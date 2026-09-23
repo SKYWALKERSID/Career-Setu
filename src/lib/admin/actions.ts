@@ -1,0 +1,17 @@
+'use server';
+import { createClient } from '@/lib/supabase/server';
+import { calculateAdminMetrics } from './calculations';
+import { isAdminRole } from './authorization';
+
+export async function getAdminMetrics() {
+  const supabase = await createClient(); const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { success: false, error: 'Unauthorized: Authentication required.' };
+  const { data: profile } = await supabase.from('profiles').select('role').eq('user_id', user.id).single();
+  if (!profile || !isAdminRole(profile.role)) return { success: false, error: 'Forbidden: Administrator access required.' };
+  const [{ count: studentCount }, { count: profileCount }, { data: readiness }, { data: students }, { data: roles }, { count: roadmapCount }, { data: roadmapTasks }, { count: recommendationCount }, { count: analyzedResumeCount }, { count: completedInterviewCount }, { count: courseCatalogCount }, { count: opportunityCatalogCount }, { count: verifiedOpportunityCount }, { count: opportunityMatchCount }, { data: aiRuns }] = await Promise.all([
+    supabase.from('student_profiles').select('id', { count: 'exact', head: true }), supabase.from('profiles').select('id', { count: 'exact', head: true }).eq('role', 'student'), supabase.from('readiness_assessments').select('student_id, overall_score, created_at'), supabase.from('student_profiles').select('target_careers'), supabase.from('career_roles').select('id, title'), supabase.from('roadmaps').select('id', { count: 'exact', head: true }), supabase.from('roadmap_tasks').select('roadmap_id, status'), supabase.from('career_recommendations').select('id', { count: 'exact', head: true }), supabase.from('resumes').select('id', { count: 'exact', head: true }).not('score', 'is', null), supabase.from('interviews').select('id', { count: 'exact', head: true }).eq('session_status', 'completed').not('overall_score', 'is', null), supabase.from('courses').select('id', { count: 'exact', head: true }), supabase.from('opportunities').select('id', { count: 'exact', head: true }), supabase.from('opportunities').select('id', { count: 'exact', head: true }).eq('is_verified', true), supabase.from('opportunity_matches').select('id', { count: 'exact', head: true }), supabase.from('ai_runs').select('feature, success, tokens_used'),
+  ]);
+  const roleTitles = new Map((roles || []).map((role) => [role.id, role.title])); const roleCounts = new Map<string, number>(); for (const student of students || []) for (const roleId of student.target_careers || []) if (roleTitles.has(roleId)) roleCounts.set(roleId, (roleCounts.get(roleId) || 0) + 1);
+  const roleUsage = [...roleCounts.entries()].map(([roleId, count]) => ({ roleId, title: roleTitles.get(roleId) || roleId, count })).sort((a, b) => b.count - a.count || a.title.localeCompare(b.title));
+  return { success: true, metrics: calculateAdminMetrics({ studentCount: studentCount || 0, profileCount: profileCount || 0, readiness: readiness || [], roleUsage, roadmapCount: roadmapCount || 0, roadmapTasks: roadmapTasks || [], recommendationCount: recommendationCount || 0, analyzedResumeCount: analyzedResumeCount || 0, completedInterviewCount: completedInterviewCount || 0, courseCatalogCount: courseCatalogCount || 0, opportunityCatalogCount: opportunityCatalogCount || 0, verifiedOpportunityCount: verifiedOpportunityCount || 0, opportunityMatchCount: opportunityMatchCount || 0, aiRuns: aiRuns || [] }) };
+}
