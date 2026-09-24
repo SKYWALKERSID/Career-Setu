@@ -66,14 +66,18 @@ export async function updateSession(request: NextRequest) {
     const url = request.nextUrl.clone();
     url.pathname = '/signup';
     url.searchParams.set('redirectTo', path);
-    return NextResponse.redirect(url);
+    const redirectRes = NextResponse.redirect(url);
+    response.cookies.getAll().forEach((c) => redirectRes.cookies.set(c));
+    return redirectRes;
   }
 
   // If authenticated user visits /login or /signup -> redirect to dashboard
   if (user && (path === '/login' || path === '/signup')) {
     const url = request.nextUrl.clone();
     url.pathname = '/dashboard';
-    return NextResponse.redirect(url);
+    const redirectRes = NextResponse.redirect(url);
+    response.cookies.getAll().forEach((c) => redirectRes.cookies.set(c));
+    return redirectRes;
   }
 
   // 2. Authenticated user profile checks
@@ -90,7 +94,9 @@ export async function updateSession(request: NextRequest) {
       if (!profile || profile.role !== 'admin') {
         const url = request.nextUrl.clone();
         url.pathname = '/dashboard';
-        return NextResponse.redirect(url);
+        const redirectRes = NextResponse.redirect(url);
+        response.cookies.getAll().forEach((c) => redirectRes.cookies.set(c));
+        return redirectRes;
       }
     }
 
@@ -105,7 +111,9 @@ export async function updateSession(request: NextRequest) {
       if (!studentProfile) {
         const url = request.nextUrl.clone();
         url.pathname = '/onboarding';
-        return NextResponse.redirect(url);
+        const redirectRes = NextResponse.redirect(url);
+        response.cookies.getAll().forEach((c) => redirectRes.cookies.set(c));
+        return redirectRes;
       }
     }
   }

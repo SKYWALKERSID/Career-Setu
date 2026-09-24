@@ -59,8 +59,10 @@ function SignUpForm() {
       // onboarding state before final redirect
       const callbackUrl = `${getURL()}/auth/callback`;
 
+      const trimmedEmail = email.trim();
+
       const result = await supabase.auth.signUp({
-        email,
+        email: trimmedEmail,
         password,
         options: { emailRedirectTo: callbackUrl },
       });

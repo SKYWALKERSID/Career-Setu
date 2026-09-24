@@ -22,8 +22,9 @@ export async function GET(request: NextRequest) {
     return NextResponse.redirect(`${origin}/signup?error=missing_code`);
   }
 
-  // We need a mutable response so we can set cookies
-  const response = NextResponse.redirect(`${origin}${next}`);
+  // We will build the response after determining destination,
+  // but collect cookies during code exchange.
+  const cookieCollector: { name: string; value: string; options: CookieOptions }[] = [];
 
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -34,10 +35,10 @@ export async function GET(request: NextRequest) {
           return request.cookies.get(name)?.value;
         },
         set(name: string, value: string, options: CookieOptions) {
-          response.cookies.set({ name, value, ...options });
+          cookieCollector.push({ name, value, options });
         },
         remove(name: string, options: CookieOptions) {
-          response.cookies.set({ name, value: '', ...options });
+          cookieCollector.push({ name, value: '', options });
         },
       },
     }
@@ -47,7 +48,11 @@ export async function GET(request: NextRequest) {
 
   if (error || !data.session) {
     console.error('[auth/callback] exchangeCodeForSession error:', error?.message);
-    return NextResponse.redirect(`${origin}/signup?error=auth_callback_failed`);
+    const errResponse = NextResponse.redirect(`${origin}/signup?error=auth_callback_failed`);
+    cookieCollector.forEach(({ name, value, options }) => {
+      errResponse.cookies.set({ name, value, ...options });
+    });
+    return errResponse;
   }
 
   const userId = data.session.user.id;
@@ -61,6 +66,11 @@ export async function GET(request: NextRequest) {
 
   const destination = studentProfile ? next : '/onboarding';
 
-  // Replace the redirect target based on onboarding state
-  return NextResponse.redirect(`${origin}${destination}`);
+  // Construct final redirect response and attach all session cookies
+  const finalResponse = NextResponse.redirect(`${origin}${destination}`);
+  cookieCollector.forEach(({ name, value, options }) => {
+    finalResponse.cookies.set({ name, value, ...options });
+  });
+
+  return finalResponse;
 }

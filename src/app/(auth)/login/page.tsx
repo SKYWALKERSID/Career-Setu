@@ -12,26 +12,59 @@ import { AuthVisualPanel } from '@/components/auth/auth-visual-panel';
 
 // ─── helpers ──────────────────────────────────────────────────────────────────
 
-function friendlyLoginError(message: string): string {
+interface LoginErrorDetails {
+  message: string;
+  code?: string;
+  isUnconfirmed?: boolean;
+}
+
+function parseLoginError(error: { message?: string; code?: string; status?: number }): LoginErrorDetails {
+  const code = error.code || '';
+  const message = error.message || '';
   const m = message.toLowerCase();
+
+  // Explicit check for unconfirmed email
+  if (code === 'email_not_confirmed' || m.includes('email not confirmed')) {
+    return {
+      code: 'email_not_confirmed',
+      isUnconfirmed: true,
+      message: 'Please verify your email address before signing in. Check your inbox for a confirmation link.',
+    };
+  }
+
+  // Invalid credentials / wrong password / user not found
   if (
+    code === 'invalid_credentials' ||
     m.includes('invalid login') ||
     m.includes('invalid credentials') ||
-    m.includes('wrong password') ||
-    m.includes('email not confirmed') === false && m.includes('credentials')
+    m.includes('wrong password')
   ) {
-    return 'Incorrect email or password. Please try again.';
+    return {
+      code: 'invalid_credentials',
+      message: 'Incorrect email or password. Please try again.',
+    };
   }
-  if (m.includes('email not confirmed')) {
-    return 'Please verify your email address before signing in. Check your inbox for a confirmation link.';
+
+  // Rate limits
+  if (code === 'over_request_rate_limit' || m.includes('too many requests') || m.includes('rate limit')) {
+    return {
+      code,
+      message: 'Too many attempts. Please wait a moment before trying again.',
+    };
   }
-  if (m.includes('too many requests') || m.includes('rate limit')) {
-    return 'Too many attempts. Please wait a moment before trying again.';
-  }
+
+  // Network / fetch errors
   if (m.includes('network') || m.includes('fetch') || m.includes('failed to fetch')) {
-    return 'Something went wrong. Please check your connection and try again.';
+    return {
+      code: 'network_error',
+      message: 'Something went wrong. Please check your connection and try again.',
+    };
   }
-  return message || 'Authentication failed. Please try again.';
+
+  return {
+    code,
+    message: message || 'Authentication failed. Please try again.',
+  };
 }
 
 // ─── form component ────────────────────────────────────────────────────────────
@@ -45,7 +78,8 @@ function LoginForm() {
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const [errorMsg, setErrorMsg] = useState('');
+  const [errorDetails, setErrorDetails] = useState<LoginErrorDetails | null>(null);
+  const [resendStatus, setResendStatus] = useState<'idle' | 'loading' | 'sent' | 'error'>('idle');
 
   // ── email / password sign-in ─────────────────────────────────────────────────
   const handleLogin = async (event: React.FormEvent) => {
@@ -53,14 +87,20 @@ function LoginForm() {
     if (loading || googleLoading) return;
 
     setLoading(true);
-    setErrorMsg('');
+    setErrorDetails(null);
+    setResendStatus('idle');
+
+    const trimmedEmail = email.trim();
 
     try {
       const supabase = createClient();
-      const result = await supabase.auth.signInWithPassword({ email, password });
+      const result = await supabase.auth.signInWithPassword({
+        email: trimmedEmail,
+        password,
+      });
 
       if (result.error) {
-        setErrorMsg(friendlyLoginError(result.error.message));
+        setErrorDetails(parseLoginError(result.error));
         return;
       }
 
@@ -77,13 +117,39 @@ function LoginForm() {
         router.push(redirectTo);
       }
     } catch (error: unknown) {
-      setErrorMsg(
-        error instanceof Error
-          ? friendlyLoginError(error.message)
-          : 'Something went wrong. Please try again.'
+      setErrorDetails(
+        parseLoginError(
+          error instanceof Error
+            ? { message: error.message }
+            : { message: 'Something went wrong. Please try again.' }
+        )
       );
     } finally {
       setLoading(false);
+    }
+  };
+
+  // ── resend verification email ─────────────────────────────────────────────────
+  const handleResendVerification = async () => {
+    if (resendStatus === 'loading') return;
+    setResendStatus('loading');
+    try {
+      const supabase = createClient();
+      const { error } = await supabase.auth.resend({
+        type: 'signup',
+        email: email.trim(),
+        options: {
+          emailRedirectTo: `${getURL()}/auth/callback`,
+        },
+      });
+
+      if (error) {
+        setResendStatus('error');
+      } else {
+        setResendStatus('sent');
+      }
+    } catch {
+      setResendStatus('error');
     }
   };
 
@@ -91,7 +157,7 @@ function LoginForm() {
   const handleGoogleSignIn = async () => {
     if (loading || googleLoading) return;
     setGoogleLoading(true);
-    setErrorMsg('');
+    setErrorDetails(null);
 
     try {
       const supabase = createClient();
@@ -102,12 +168,12 @@ function LoginForm() {
         },
       });
       if (error) {
-        setErrorMsg('Google sign-in could not be completed. Please try again.');
+        setErrorDetails({ message: 'Google sign-in could not be completed. Please try again.' });
         setGoogleLoading(false);
       }
       // On success Supabase redirects the browser — no further action needed
     } catch {
-      setErrorMsg('Something went wrong. Please try again.');
+      setErrorDetails({ message: 'Something went wrong. Please try again.' });
       setGoogleLoading(false);
     }
   };
@@ -125,12 +191,29 @@ function LoginForm() {
         Sign in to continue your career journey.
       </p>
 
-      {errorMsg && (
+      {errorDetails && (
         <div
           role="alert"
           className="mt-5 rounded-md border border-red-200 bg-red-50 p-3.5 text-xs text-red-700"
         >
-          <p>{errorMsg}</p>
+          <p>{errorDetails.message}</p>
+          {errorDetails.isUnconfirmed && (
+            <div className="mt-2.5 pt-2 border-t border-red-200 flex items-center justify-between">
+              <span className="text-[11px] text-red-600">Didn&apos;t get the link?</span>
+              <button
+                type="button"
+                onClick={handleResendVerification}
+                disabled={resendStatus === 'loading' || resendStatus === 'sent'}
+                className="font-semibold text-[#1559c7] hover:underline disabled:opacity-50 text-xs"
+              >
+                {resendStatus === 'loading'
+                  ? 'Sending…'
+                  : resendStatus === 'sent'
+                  ? 'Verification link sent!'
+                  : 'Resend verification email'}
+              </button>
+            </div>
+          )}
         </div>
       )}
 
