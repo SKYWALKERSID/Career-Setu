@@ -181,9 +181,7 @@ function LoginForm() {
           <button
             type="button"
             className="hover:underline"
-            onClick={() => {
-              // Placeholder — password reset can be wired here
-            }}
+            onClick={() => router.push('/forgot-password')}
           >
             Forgot Password?
           </button>
