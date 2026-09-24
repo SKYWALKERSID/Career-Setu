@@ -1,10 +1,25 @@
 import { createClient } from '@supabase/supabase-js';
+import fs from 'fs';
+import path from 'path';
 
-// Load environment variables if available
+// Load .env.local variables if available
+const envPath = path.resolve(process.cwd(), '.env.local');
+if (fs.existsSync(envPath)) {
+  const envText = fs.readFileSync(envPath, 'utf8');
+  envText.split(/\r?\n/).forEach(line => {
+    const parts = line.split('=');
+    if (parts[0] && parts[1] && !process.env[parts[0].trim()]) {
+      process.env[parts[0].trim()] = parts.slice(1).join('=').trim();
+    }
+  });
+}
+
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'http://127.0.0.1:54321';
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || 'service-role-key-placeholder';
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'service-role-key-placeholder';
 
 const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+
 
 export const SEED_SKILLS = [
   { name: 'Python', category: 'Programming', aliases: ['py', 'python3'] },
@@ -386,41 +401,74 @@ async function main() {
 
   // 1. Seed Skills
   console.log('Seeding skills...');
-  const { data: skillsData, error: skillsError } = await supabase
-    .from('skills')
-    .upsert(SEED_SKILLS, { onConflict: 'name' })
-    .select();
-  if (skillsError) console.error('Error seeding skills:', skillsError);
-  else console.log(`✓ Seeded ${skillsData.length} skills`);
+  const { data: existingSkills } = await supabase.from('skills').select('name');
+  const existingSkillNames = new Set((existingSkills || []).map((s: any) => s.name));
+  const newSkills = SEED_SKILLS.filter(s => !existingSkillNames.has(s.name));
+  
+  if (newSkills.length > 0) {
+    const { data: skillsData, error: skillsError } = await supabase
+      .from('skills')
+      .insert(newSkills)
+      .select();
+    if (skillsError) console.error('Error seeding skills:', skillsError);
+    else console.log(`✓ Seeded ${skillsData ? skillsData.length : 0} new skills`);
+  } else {
+    console.log(`✓ Skills catalog already populated (${existingSkillNames.size} skills present)`);
+  }
 
   // 2. Seed Career Roles
   console.log('Seeding career roles...');
-  const { data: rolesData, error: rolesError } = await supabase
-    .from('career_roles')
-    .upsert(SEED_CAREER_ROLES, { onConflict: 'title' })
-    .select();
-  if (rolesError) console.error('Error seeding career roles:', rolesError);
-  else console.log(`✓ Seeded ${rolesData.length} career roles`);
+  const { data: existingRoles } = await supabase.from('career_roles').select('title');
+  const existingRoleTitles = new Set((existingRoles || []).map((r: any) => r.title));
+  const newRoles = SEED_CAREER_ROLES.filter(r => !existingRoleTitles.has(r.title));
+
+  if (newRoles.length > 0) {
+    const { data: rolesData, error: rolesError } = await supabase
+      .from('career_roles')
+      .insert(newRoles)
+      .select();
+    if (rolesError) console.error('Error seeding career roles:', rolesError);
+    else console.log(`✓ Seeded ${rolesData ? rolesData.length : 0} new career roles`);
+  } else {
+    console.log(`✓ Career roles catalog already populated (${existingRoleTitles.size} roles present)`);
+  }
 
   // 3. Seed Courses
   console.log('Seeding courses...');
-  const { data: coursesData, error: coursesError } = await supabase
-    .from('courses')
-    .upsert(SEED_COURSES, { onConflict: 'title' })
-    .select();
-  if (coursesError) console.error('Error seeding courses:', coursesError);
-  else console.log(`✓ Seeded ${coursesData.length} courses`);
+  const { data: existingCourses } = await supabase.from('courses').select('title');
+  const existingCourseTitles = new Set((existingCourses || []).map((c: any) => c.title));
+  const newCourses = SEED_COURSES.filter(c => !existingCourseTitles.has(c.title));
+
+  if (newCourses.length > 0) {
+    const { data: coursesData, error: coursesError } = await supabase
+      .from('courses')
+      .insert(newCourses)
+      .select();
+    if (coursesError) console.error('Error seeding courses:', coursesError);
+    else console.log(`✓ Seeded ${coursesData ? coursesData.length : 0} new courses`);
+  } else {
+    console.log(`✓ Courses catalog already populated (${existingCourseTitles.size} courses present)`);
+  }
 
   // 4. Seed Opportunities
   console.log('Seeding opportunities...');
-  const { data: oppsData, error: oppsError } = await supabase
-    .from('opportunities')
-    .upsert(SEED_OPPORTUNITIES, { onConflict: 'title' })
-    .select();
-  if (oppsError) console.error('Error seeding opportunities:', oppsError);
-  else console.log(`✓ Seeded ${oppsData.length} opportunities`);
+  const { data: existingOpps } = await supabase.from('opportunities').select('title');
+  const existingOppTitles = new Set((existingOpps || []).map((o: any) => o.title));
+  const newOpps = SEED_OPPORTUNITIES.filter(o => !existingOppTitles.has(o.title));
+
+  if (newOpps.length > 0) {
+    const { data: oppsData, error: oppsError } = await supabase
+      .from('opportunities')
+      .insert(newOpps)
+      .select();
+    if (oppsError) console.error('Error seeding opportunities:', oppsError);
+    else console.log(`✓ Seeded ${oppsData ? oppsData.length : 0} new opportunities`);
+  } else {
+    console.log(`✓ Opportunities catalog already populated (${existingOppTitles.size} opportunities present)`);
+  }
 
   console.log('🎉 Seeding complete!');
 }
 
 main().catch(console.error);
+
