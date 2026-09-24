@@ -61,16 +61,16 @@ export async function updateSession(request: NextRequest) {
     path === route || path.startsWith(`${route}/`)
   );
 
-  // 1. Unauthenticated users trying to access protected routes -> redirect to login
+  // 1. Unauthenticated users trying to access protected routes -> redirect to signup
   if (!user && isProtectedRoute) {
     const url = request.nextUrl.clone();
-    url.pathname = '/login';
+    url.pathname = '/signup';
     url.searchParams.set('redirectTo', path);
     return NextResponse.redirect(url);
   }
 
-  // If authenticated user visits login -> redirect to dashboard
-  if (user && path === '/login') {
+  // If authenticated user visits /login or /signup -> redirect to dashboard
+  if (user && (path === '/login' || path === '/signup')) {
     const url = request.nextUrl.clone();
     url.pathname = '/dashboard';
     return NextResponse.redirect(url);
