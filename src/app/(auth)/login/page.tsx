@@ -7,7 +7,34 @@ import { ArrowRight, Eye, EyeOff, LockKeyhole, UserRound } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { createClient } from '@/lib/supabase/client';
+import { getURL } from '@/lib/utils';
 import { AuthVisualPanel } from '@/components/auth/auth-visual-panel';
+
+// ─── helpers ──────────────────────────────────────────────────────────────────
+
+function friendlyLoginError(message: string): string {
+  const m = message.toLowerCase();
+  if (
+    m.includes('invalid login') ||
+    m.includes('invalid credentials') ||
+    m.includes('wrong password') ||
+    m.includes('email not confirmed') === false && m.includes('credentials')
+  ) {
+    return 'Incorrect email or password. Please try again.';
+  }
+  if (m.includes('email not confirmed')) {
+    return 'Please verify your email address before signing in. Check your inbox for a confirmation link.';
+  }
+  if (m.includes('too many requests') || m.includes('rate limit')) {
+    return 'Too many attempts. Please wait a moment before trying again.';
+  }
+  if (m.includes('network') || m.includes('fetch') || m.includes('failed to fetch')) {
+    return 'Something went wrong. Please check your connection and try again.';
+  }
+  return message || 'Authentication failed. Please try again.';
+}
+
+// ─── form component ────────────────────────────────────────────────────────────
 
 function LoginForm() {
   const router = useRouter();
@@ -16,12 +43,14 @@ function LoginForm() {
   const [email, setEmail] = useState(searchParams.get('email') ?? '');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
 
+  // ── email / password sign-in ─────────────────────────────────────────────────
   const handleLogin = async (event: React.FormEvent) => {
     event.preventDefault();
-    if (loading) return;
+    if (loading || googleLoading) return;
 
     setLoading(true);
     setErrorMsg('');
@@ -31,11 +60,11 @@ function LoginForm() {
       const result = await supabase.auth.signInWithPassword({ email, password });
 
       if (result.error) {
-        setErrorMsg(result.error.message || 'Authentication failed. Please check your credentials.');
+        setErrorMsg(friendlyLoginError(result.error.message));
         return;
       }
 
-      // Check whether onboarding is complete
+      // Onboarding-aware redirect: check whether student profile exists
       const { data: studentProfile } = await supabase
         .from('student_profiles')
         .select('id')
@@ -49,13 +78,41 @@ function LoginForm() {
       }
     } catch (error: unknown) {
       setErrorMsg(
-        error instanceof Error ? error.message : 'An unexpected error occurred. Please try again.'
+        error instanceof Error
+          ? friendlyLoginError(error.message)
+          : 'Something went wrong. Please try again.'
       );
     } finally {
       setLoading(false);
     }
   };
 
+  // ── Google OAuth ─────────────────────────────────────────────────────────────
+  const handleGoogleSignIn = async () => {
+    if (loading || googleLoading) return;
+    setGoogleLoading(true);
+    setErrorMsg('');
+
+    try {
+      const supabase = createClient();
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: `${getURL()}/auth/callback`,
+        },
+      });
+      if (error) {
+        setErrorMsg('Google sign-in could not be completed. Please try again.');
+        setGoogleLoading(false);
+      }
+      // On success Supabase redirects the browser — no further action needed
+    } catch {
+      setErrorMsg('Something went wrong. Please try again.');
+      setGoogleLoading(false);
+    }
+  };
+
+  // ── render ───────────────────────────────────────────────────────────────────
   return (
     <div className="w-full rounded-[10px] border border-[#edf1f6] bg-white p-7 shadow-[0_10px_30px_rgba(25,70,120,0.06)] sm:p-9">
       <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-[#7789a5]">
@@ -69,7 +126,10 @@ function LoginForm() {
       </p>
 
       {errorMsg && (
-        <div className="mt-5 rounded-md border border-red-200 bg-red-50 p-3.5 text-xs text-red-700">
+        <div
+          role="alert"
+          className="mt-5 rounded-md border border-red-200 bg-red-50 p-3.5 text-xs text-red-700"
+        >
           <p>{errorMsg}</p>
         </div>
       )}
@@ -82,6 +142,7 @@ function LoginForm() {
             <Input
               id="login-email"
               type="email"
+              autoComplete="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="Enter your email address"
@@ -98,6 +159,7 @@ function LoginForm() {
             <Input
               id="login-password"
               type={showPassword ? 'text' : 'password'}
+              autoComplete="current-password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="Enter your password"
@@ -116,7 +178,15 @@ function LoginForm() {
         </label>
 
         <div className="text-right text-xs font-semibold text-[#1559c7]">
-          Forgot Password?
+          <button
+            type="button"
+            className="hover:underline"
+            onClick={() => {
+              // Placeholder — password reset can be wired here
+            }}
+          >
+            Forgot Password?
+          </button>
         </div>
 
         <Button
@@ -125,7 +195,7 @@ function LoginForm() {
           size="lg"
           className="h-11 w-full"
           isLoading={loading}
-          disabled={loading}
+          disabled={loading || googleLoading}
         >
           Sign In <ArrowRight className="h-4 w-4" />
         </Button>
@@ -137,28 +207,25 @@ function LoginForm() {
         <span className="h-px flex-1 bg-[#e4ebf3]" />
       </div>
 
-      <div className="space-y-3">
-        <button
-          type="button"
-          disabled
-          className="flex h-11 w-full items-center justify-center gap-2 rounded-md border border-[#9dbce7] text-xs font-semibold text-[#536987] opacity-60"
-          title="Google OAuth coming soon"
-        >
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/google-icon.svg" alt="" className="h-4 w-4" />
-          Continue with Google
-        </button>
-        <button
-          type="button"
-          disabled
-          className="flex h-11 w-full items-center justify-center gap-2 rounded-md border border-[#9dbce7] text-xs font-semibold text-[#536987] opacity-60"
-          title="LinkedIn OAuth coming soon"
-        >
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/linkedin-icon.svg" alt="" className="h-4 w-4" />
-          Continue with LinkedIn
-        </button>
-      </div>
+      <button
+        type="button"
+        onClick={handleGoogleSignIn}
+        disabled={loading || googleLoading}
+        aria-label="Continue with Google"
+        className="flex h-11 w-full items-center justify-center gap-2.5 rounded-md border border-[#d0dcea] bg-white text-xs font-semibold text-[#3c4858] shadow-sm transition-colors hover:bg-[#f7faff] hover:border-[#b0c6e0] disabled:opacity-50 disabled:cursor-not-allowed"
+      >
+        {googleLoading ? (
+          <span className="h-4 w-4 animate-spin rounded-full border-2 border-[#d0dcea] border-t-[#1559c7]" />
+        ) : (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src="/google-icon.svg"
+            alt=""
+            className="h-4 w-4"
+          />
+        )}
+        {googleLoading ? 'Redirecting to Google…' : 'Continue with Google'}
+      </button>
 
       <p className="mt-7 text-center text-xs text-[#536987]">
         Don&apos;t have an account?{' '}
@@ -169,6 +236,8 @@ function LoginForm() {
     </div>
   );
 }
+
+// ─── page ──────────────────────────────────────────────────────────────────────
 
 export default function LoginPage() {
   return (
