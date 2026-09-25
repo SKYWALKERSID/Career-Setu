@@ -21,7 +21,6 @@ import {
   HelpCircle,
   Play,
   ShieldCheck,
-  Sparkles,
   Target,
 } from 'lucide-react';
 
@@ -83,20 +82,20 @@ export default function InterviewSetupPage() {
                 MOCK INTERVIEW · SETUP
               </p>
               <h1 className="mt-2 text-3xl font-extrabold tracking-[-0.03em] text-[#10285a] sm:text-4xl">
-                Practice with Purpose.
+                Mock Interview
               </h1>
               <p className="mt-2 max-w-xl text-sm leading-6 text-[#526d89]">
-                Prepare for your target career with a bounded, 5-question interview. Every answer is evaluated against real role criteria to deliver actionable, persisted feedback.
+                Practice a five-question interview based on your selected career role. Responses are evaluated against role-specific criteria and saved to your progress.
               </p>
               <div className="mt-5 flex flex-wrap items-center gap-5 text-xs font-semibold text-[#375d87]">
                 <span className="flex items-center gap-1.5">
-                  <FileQuestion className="h-4 w-4 text-[#1769d4]" /> 5 Questions per Session
+                  <FileQuestion className="h-4 w-4 text-[#1769d4]" /> 5 questions per session
                 </span>
                 <span className="flex items-center gap-1.5">
-                  <ShieldCheck className="h-4 w-4 text-[#1769d4]" /> Private & Persisted
+                  <ShieldCheck className="h-4 w-4 text-[#1769d4]" /> Responses are saved
                 </span>
                 <span className="flex items-center gap-1.5">
-                  <Sparkles className="h-4 w-4 text-[#1769d4]" /> Fact-Based Evaluation
+                  <CheckCircle2 className="h-4 w-4 text-[#1769d4]" /> Role-specific evaluation
                 </span>
               </div>
             </div>
