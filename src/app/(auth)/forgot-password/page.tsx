@@ -9,7 +9,7 @@ import { createClient } from '@/lib/supabase/client';
 import { getURL } from '@/lib/utils';
 import { AuthVisualPanel } from '@/components/auth/auth-visual-panel';
 
-// ─── helpers ──────────────────────────────────────────────────────────────────
+//helpers 
 
 function friendlyResetError(message: string): string {
   const m = message.toLowerCase();
@@ -25,7 +25,7 @@ function friendlyResetError(message: string): string {
   return 'We couldn\'t send the reset email right now. Please try again.';
 }
 
-// ─── form ─────────────────────────────────────────────────────────────────────
+//form 
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState('');
@@ -64,7 +64,7 @@ export default function ForgotPasswordPage() {
     }
   };
 
-  // ── success state ─────────────────────────────────────────────────────────────
+  //success state
   if (sent) {
     return (
       <main className="grid min-h-screen bg-[#f7faff] lg:grid-cols-[1fr_1fr]">
@@ -109,7 +109,7 @@ export default function ForgotPasswordPage() {
     );
   }
 
-  // ── request form ──────────────────────────────────────────────────────────────
+  //request form 
   return (
     <main className="grid min-h-screen bg-[#f7faff] lg:grid-cols-[1fr_1fr]">
       <section className="flex min-h-screen flex-col bg-[#f7faff] px-5 py-6 sm:px-10 lg:px-16">

@@ -10,7 +10,7 @@ import { createClient } from '@/lib/supabase/client';
 import { getURL } from '@/lib/utils';
 import { AuthVisualPanel } from '@/components/auth/auth-visual-panel';
 
-// ─── helpers ──────────────────────────────────────────────────────────────────
+// helpers 
 
 function friendlySignupError(message: string): string {
   const m = message.toLowerCase();
@@ -29,7 +29,7 @@ function friendlySignupError(message: string): string {
   return message || 'Signup failed. Please try again.';
 }
 
-// ─── form component ────────────────────────────────────────────────────────────
+//  form component
 
 function SignUpForm() {
   const router = useRouter();
@@ -43,7 +43,7 @@ function SignUpForm() {
   const [successMsg, setSuccessMsg] = useState('');
   const [isAlreadyRegistered, setIsAlreadyRegistered] = useState(false);
 
-  // ── email / password sign-up ─────────────────────────────────────────────────
+  // email / password sign-up
   const handleSignUp = async (event: React.FormEvent) => {
     event.preventDefault();
     if (loading || googleLoading) return;
@@ -112,7 +112,7 @@ function SignUpForm() {
     }
   };
 
-  // ── Google OAuth ─────────────────────────────────────────────────────────────
+  // Google OAuth 
   const handleGoogleSignIn = async () => {
     if (loading || googleLoading) return;
     setGoogleLoading(true);
@@ -137,7 +137,7 @@ function SignUpForm() {
     }
   };
 
-  // ── "already registered" → login ────────────────────────────────────────────
+  // "already registered" → login 
   const goToLogin = () => {
     const params = new URLSearchParams();
     if (email) params.set('email', email);
@@ -145,7 +145,7 @@ function SignUpForm() {
     router.push(`/login${qs ? `?${qs}` : ''}`);
   };
 
-  // ── render ───────────────────────────────────────────────────────────────────
+  // render 
   return (
     <div className="w-full rounded-[10px] border border-[#edf1f6] bg-white p-7 shadow-[0_10px_30px_rgba(25,70,120,0.06)] sm:p-9">
       <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-[#7789a5]">
@@ -277,7 +277,7 @@ function SignUpForm() {
   );
 }
 
-// ─── page ──────────────────────────────────────────────────────────────────────
+// page
 
 export default function SignUpPage() {
   return (

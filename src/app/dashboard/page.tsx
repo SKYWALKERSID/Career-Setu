@@ -14,6 +14,8 @@ import { ArrowRight, Award, BookOpen, Building2, CalendarDays, CheckCircle2, Che
 import { getDashboardData, type DashboardData } from '@/lib/dashboard/queries';
 import { generateCareerRecommendations } from '@/lib/ai/actions-recommendations';
 
+import { formatSemesterOrdinal } from '@/lib/profile/user-profile-summary';
+
 function PortalFrame({ children }: { children: React.ReactNode }) {
   return <div className="portal-page min-h-screen flex"><Sidebar /><div className="flex-1 min-w-0 flex flex-col"><TopNav />{children}</div></div>;
 }
@@ -52,6 +54,11 @@ export default function DashboardPage() {
   const opportunities = dashboardData?.previewOpportunities || [];
   const studentSkills = dashboardData?.studentSkills || [];
 
+  const semesterFormatted = formatSemesterOrdinal(sp?.semester);
+  const collegeSubtitle = sp?.college
+    ? (semesterFormatted ? `${sp.college} · ${semesterFormatted}` : sp.college)
+    : 'Madhya Pradesh Student Employability Portal';
+
   async function handleGenerateRecommendations() {
     setRecommendationsLoading(true);
     setRecommendationsError('');
@@ -76,7 +83,7 @@ export default function DashboardPage() {
     <main className="flex-1 bg-[#f4f8fc] p-4 sm:p-6 max-w-[1440px] w-full mx-auto space-y-5">
       <section className="flex flex-col md:flex-row md:items-end justify-between gap-3">
         <div><p className="text-[10px] uppercase tracking-[0.22em] font-bold text-brand-700 mb-1">Student dashboard</p><h1 className="text-[27px] leading-tight font-extrabold text-[#102b63]">Good morning, {sp?.name || 'Student'} <span aria-hidden="true">👋</span></h1><p className="text-xs text-slate-500 mt-1">Here&apos;s your personalized career overview.</p></div>
-        <div className="text-right text-[10px] text-slate-500"><p><span className="font-semibold text-slate-700">हिंदी</span><span className="mx-1">|</span>English</p><p className="mt-2">{sp?.college ? `${sp.college} · ${sp.semester || ''}th Sem` : 'Madhya Pradesh Student Employability Portal'}</p></div>
+        <div className="text-right text-[10px] text-slate-500"><p><span className="font-semibold text-slate-700">हिंदी</span><span className="mx-1">|</span>English</p><p className="mt-2">{collegeSubtitle}</p></div>
       </section>
 
       <section className="relative overflow-hidden rounded-md border border-blue-100 bg-gradient-to-r from-[#e8f2ff] via-[#e2eeff] to-[#d6e7ff] px-5 py-4 min-h-[82px] flex items-center"><div className="relative z-10"><p className="text-[14px] font-semibold text-[#143b7a]">“Your skills today can build a stronger Madhya Pradesh tomorrow.”</p><p className="text-[11px] text-slate-600 mt-1">Explore. Learn. Grow.</p></div><div className="absolute right-5 bottom-3 text-[10px] text-slate-500">📍 {sp?.location || 'Madhya Pradesh'}</div></section>

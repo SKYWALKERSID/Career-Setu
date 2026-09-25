@@ -9,7 +9,7 @@ import { Input } from '@/components/ui/input';
 import { createClient } from '@/lib/supabase/client';
 import { AuthVisualPanel } from '@/components/auth/auth-visual-panel';
 
-// ─── helpers ──────────────────────────────────────────────────────────────────
+// helpers  
 
 function friendlyUpdateError(message: string): string {
   const m = message.toLowerCase();
@@ -28,7 +28,7 @@ function friendlyUpdateError(message: string): string {
   return 'Something went wrong. Please try again.';
 }
 
-// ─── inner form (needs useSearchParams so must be in Suspense) ────────────────
+//  inner form (needs useSearchParams so must be in Suspense) 
 
 function ResetPasswordForm() {
   const router = useRouter();
@@ -81,7 +81,7 @@ function ResetPasswordForm() {
     });
 
     return () => subscription.unsubscribe();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleUpdatePassword = async (event: React.FormEvent) => {
@@ -122,7 +122,7 @@ function ResetPasswordForm() {
     }
   };
 
-  // ── loading while checking session ────────────────────────────────────────────
+  //  loading while checking session 
   if (sessionReady === null) {
     return (
       <div className="w-full rounded-[10px] border border-[#edf1f6] bg-white p-7 shadow-[0_10px_30px_rgba(25,70,120,0.06)] sm:p-9">
@@ -134,7 +134,7 @@ function ResetPasswordForm() {
     );
   }
 
-  // ── invalid / expired link ────────────────────────────────────────────────────
+  //  invalid / expired link 
   if (sessionReady === false) {
     return (
       <div className="w-full rounded-[10px] border border-[#edf1f6] bg-white p-7 shadow-[0_10px_30px_rgba(25,70,120,0.06)] sm:p-9">
@@ -162,7 +162,7 @@ function ResetPasswordForm() {
     );
   }
 
-  // ── success state ─────────────────────────────────────────────────────────────
+  //  success state 
   if (success) {
     return (
       <div className="w-full rounded-[10px] border border-[#edf1f6] bg-white p-7 shadow-[0_10px_30px_rgba(25,70,120,0.06)] sm:p-9">
@@ -187,7 +187,7 @@ function ResetPasswordForm() {
     );
   }
 
-  // ── set new password form ─────────────────────────────────────────────────────
+  //  set new password form 
   return (
     <div className="w-full rounded-[10px] border border-[#edf1f6] bg-white p-7 shadow-[0_10px_30px_rgba(25,70,120,0.06)] sm:p-9">
       <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-[#7789a5]">
@@ -283,7 +283,7 @@ function ResetPasswordForm() {
   );
 }
 
-// ─── page ──────────────────────────────────────────────────────────────────────
+//  page 
 
 export default function ResetPasswordPage() {
   return (

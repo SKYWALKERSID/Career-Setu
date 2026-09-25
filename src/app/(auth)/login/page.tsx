@@ -10,7 +10,7 @@ import { createClient } from '@/lib/supabase/client';
 import { getURL } from '@/lib/utils';
 import { AuthVisualPanel } from '@/components/auth/auth-visual-panel';
 
-// ─── helpers ──────────────────────────────────────────────────────────────────
+// helpers 
 
 interface LoginErrorDetails {
   message: string;
@@ -67,7 +67,7 @@ function parseLoginError(error: { message?: string; code?: string; status?: numb
   };
 }
 
-// ─── form component ────────────────────────────────────────────────────────────
+// form component 
 
 function LoginForm() {
   const router = useRouter();
@@ -81,7 +81,7 @@ function LoginForm() {
   const [errorDetails, setErrorDetails] = useState<LoginErrorDetails | null>(null);
   const [resendStatus, setResendStatus] = useState<'idle' | 'loading' | 'sent' | 'error'>('idle');
 
-  // ── email / password sign-in ─────────────────────────────────────────────────
+  // email / password sign-in
   const handleLogin = async (event: React.FormEvent) => {
     event.preventDefault();
     if (loading || googleLoading) return;
@@ -129,7 +129,7 @@ function LoginForm() {
     }
   };
 
-  // ── resend verification email ─────────────────────────────────────────────────
+  // resend verification email
   const handleResendVerification = async () => {
     if (resendStatus === 'loading') return;
     setResendStatus('loading');
@@ -153,7 +153,7 @@ function LoginForm() {
     }
   };
 
-  // ── Google OAuth ─────────────────────────────────────────────────────────────
+  // Google OAuth
   const handleGoogleSignIn = async () => {
     if (loading || googleLoading) return;
     setGoogleLoading(true);
@@ -178,7 +178,7 @@ function LoginForm() {
     }
   };
 
-  // ── render ───────────────────────────────────────────────────────────────────
+  //render
   return (
     <div className="w-full rounded-[10px] border border-[#edf1f6] bg-white p-7 shadow-[0_10px_30px_rgba(25,70,120,0.06)] sm:p-9">
       <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-[#7789a5]">
@@ -209,8 +209,8 @@ function LoginForm() {
                 {resendStatus === 'loading'
                   ? 'Sending…'
                   : resendStatus === 'sent'
-                  ? 'Verification link sent!'
-                  : 'Resend verification email'}
+                    ? 'Verification link sent!'
+                    : 'Resend verification email'}
               </button>
             </div>
           )}
@@ -318,7 +318,7 @@ function LoginForm() {
   );
 }
 
-// ─── page ──────────────────────────────────────────────────────────────────────
+// page
 
 export default function LoginPage() {
   return (

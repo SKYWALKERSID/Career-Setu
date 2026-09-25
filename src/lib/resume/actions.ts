@@ -15,9 +15,30 @@ function extractText(buffer: Buffer, type: string): string {
   if (type === 'text/plain') return buffer.toString('utf8').trim();
   if (type === 'application/pdf') {
     const raw = buffer.toString('latin1');
-    return [...raw.matchAll(/\(([^()]*)\)\s*Tj/g)].map((match) => match[1].replace(/\\([()\\])/g, '$1')).join(' ').trim();
+    // Extract text from (text) Tj commands
+    const tjMatches = [...raw.matchAll(/\(([^()]*)\)\s*Tj/g)].map((m) => m[1].replace(/\\([()\\])/g, '$1'));
+    // Extract text from [(text1) -10 (text2)] TJ commands
+    const arrayMatches = [...raw.matchAll(/\[\s*((?:\((?:[^()]*)\)|[^\]])*)\]\s*TJ/g)]
+      .flatMap((m) => [...m[1].matchAll(/\(([^()]*)\)/g)].map((sub) => sub[1].replace(/\\([()\\])/g, '$1')));
+
+    let extracted = [...tjMatches, ...arrayMatches].join(' ').trim();
+
+    // Fallback: If regex extraction yields less than 20 characters, extract printable ASCII sequences from the stream
+    if (extracted.length < 20) {
+      const asciiClean = raw
+        .replace(/[^\x20-\x7E\n\r\t]/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim();
+      // Filter out PDF syntax keywords
+      extracted = asciiClean
+        .split(' ')
+        .filter((w) => w.length > 1 && !/^(obj|endobj|stream|endstream|xref|trailer|startxref|Catalog|Pages|Parent|Type|Font|Length|Filter)$/i.test(w))
+        .join(' ');
+    }
+
+    return extracted.trim();
   }
-  throw new Error('DOCX text extraction is not available in the current runtime. Please upload a PDF or text resume.');
+  throw new Error('Unsupported format. Please upload a PDF or text resume.');
 }
 
 export async function getLatestResume() {

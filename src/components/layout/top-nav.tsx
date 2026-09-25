@@ -1,13 +1,30 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Search, Bell, LogOut } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
+import { getCurrentUserProfileSummary, UserProfileSummary } from '@/lib/profile/user-profile-summary';
 
 export function TopNav() {
   const router = useRouter();
+  const [profile, setProfile] = useState<UserProfileSummary | null>(null);
+
+  useEffect(() => {
+    let mounted = true;
+    void (async () => {
+      try {
+        const summary = await getCurrentUserProfileSummary();
+        if (mounted) setProfile(summary);
+      } catch (err) {
+        console.error('Failed to load user profile for TopNav:', err);
+      }
+    })();
+    return () => {
+      mounted = false;
+    };
+  }, []);
 
   const handleLogout = async () => {
     try {
@@ -51,11 +68,15 @@ export function TopNav() {
         <div className="flex items-center gap-2 border-l border-slate-200 pl-4">
           <Link href="/settings" className="flex items-center gap-2.5 hover:opacity-90 transition-opacity">
             <div className="h-8 w-8 rounded-full bg-brand-700 text-white font-bold text-[11px] flex items-center justify-center shadow-sm">
-              AS
+              {profile?.initials || '..'}
             </div>
-            <div className="text-left hidden sm:block">
-              <p className="text-[11px] font-semibold text-slate-900 leading-tight">Ananya Sharma</p>
-              <p className="text-[9px] text-slate-500 font-medium">B.Tech (CSE) • 7th Sem</p>
+            <div className="text-left hidden sm:block min-w-0 max-w-[150px]">
+              <p className="text-[11px] font-semibold text-slate-900 leading-tight truncate">
+                {profile?.name || 'Student'}
+              </p>
+              <p className="text-[9px] text-slate-500 font-medium truncate">
+                {profile?.academicSubtitle || 'Madhya Pradesh Student'}
+              </p>
             </div>
           </Link>
 
