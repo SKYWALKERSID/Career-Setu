@@ -252,7 +252,7 @@ export default function SettingsPage() {
                   <Card className="rounded-[3px] border border-[#dfe8f1] bg-white p-6 shadow-[0_2px_9px_rgba(27,63,105,0.04)]">
                     <div className="flex items-center gap-2 border-b border-[#edf3f8] pb-4">
                       <User className="h-5 w-5 text-[#1769d4]" />
-                      <h2 className="text-base font-bold text-[#10285a]">Personal Details</h2>
+                      <h2 className="text-lg font-bold text-[#10285a]">Personal Details</h2>
                     </div>
 
                     <div className="mt-6 grid gap-5 sm:grid-cols-2">
@@ -283,7 +283,7 @@ export default function SettingsPage() {
                   <Card className="rounded-[3px] border border-[#dfe8f1] bg-white p-6 shadow-[0_2px_9px_rgba(27,63,105,0.04)]">
                     <div className="flex items-center gap-2 border-b border-[#edf3f8] pb-4">
                       <GraduationCap className="h-5 w-5 text-[#1769d4]" />
-                      <h2 className="text-base font-bold text-[#10285a]">Academic Foundation</h2>
+                      <h2 className="text-lg font-bold text-[#10285a]">Academic Foundation</h2>
                     </div>
 
                     <div className="mt-6 grid gap-5 sm:grid-cols-2">
@@ -359,7 +359,7 @@ export default function SettingsPage() {
                     <div className="flex items-center justify-between border-b border-[#edf3f8] pb-4">
                       <div className="flex items-center gap-2">
                         <Sparkles className="h-5 w-5 text-[#1769d4]" />
-                        <h2 className="text-base font-bold text-[#10285a]">Technical Skills Catalog</h2>
+                        <h2 className="text-lg font-bold text-[#10285a]">Technical Skills Catalog</h2>
                       </div>
                       <span className="text-xs font-semibold text-[#1769d4]">
                         {formData.skill_ids.length} Selected
@@ -398,7 +398,7 @@ export default function SettingsPage() {
                     <div className="flex items-center justify-between border-b border-[#edf3f8] pb-4">
                       <div className="flex items-center gap-2">
                         <BriefcaseBusiness className="h-5 w-5 text-[#1769d4]" />
-                        <h2 className="text-base font-bold text-[#10285a]">Target Career Roles</h2>
+                        <h2 className="text-lg font-bold text-[#10285a]">Target Career Roles</h2>
                       </div>
                       <span className="text-xs font-semibold text-[#1769d4]">
                         {formData.target_careers.length} Selected
@@ -423,7 +423,7 @@ export default function SettingsPage() {
                             }`}
                           >
                             <div className="flex items-center justify-between">
-                              <h3 className="text-xs font-bold text-[#10285a]">{role.title}</h3>
+                              <h3 className="text-lg sm:text-xl font-bold text-[#10285a]">{role.title}</h3>
                               {isSelected && <CheckCircle2 className="h-4 w-4 text-[#1769d4]" />}
                             </div>
                             <p className="mt-1 text-[11px] text-slate-500">{role.category}</p>
@@ -439,7 +439,7 @@ export default function SettingsPage() {
                     <div className="flex items-center justify-between border-b border-[#edf3f8] pb-4">
                       <div className="flex items-center gap-2">
                         <Heart className="h-5 w-5 text-[#1769d4]" />
-                        <h2 className="text-base font-bold text-[#10285a]">Domain Interests</h2>
+                        <h2 className="text-lg font-bold text-[#10285a]">Domain Interests</h2>
                       </div>
                       <span className="text-xs font-semibold text-[#1769d4]">
                         {formData.interests.length} Selected
@@ -483,7 +483,7 @@ export default function SettingsPage() {
               {/* Sidebar Info Card */}
               <aside className="space-y-5">
                 <Card className="rounded-[3px] border border-[#dfe8f1] bg-white p-5 shadow-[0_2px_9px_rgba(27,63,105,0.04)]">
-                  <h2 className="text-sm font-bold text-[#10285a]">Profile Strength Breakdown</h2>
+                  <h2 className="text-2xl sm:text-3xl font-bold text-[#10285a]">Profile Strength Breakdown</h2>
                   <p className="mt-1 text-xs text-slate-500">
                     Calculated deterministically from your current form selections.
                   </p>
@@ -527,7 +527,7 @@ export default function SettingsPage() {
                 </Card>
 
                 <div className="rounded-[3px] border border-[#dbe8f5] bg-[#edf6ff] p-5">
-                  <h3 className="text-xs font-bold text-[#10285a]">Data Ownership & Security</h3>
+                  <h3 className="text-lg sm:text-xl font-bold text-[#10285a]">Data Ownership & Security</h3>
                   <p className="mt-2 text-[11px] leading-4 text-slate-600">
                     Your profile data is protected by Supabase RLS (`user_id = auth.uid()`). Updates are stored securely and never shared publicly.
                   </p>
@@ -540,4 +540,3 @@ export default function SettingsPage() {
     </div>
   );
 }
-

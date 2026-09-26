@@ -149,7 +149,7 @@ export default function InterviewReportPage() {
             <>
               {/* Header Hero Section */}
               <section className="relative overflow-hidden rounded-[3px] border border-[#dbe7f3] bg-[#eaf4fc] px-6 py-7 shadow-[0_2px_10px_rgba(29,67,110,0.04)] sm:px-10">
-                <p className="text-[10px] font-extrabold uppercase tracking-[0.24em] text-[#1769d4]">
+                <p className="text-xs font-bold uppercase tracking-widest text-[#1769d4]">
                   MOCK INTERVIEW · EVALUATION REPORT
                 </p>
                 <div className="mt-2 flex flex-wrap items-end justify-between gap-6">
@@ -157,7 +157,7 @@ export default function InterviewReportPage() {
                     <h1 className="text-3xl font-extrabold tracking-[-0.03em] text-[#10285a] sm:text-4xl">
                       Session Performance Report
                     </h1>
-                    <p className="mt-2 text-sm text-[#526d89]">
+                    <p className="mt-2 text-base text-[#526d89]">
                       Target Role:{' '}
                       <span className="font-bold text-[#10285a]">
                         {session.career_roles?.title || 'Target Career'}
@@ -168,7 +168,7 @@ export default function InterviewReportPage() {
                   </div>
                   <div className="flex items-center gap-3 rounded border border-[#cbe0f5] bg-white/80 px-5 py-3 shadow-sm">
                     <div className="text-right">
-                      <p className="text-[10px] font-bold uppercase tracking-wide text-slate-500">Overall Score</p>
+                      <p className="text-xs font-bold uppercase tracking-wide text-slate-500">Overall Score</p>
                       <p className="text-xs text-slate-400">Fact-based evaluation</p>
                     </div>
                     <div className="flex items-baseline gap-1">
@@ -190,10 +190,10 @@ export default function InterviewReportPage() {
                       </div>
                       <div>
                         <h2 className="text-base font-bold text-[#10285a]">Executive Summary</h2>
-                        <p className="text-[11px] text-slate-500">Persisted synthesis across all 5 turns</p>
+                        <p className="text-xs text-slate-500">Persisted synthesis across all 5 turns</p>
                       </div>
                     </div>
-                    <p className="mt-4 text-sm leading-6 text-slate-700">
+                    <p className="mt-4 text-base leading-6 text-slate-700">
                       {report.feedback_summary || 'No summary was persisted for this completed interview session.'}
                     </p>
                   </div>

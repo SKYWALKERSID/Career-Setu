@@ -78,13 +78,13 @@ export default function InterviewSetupPage() {
           {/* Hero Banner matched to Career/Resume pages */}
           <section className="relative overflow-hidden rounded-[3px] border border-[#dbe7f3] bg-[#eaf4fc] px-6 py-7 shadow-[0_2px_10px_rgba(29,67,110,0.04)] sm:px-10">
             <div className="relative max-w-2xl">
-              <p className="text-[10px] font-extrabold uppercase tracking-[0.24em] text-[#1769d4]">
+              <p className="text-xs font-bold uppercase tracking-widest text-[#1769d4]">
                 MOCK INTERVIEW · SETUP
               </p>
               <h1 className="mt-2 text-3xl font-extrabold tracking-[-0.03em] text-[#10285a] sm:text-4xl">
                 Mock Interview
               </h1>
-              <p className="mt-2 max-w-xl text-sm leading-6 text-[#526d89]">
+              <p className="mt-2 max-w-xl text-base leading-6 text-[#526d89]">
                 Practice a five-question interview based on your selected career role. Responses are evaluated against role-specific criteria and saved to your progress.
               </p>
               <div className="mt-5 flex flex-wrap items-center gap-5 text-xs font-semibold text-[#375d87]">
@@ -102,7 +102,7 @@ export default function InterviewSetupPage() {
           </section>
 
           {/* Tab navigation matching shared visual language */}
-          <div className="flex flex-wrap items-center gap-6 border-b border-[#dce7f0] text-xs font-semibold text-[#61728a]">
+          <div className="flex flex-wrap items-center gap-6 border-b border-[#dce7f0] text-sm font-semibold text-[#61728a]">
             <button type="button" className="border-b-2 border-[#1769d4] px-2 py-3 text-[#1769d4]">
               New Session Setup
             </button>
@@ -155,7 +155,7 @@ export default function InterviewSetupPage() {
                   <div className="mt-7 space-y-6">
                     <div className="grid gap-6 sm:grid-cols-2">
                       <FormField label="Target Career Role" required>
-                        <Select value={role} onChange={(event) => setRole(event.target.value)} className="h-10 text-xs">
+                        <Select value={role} onChange={(event) => setRole(event.target.value)} className="h-10 text-sm">
                           <option value="">Select a target role</option>
                           {roles.map((item) => (
                             <option key={item.id} value={item.id}>
@@ -170,7 +170,7 @@ export default function InterviewSetupPage() {
                         <Select
                           value={difficulty}
                           onChange={(event) => setDifficulty(event.target.value)}
-                          className="h-10 text-xs"
+                          className="h-10 text-sm"
                         >
                           <option value="easy">Easy (Foundational Concepts)</option>
                           <option value="medium">Medium (Applied Problem Solving)</option>
@@ -180,7 +180,7 @@ export default function InterviewSetupPage() {
                     </div>
 
                     {selectedRoleObj && (
-                      <div className="rounded border border-[#e2edf7] bg-[#f8fbfe] p-4 text-xs">
+                      <div className="rounded border border-[#e2edf7] bg-[#f8fbfe] p-4 text-sm">
                         <p className="font-bold text-[#10285a]">Role Overview: {selectedRoleObj.title}</p>
                         <p className="mt-1 text-slate-600">
                           Questions will test technical depth, practical problem solving, and role readiness tailored for {selectedRoleObj.category || 'this career domain'}.
@@ -189,14 +189,14 @@ export default function InterviewSetupPage() {
                     )}
 
                     <div className="flex items-center justify-between border-t border-[#edf3f8] pt-6">
-                      <p className="text-[11px] text-slate-400">
+                      <p className="text-xs text-slate-400">
                         Session length: 5 sequential questions.
                       </p>
                       <Button
                         variant="govt"
                         onClick={submit}
                         disabled={busy || !role}
-                        className="px-6"
+                        className="px-6 text-sm font-semibold"
                       >
                         {busy ? (
                           'Preparing Session...'

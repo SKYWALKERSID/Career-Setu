@@ -123,7 +123,7 @@ export default function ProgressPage() {
                 {/* Readiness Gauge Card */}
                 <Card className="rounded-[3px] border border-[#dfe8f1] bg-white p-6 shadow-[0_2px_9px_rgba(27,63,105,0.04)]">
                   <div className="flex items-center justify-between border-b border-[#edf3f8] pb-4">
-                    <h2 className="text-base font-bold text-[#10285a]">Overall Readiness</h2>
+                    <h2 className="text-lg font-bold text-[#10285a]">Overall Readiness</h2>
                     <Badge variant={snapshot.readiness.trend === 'up' ? 'success' : 'secondary'}>
                       {snapshot.readiness.trend === 'up'
                         ? 'Improving'
@@ -174,7 +174,7 @@ export default function ProgressPage() {
                   <div className="flex items-center justify-between border-b border-[#edf3f8] pb-4">
                     <div className="flex items-center gap-2">
                       <TrendingUp className="h-5 w-5 text-[#1769d4]" />
-                      <h2 className="text-base font-bold text-[#10285a]">Readiness Component Breakdown</h2>
+                      <h2 className="text-lg font-bold text-[#10285a]">Readiness Component Breakdown</h2>
                     </div>
                     <span className="text-xs font-semibold text-slate-500">6 Evaluated Factors</span>
                   </div>
@@ -207,7 +207,7 @@ export default function ProgressPage() {
                   <div className="flex items-center justify-between border-b border-[#edf3f8] pb-4">
                     <div className="flex items-center gap-2">
                       <Layers className="h-5 w-5 text-[#1769d4]" />
-                      <h2 className="text-base font-bold text-[#10285a]">Roadmap Tasks Progress</h2>
+                      <h2 className="text-lg font-bold text-[#10285a]">Roadmap Tasks Progress</h2>
                     </div>
                     <Link
                       href="/roadmap"
@@ -253,34 +253,34 @@ export default function ProgressPage() {
                   <div className="flex items-center justify-between border-b border-[#edf3f8] pb-4">
                     <div className="flex items-center gap-2">
                       <ShieldCheck className="h-5 w-5 text-[#1769d4]" />
-                      <h2 className="text-base font-bold text-[#10285a]">Persisted Evidence Portfolio</h2>
+                      <h2 className="text-lg font-bold text-[#10285a]">Persisted Evidence Portfolio</h2>
                     </div>
                     <span className="text-xs text-slate-400">Verified Records</span>
                   </div>
 
                   <div className="mt-5 grid grid-cols-2 gap-3">
                     <div className="rounded border border-[#e5edf5] bg-[#f8fbfe] p-3.5">
-                      <p className="text-[11px] font-semibold text-slate-500">Current Skills</p>
+                      <p className="text-xs font-semibold text-slate-500">Current Skills</p>
                       <p className="mt-1 text-2xl font-extrabold text-[#10285a]">{snapshot.currentSkills}</p>
-                      <p className="mt-1 text-[10px] text-slate-400">Profile skill catalog</p>
+                      <p className="mt-1 text-xs text-slate-400">Profile skill catalog</p>
                     </div>
 
                     <div className="rounded border border-[#e5edf5] bg-[#f8fbfe] p-3.5">
-                      <p className="text-[11px] font-semibold text-slate-500">Evaluated Resumes</p>
+                      <p className="text-xs font-semibold text-slate-500">Evaluated Resumes</p>
                       <p className="mt-1 text-2xl font-extrabold text-[#10285a]">{snapshot.analyzedResumes}</p>
-                      <p className="mt-1 text-[10px] text-slate-400">Copilot uploads</p>
+                      <p className="mt-1 text-xs text-slate-400">Copilot uploads</p>
                     </div>
 
                     <div className="rounded border border-[#e5edf5] bg-[#f8fbfe] p-3.5">
-                      <p className="text-[11px] font-semibold text-slate-500">Mock Interviews</p>
+                      <p className="text-xs font-semibold text-slate-500">Mock Interviews</p>
                       <p className="mt-1 text-2xl font-extrabold text-[#10285a]">{snapshot.completedInterviews}</p>
-                      <p className="mt-1 text-[10px] text-slate-400">Completed 5-turn sessions</p>
+                      <p className="mt-1 text-xs text-slate-400">Completed 5-turn sessions</p>
                     </div>
 
                     <div className="rounded border border-[#e5edf5] bg-[#f8fbfe] p-3.5">
-                      <p className="text-[11px] font-semibold text-slate-500">Course Completion</p>
+                      <p className="text-xs font-semibold text-slate-500">Course Completion</p>
                       <p className="mt-1 text-xs font-bold text-slate-400">Unavailable</p>
-                      <p className="mt-1 text-[10px] text-slate-400">Not tracked in backend</p>
+                      <p className="mt-1 text-xs text-slate-400">Not tracked in backend</p>
                     </div>
                   </div>
                 </Card>
@@ -293,7 +293,7 @@ export default function ProgressPage() {
                   <div className="flex items-center justify-between border-b border-[#edf3f8] pb-4">
                     <div className="flex items-center gap-2">
                       <History className="h-5 w-5 text-[#1769d4]" />
-                      <h2 className="text-base font-bold text-[#10285a]">Readiness Assessment History</h2>
+                      <h2 className="text-lg font-bold text-[#10285a]">Readiness Assessment History</h2>
                     </div>
                     <span className="text-xs text-slate-400">
                       {snapshot.readiness.history.length} Saved Evaluations
@@ -313,7 +313,7 @@ export default function ProgressPage() {
                               <p className="font-bold text-[#10285a]">
                                 Assessment #{idx + 1}
                               </p>
-                              <p className="text-[11px] text-slate-500">
+                              <p className="text-xs text-slate-500">
                                 {new Date(record.created_at).toLocaleDateString(undefined, {
                                   year: 'numeric',
                                   month: 'short',
@@ -325,7 +325,7 @@ export default function ProgressPage() {
                               <span className="text-sm font-extrabold text-[#10285a]">
                                 {record.overall_score}/100
                               </span>
-                              <Badge variant="info" className="text-[10px]">
+                              <Badge variant="info" className="text-xs">
                                 Saved
                               </Badge>
                             </div>
@@ -339,7 +339,7 @@ export default function ProgressPage() {
                 {/* Recommended Next Actions Sidebar */}
                 <aside className="space-y-5">
                   <Card className="rounded-[3px] border border-[#dfe8f1] bg-white p-5 shadow-[0_2px_9px_rgba(27,63,105,0.04)]">
-                    <h2 className="text-sm font-bold text-[#10285a]">Recommended Next Actions</h2>
+                    <h2 className="text-lg sm:text-xl font-bold text-[#10285a]">Recommended Next Actions</h2>
                     <p className="mt-1 text-xs text-slate-500">
                       Steps to advance your readiness score and complete your portfolio.
                     </p>

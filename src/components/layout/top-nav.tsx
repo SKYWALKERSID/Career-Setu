@@ -38,28 +38,28 @@ export function TopNav() {
   };
 
   return (
-    <header className="h-[58px] border-b border-[#dce7f2] bg-white px-7 flex items-center justify-between sticky top-0 z-30">
+    <header className="h-[62px] border-b border-[#dce7f2] bg-white px-7 flex items-center justify-between sticky top-0 z-30">
       {/* Global Search Bar */}
       <div className="relative w-[390px] max-w-[48vw]">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
         <input
           type="text"
           placeholder="Search for careers, courses, colleges, opportunities..."
-          className="w-full h-9 pl-9 pr-4 text-[11px] bg-[#f4f8fd] border border-[#dce7f2] rounded-md text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500"
+          className="w-full h-10 pl-9 pr-4 text-sm bg-[#f4f8fd] border border-[#dce7f2] rounded-md text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500"
         />
       </div>
 
       {/* Right Controls */}
       <div className="flex items-center gap-4">
         {/* Language Toggle */}
-        <div className="text-[11px] text-slate-500 font-medium">
+        <div className="text-xs text-slate-600 font-medium">
           <span className="cursor-pointer hover:text-slate-900">हिंदी</span>
           <span className="mx-1">|</span>
           <span className="font-semibold text-slate-900">English</span>
         </div>
 
         {/* Notification Bell */}
-        <button className="relative p-1.5 text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors">
+        <button className="relative p-2 text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors">
           <Bell className="h-4 w-4" />
           <span className="absolute top-1 right-1 h-2 w-2 rounded-full bg-brand-600" />
         </button>
@@ -67,14 +67,14 @@ export function TopNav() {
         {/* User Profile Summary & Logout */}
         <div className="flex items-center gap-2 border-l border-slate-200 pl-4">
           <Link href="/settings" className="flex items-center gap-2.5 hover:opacity-90 transition-opacity">
-            <div className="h-8 w-8 rounded-full bg-brand-700 text-white font-bold text-[11px] flex items-center justify-center shadow-sm">
+            <div className="h-8 w-8 rounded-full bg-brand-700 text-white font-bold text-xs flex items-center justify-center shadow-sm">
               {profile?.initials || '..'}
             </div>
-            <div className="text-left hidden sm:block min-w-0 max-w-[150px]">
-              <p className="text-[11px] font-semibold text-slate-900 leading-tight truncate">
+            <div className="text-left hidden sm:block min-w-0 max-w-[170px]">
+              <p className="text-sm font-semibold text-slate-900 leading-tight truncate">
                 {profile?.name || 'Student'}
               </p>
-              <p className="text-[9px] text-slate-500 font-medium truncate">
+              <p className="text-xs text-slate-500 font-medium truncate">
                 {profile?.academicSubtitle || 'Madhya Pradesh Student'}
               </p>
             </div>

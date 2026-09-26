@@ -14,7 +14,7 @@ export function FormField({ label, error, hint, required, children, className }:
   return (
     <div className={cn('space-y-1.5', className)}>
       {label && (
-        <label className="block text-xs font-semibold uppercase tracking-wider text-slate-700">
+        <label className="block text-sm font-semibold text-slate-800">
           {label} {required && <span className="text-red-500">*</span>}
         </label>
       )}

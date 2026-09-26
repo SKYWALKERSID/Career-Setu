@@ -126,14 +126,14 @@ export default function InterviewPage() {
                 <div className="flex flex-wrap items-start justify-between gap-4">
                   <div>
                     <div className="flex items-center gap-2">
-                      <p className="text-[10px] font-extrabold uppercase tracking-[0.22em] text-[#1769d4]">
+                      <p className="text-xs font-bold uppercase tracking-widest text-[#1769d4]">
                         MOCK INTERVIEW · LIVE SESSION
                       </p>
-                      <Badge variant="info" className="text-[10px] uppercase">
+                      <Badge variant="info" className="text-xs uppercase">
                         {session.difficulty}
                       </Badge>
                     </div>
-                    <h1 className="mt-2 text-2xl font-extrabold tracking-[-0.02em] text-[#10285a] sm:text-3xl">
+                    <h1 className="mt-2 text-3xl font-extrabold tracking-[-0.02em] text-[#10285a] sm:text-4xl">
                       {session.career_roles?.title || 'Target Career Interview'}
                     </h1>
                   </div>
@@ -164,7 +164,7 @@ export default function InterviewPage() {
               <div className="mt-4 grid gap-5 lg:grid-cols-[minmax(0,1fr)_320px]">
                 {/* Active Workspace Main Card */}
                 <section className="rounded-[3px] border border-[#dfe8f1] bg-white p-6 shadow-[0_2px_9px_rgba(27,63,105,0.04)] sm:p-8">
-                  <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-[0.14em] text-[#1769d4]">
+                  <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-[#1769d4]">
                     <FileQuestion className="h-4 w-4" /> Current Prompt
                   </div>
 
@@ -173,10 +173,10 @@ export default function InterviewPage() {
                   </h2>
 
                   <div className="mt-8">
-                    <label htmlFor="answer" className="block text-xs font-bold text-[#10285a]">
+                    <label htmlFor="answer" className="block text-sm font-semibold text-[#10285a]">
                       Your Answer
                     </label>
-                    <p className="mt-1 text-[11px] text-slate-500">
+                    <p className="mt-1 text-xs text-slate-500">
                       Provide a clear, detailed response drawing on your practical knowledge and experience.
                     </p>
                     <textarea
@@ -184,7 +184,7 @@ export default function InterviewPage() {
                       value={answer}
                       onChange={(event) => setAnswer(event.target.value)}
                       disabled={busy || !question}
-                      className="mt-3 min-h-48 w-full resize-y rounded border border-[#cbdbea] bg-[#fbfdff] p-4 text-sm leading-6 text-slate-800 outline-none transition focus:border-[#1769d4] focus:ring-2 focus:ring-[#1769d4]/15 disabled:bg-slate-50"
+                      className="mt-3 min-h-48 w-full resize-y rounded border border-[#cbdbea] bg-[#fbfdff] p-4 text-base leading-6 text-slate-800 outline-none transition focus:border-[#1769d4] focus:ring-2 focus:ring-[#1769d4]/15 disabled:bg-slate-50"
                       placeholder="Type your response here..."
                     />
                   </div>
@@ -196,14 +196,14 @@ export default function InterviewPage() {
                   )}
 
                   <div className="mt-5 flex flex-wrap items-center justify-between gap-4 border-t border-[#edf3f8] pt-5">
-                    <p className="text-[11px] text-slate-400">
+                    <p className="text-xs text-slate-400">
                       Evaluated against catalog skill expectations for this role.
                     </p>
                     <Button
                       variant="govt"
                       onClick={submit}
                       disabled={busy || !answer.trim() || !question}
-                      className="px-6"
+                      className="px-6 text-sm font-semibold"
                     >
                       {busy ? (
                         'Evaluating Answer...'
@@ -242,7 +242,7 @@ export default function InterviewPage() {
                             {turn.answer ? (
                               <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" />
                             ) : turn.turn_number === currentNumber ? (
-                              <span className="text-[10px] uppercase tracking-wide text-[#1769d4]">Current</span>
+                              <span className="text-xs uppercase tracking-wide text-[#1769d4]">Current</span>
                             ) : null}
                           </div>
                         </div>
@@ -254,7 +254,7 @@ export default function InterviewPage() {
                     <h2 className="flex items-center gap-2 text-sm font-bold text-[#10285a]">
                       <HelpCircle className="h-4 w-4 text-[#1769d4]" /> Guidance
                     </h2>
-                    <ul className="mt-3 space-y-2.5 text-xs leading-5 text-slate-600">
+                    <ul className="mt-3 space-y-2.5 text-sm leading-5 text-slate-600">
                       <li>• Answer each prompt sequentially before proceeding.</li>
                       <li>• Focus on specific examples and technical clarity.</li>
                       <li>• Evaluation is saved per turn to ensure data persistence.</li>

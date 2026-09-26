@@ -78,32 +78,172 @@ export default function DashboardPage() {
     ['Interview Performance', assessment.interview_score],
     ['Career Alignment', assessment.alignment_score],
   ] as const : [];
+  return (
+    <PortalFrame>
+      <main className="flex-1 bg-[#f4f8fc] p-4 sm:p-6 max-w-[1440px] w-full mx-auto space-y-5">
+        <section className="flex flex-col md:flex-row md:items-end justify-between gap-3">
+          <div>
+            <p className="text-xs uppercase tracking-widest font-bold text-brand-700 mb-1">Student dashboard</p>
+            <h1 className="text-3xl sm:text-4xl leading-tight font-extrabold text-[#102b63]">Welcome, {sp?.name || 'Student'}</h1>
+            <p className="text-sm text-slate-500 mt-1">Your personalized career overview.</p>
+          </div>
+          <div className="text-right text-xs text-slate-500">
+            <p><span className="font-semibold text-slate-700">हिंदी</span><span className="mx-1">|</span>English</p>
+            <p className="mt-2">{collegeSubtitle}</p>
+          </div>
+        </section>
 
-  return <PortalFrame>
-    <main className="flex-1 bg-[#f4f8fc] p-4 sm:p-6 max-w-[1440px] w-full mx-auto space-y-5">
-      <section className="flex flex-col md:flex-row md:items-end justify-between gap-3">
-        <div><p className="text-[10px] uppercase tracking-[0.22em] font-bold text-brand-700 mb-1">Student dashboard</p><h1 className="text-[27px] leading-tight font-extrabold text-[#102b63]">Welcome, {sp?.name || 'Student'}</h1><p className="text-xs text-slate-500 mt-1">Your personalized career overview.</p></div>
-        <div className="text-right text-[10px] text-slate-500"><p><span className="font-semibold text-slate-700">हिंदी</span><span className="mx-1">|</span>English</p><p className="mt-2">{collegeSubtitle}</p></div>
-      </section>
+        <section className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+          <Card className="overflow-hidden">
+            <PanelHeading icon={TrendingUp} title="Career Readiness Score" href="/progress" action="View Report" />
+            <CardContent className="p-4">
+              {assessment ? (
+                <div className="flex gap-4 items-center">
+                  <div className="h-[108px] w-[108px] shrink-0 rounded-full border-[7px] border-brand-600 border-r-blue-100 flex items-center justify-center bg-white">
+                    <div className="text-center">
+                      <span className="text-3xl sm:text-4xl font-extrabold text-[#102b63]">{assessment.overall_score}</span>
+                      <span className="block text-xs text-slate-500">/ 100</span>
+                    </div>
+                  </div>
+                  <div className="flex-1 space-y-2">
+                    {scoreRows.map(([label, value]) => (
+                      <div key={label}>
+                        <div className="flex justify-between text-xs text-slate-600 mb-0.5">
+                          <span>{label}</span>
+                          <span className="font-bold text-slate-800">{value ?? '—'}</span>
+                        </div>
+                        <Progress value={value ?? 0} className="h-1.5 bg-slate-100" />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ) : (
+                <EmptyState icon={<Award className="h-7 w-7 text-slate-400" />} title="Assessment Pending" description="Complete your assessment to see your readiness score." />
+              )}
+            </CardContent>
+          </Card>
 
+          <Card className="overflow-hidden">
+            <PanelHeading icon={Target} title="Top Career Recommendations" href="/career" />
+            <CardContent className="p-3">
+              {recommendationsError && <p className="text-xs text-red-700 px-1 pb-2">{recommendationsError}</p>}
+              {recommendations.length ? (
+                recommendations.map((recommendation, index) => (
+                  <Link key={recommendation.id} href={`/career/${recommendation.role?.id || ''}`} className="flex items-center gap-3 px-2 py-2.5 border-b last:border-0 border-slate-100 hover:bg-blue-50/50">
+                    <span className="h-7 w-7 rounded-full bg-blue-50 text-brand-700 flex items-center justify-center text-xs font-bold">{index + 1}</span>
+                    <span className="min-w-0 flex-1">
+                      <span className="block text-xs font-bold text-slate-900 truncate">{recommendation.role?.title}</span>
+                      <span className="block text-xs text-slate-500 truncate">{recommendation.rationale}</span>
+                    </span>
+                    <Badge variant="success" className="text-xs shrink-0">{recommendation.score}% Match</Badge>
+                    <ChevronRight className="h-3.5 w-3.5 text-slate-400" />
+                  </Link>
+                ))
+              ) : (
+                <EmptyState icon={<Sparkles className="h-7 w-7 text-slate-400" />} title="Recommendations Pending" description="Generate recommendations from your profile and skills." actionLabel={recommendationsLoading ? 'Generating...' : 'Generate Recommendations'} onAction={handleGenerateRecommendations} />
+              )}
+            </CardContent>
+          </Card>
 
+          <Card className="overflow-hidden">
+            <PanelHeading icon={CalendarDays} title="Your 90-Day Plan" href="/roadmap" action="View Plan" />
+            <CardContent className="p-4">
+              {roadmapTasks.length ? (
+                <div className="space-y-3">
+                  {roadmapTasks.map((task) => (
+                    <div key={task.id} className="flex gap-3 items-start">
+                      <div className={`h-5 w-5 rounded-full flex items-center justify-center shrink-0 ${task.status === 'completed' ? 'bg-emerald-100 text-emerald-700' : 'bg-blue-100 text-brand-700'}`}>
+                        {task.status === 'completed' ? <CheckCircle2 className="h-3 w-3" /> : <span className="text-xs font-bold">{task.week}</span>}
+                      </div>
+                      <div>
+                        <p className="text-xs font-semibold text-slate-800">{task.title}</p>
+                        <p className="text-xs text-slate-500">Week {task.week}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <EmptyState icon={<CalendarDays className="h-7 w-7 text-slate-400" />} title="Roadmap Pending" description="Your personalized learning plan will appear here after profile evaluation." />
+              )}
+            </CardContent>
+          </Card>
+        </section>
 
-      <section className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-        <Card className="overflow-hidden"><PanelHeading icon={TrendingUp} title="Career Readiness Score" href="/progress" action="View Report" /><CardContent className="p-4">{assessment ? <div className="flex gap-4 items-center"><div className="h-[108px] w-[108px] shrink-0 rounded-full border-[7px] border-brand-600 border-r-blue-100 flex items-center justify-center bg-white"><div className="text-center"><span className="text-[30px] font-extrabold text-[#102b63]">{assessment.overall_score}</span><span className="block text-[10px] text-slate-500">/ 100</span></div></div><div className="flex-1 space-y-2">{scoreRows.map(([label, value]) => <div key={label}><div className="flex justify-between text-[9px] text-slate-600 mb-0.5"><span>{label}</span><span className="font-bold text-slate-800">{value ?? '—'}</span></div><Progress value={value ?? 0} className="h-1.5 bg-slate-100" /></div>)}</div></div> : <EmptyState icon={<Award className="h-7 w-7 text-slate-400" />} title="Assessment Pending" description="Complete your assessment to see your readiness score." />}</CardContent></Card>
+        <section className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <Card className="overflow-hidden">
+            <PanelHeading icon={BookOpen} title="Recommended Courses" href="/courses" />
+            <CardContent className="p-3 space-y-2">
+              {courses.length ? (
+                courses.map((course) => (
+                  <div key={course.id} className="flex items-center gap-3 p-2 rounded border border-slate-100">
+                    <div className="h-8 w-8 rounded bg-blue-50 text-brand-700 flex items-center justify-center"><BookOpen className="h-4 w-4" /></div>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-xs font-semibold truncate">{course.title}</p>
+                      <p className="text-xs text-slate-500">{course.provider} · {course.level}</p>
+                    </div>
+                    <Badge variant="success" className="text-xs">{course.is_free ? 'Free' : course.price}</Badge>
+                  </div>
+                ))
+              ) : (
+                <EmptyState icon={<BookOpen className="h-7 w-7 text-slate-400" />} title="No courses available" description="Recommended catalog courses will appear here when available." />
+              )}
+            </CardContent>
+          </Card>
 
-        <Card className="overflow-hidden"><PanelHeading icon={Target} title="Top Career Recommendations" href="/career" /><CardContent className="p-3">{recommendationsError && <p className="text-[10px] text-red-700 px-1 pb-2">{recommendationsError}</p>}{recommendations.length ? recommendations.map((recommendation, index) => <Link key={recommendation.id} href={`/career/${recommendation.role?.id || ''}`} className="flex items-center gap-3 px-2 py-2.5 border-b last:border-0 border-slate-100 hover:bg-blue-50/50"><span className="h-7 w-7 rounded-full bg-blue-50 text-brand-700 flex items-center justify-center text-xs font-bold">{index + 1}</span><span className="min-w-0 flex-1"><span className="block text-[11px] font-bold text-slate-900 truncate">{recommendation.role?.title}</span><span className="block text-[10px] text-slate-500 truncate">{recommendation.rationale}</span></span><Badge variant="success" className="text-[9px] shrink-0">{recommendation.score}% Match</Badge><ChevronRight className="h-3.5 w-3.5 text-slate-400" /></Link>) : <EmptyState icon={<Sparkles className="h-7 w-7 text-slate-400" />} title="Recommendations Pending" description="Generate recommendations from your profile and skills." actionLabel={recommendationsLoading ? 'Generating...' : 'Generate Recommendations'} onAction={handleGenerateRecommendations} />}</CardContent></Card>
+          <Card className="overflow-hidden">
+            <PanelHeading icon={Building2} title="Matching Opportunities" href="/opportunities" />
+            <CardContent className="p-3 space-y-2">
+              {opportunities.length ? (
+                opportunities.map((opportunity) => (
+                  <Link key={opportunity.id} href={`/opportunities/${opportunity.id}`} className="flex items-center gap-3 p-2 rounded border border-slate-100 hover:border-blue-200">
+                    <div className="h-8 w-8 rounded bg-blue-50 text-brand-700 flex items-center justify-center"><Building2 className="h-4 w-4" /></div>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-xs font-semibold truncate">{opportunity.title}</p>
+                      <p className="text-xs text-slate-500">{opportunity.organization} · {opportunity.location}</p>
+                    </div>
+                    {opportunity.is_verified && <Badge variant="verified" className="text-xs">Verified</Badge>}
+                    <ChevronRight className="h-3.5 w-3.5 text-slate-400" />
+                  </Link>
+                ))
+              ) : (
+                <EmptyState icon={<Building2 className="h-7 w-7 text-slate-400" />} title="No opportunities available" description="Matching opportunities will appear here when the catalog has active listings." />
+              )}
+            </CardContent>
+          </Card>
+        </section>
 
-        <Card className="overflow-hidden"><PanelHeading icon={CalendarDays} title="Your 90-Day Plan" href="/roadmap" action="View Plan" /><CardContent className="p-4">{roadmapTasks.length ? <div className="space-y-3">{roadmapTasks.map((task) => <div key={task.id} className="flex gap-3 items-start"><div className={`h-5 w-5 rounded-full flex items-center justify-center shrink-0 ${task.status === 'completed' ? 'bg-emerald-100 text-emerald-700' : 'bg-blue-100 text-brand-700'}`}>{task.status === 'completed' ? <CheckCircle2 className="h-3 w-3" /> : <span className="text-[10px] font-bold">{task.week}</span>}</div><div><p className="text-[11px] font-semibold text-slate-800">{task.title}</p><p className="text-[9px] text-slate-500">Week {task.week}</p></div></div>)}</div> : <EmptyState icon={<CalendarDays className="h-7 w-7 text-slate-400" />} title="Roadmap Pending" description="Your personalized learning plan will appear here after profile evaluation." />}</CardContent></Card>
-      </section>
+        <section className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <Card className="p-3 flex items-center justify-between">
+            <div><p className="text-xs text-slate-500">Mapped Skills</p><p className="text-lg font-bold text-[#102b63]">{studentSkills.length}</p></div>
+            <Link href="/onboarding"><Button variant="outline" size="sm" className="text-xs font-semibold">Update <ArrowRight className="h-3 w-3" /></Button></Link>
+          </Card>
+          <Card className="p-3 flex items-center justify-between">
+            <div className="min-w-0"><p className="text-xs text-slate-500">Target Career Goals</p><p className="text-xs font-bold truncate max-w-[170px]">{sp?.target_careers?.length ? sp.target_careers.join(', ') : 'Not selected'}</p></div>
+            <Link href="/career"><Button variant="outline" size="sm" className="text-xs font-semibold">Explore <ArrowRight className="h-3 w-3" /></Button></Link>
+          </Card>
+          <Card className="p-3 flex items-center justify-between">
+            <div className="min-w-0"><p className="text-xs text-slate-500">Profile Completion</p><p className="text-lg font-bold text-[#102b63]">{dashboardData?.completionScore || 0}%</p></div>
+            <Link href="/settings"><Button variant="outline" size="sm" className="text-xs font-semibold">Edit <ArrowRight className="h-3 w-3" /></Button></Link>
+          </Card>
+        </section>
 
-      <section className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <Card className="overflow-hidden"><PanelHeading icon={BookOpen} title="Recommended Courses" href="/courses" /><CardContent className="p-3 space-y-2">{courses.length ? courses.map((course) => <div key={course.id} className="flex items-center gap-3 p-2 rounded border border-slate-100"><div className="h-8 w-8 rounded bg-blue-50 text-brand-700 flex items-center justify-center"><BookOpen className="h-4 w-4" /></div><div className="min-w-0 flex-1"><p className="text-[11px] font-semibold truncate">{course.title}</p><p className="text-[9px] text-slate-500">{course.provider} · {course.level}</p></div><Badge variant="success" className="text-[9px]">{course.is_free ? 'Free' : course.price}</Badge></div>) : <EmptyState icon={<BookOpen className="h-7 w-7 text-slate-400" />} title="No courses available" description="Recommended catalog courses will appear here when available." />}</CardContent></Card>
-        <Card className="overflow-hidden"><PanelHeading icon={Building2} title="Matching Opportunities" href="/opportunities" /><CardContent className="p-3 space-y-2">{opportunities.length ? opportunities.map((opportunity) => <Link key={opportunity.id} href={`/opportunities/${opportunity.id}`} className="flex items-center gap-3 p-2 rounded border border-slate-100 hover:border-blue-200"><div className="h-8 w-8 rounded bg-blue-50 text-brand-700 flex items-center justify-center"><Building2 className="h-4 w-4" /></div><div className="min-w-0 flex-1"><p className="text-[11px] font-semibold truncate">{opportunity.title}</p><p className="text-[9px] text-slate-500">{opportunity.organization} · {opportunity.location}</p></div>{opportunity.is_verified && <Badge variant="verified" className="text-[9px]">Verified</Badge>}<ChevronRight className="h-3.5 w-3.5 text-slate-400" /></Link>) : <EmptyState icon={<Building2 className="h-7 w-7 text-slate-400" />} title="No opportunities available" description="Matching opportunities will appear here when the catalog has active listings." />}</CardContent></Card>
-      </section>
-
-      <section className="grid grid-cols-1 md:grid-cols-3 gap-4"><Card className="p-3 flex items-center justify-between"><div><p className="text-[10px] text-slate-500">Mapped Skills</p><p className="text-lg font-bold text-[#102b63]">{studentSkills.length}</p></div><Link href="/onboarding"><Button variant="outline" size="sm" className="text-[10px]">Update <ArrowRight className="h-3 w-3" /></Button></Link></Card><Card className="p-3 flex items-center justify-between"><div className="min-w-0"><p className="text-[10px] text-slate-500">Target Career Goals</p><p className="text-[11px] font-bold truncate max-w-[170px]">{sp?.target_careers?.length ? sp.target_careers.join(', ') : 'Not selected'}</p></div><Link href="/career"><Button variant="outline" size="sm" className="text-[10px]">Explore <ArrowRight className="h-3 w-3" /></Button></Link></Card><Card className="p-3 flex items-center justify-between"><div className="min-w-0"><p className="text-[10px] text-slate-500">Profile Completion</p><p className="text-lg font-bold text-[#102b63]">{dashboardData?.completionScore || 0}%</p></div><Link href="/settings"><Button variant="outline" size="sm" className="text-[10px]">Edit <ArrowRight className="h-3 w-3" /></Button></Link></Card></section>
-
-      <section className="grid grid-cols-1 md:grid-cols-2 gap-4"><Card className="p-4 flex items-center justify-between gap-4"><div className="flex items-center gap-3"><div className="h-9 w-9 rounded bg-blue-50 text-brand-700 flex items-center justify-center"><FileText className="h-4 w-4" /></div><div><p className="text-[12px] font-bold">Resume Copilot</p><p className="text-[10px] text-slate-500">Get fact-preserving feedback on your resume.</p></div></div><Link href="/resume"><Button variant="outline" size="sm" className="text-[10px] shrink-0">Open <ArrowRight className="h-3 w-3" /></Button></Link></Card><Card className="p-4 flex items-center justify-between gap-4"><div className="flex items-center gap-3"><div className="h-9 w-9 rounded bg-blue-50 text-brand-700 flex items-center justify-center"><Mic className="h-4 w-4" /></div><div><p className="text-[12px] font-bold">Mock Interview</p><p className="text-[10px] text-slate-500">Practice role-specific questions with feedback.</p></div></div><Link href="/interview/setup"><Button variant="govt" size="sm" className="text-[10px] shrink-0">Start <ArrowRight className="h-3 w-3" /></Button></Link></Card></section>
-    </main>
-  </PortalFrame>;
+        <section className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <Card className="p-4 flex items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <div className="h-9 w-9 rounded bg-blue-50 text-brand-700 flex items-center justify-center"><FileText className="h-4 w-4" /></div>
+              <div><p className="text-sm font-bold">Resume Copilot</p><p className="text-xs text-slate-500">Get fact-preserving feedback on your resume.</p></div>
+            </div>
+            <Link href="/resume"><Button variant="outline" size="sm" className="text-xs font-semibold shrink-0">Open <ArrowRight className="h-3 w-3" /></Button></Link>
+          </Card>
+          <Card className="p-4 flex items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <div className="h-9 w-9 rounded bg-blue-50 text-brand-700 flex items-center justify-center"><Mic className="h-4 w-4" /></div>
+              <div><p className="text-sm font-bold">Mock Interview</p><p className="text-xs text-slate-500">Practice role-specific questions with feedback.</p></div>
+            </div>
+            <Link href="/interview/setup"><Button variant="govt" size="sm" className="text-xs font-semibold shrink-0">Start <ArrowRight className="h-3 w-3" /></Button></Link>
+          </Card>
+        </section>
+      </main>
+    </PortalFrame>
+  );
 }
