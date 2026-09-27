@@ -203,7 +203,10 @@ export default function OnboardingPage() {
               variant="govt"
               size="lg"
               className="mt-9 w-[215px]"
-              onClick={() => router.push('/dashboard')}
+              onClick={() => {
+                router.replace('/dashboard');
+                router.refresh();
+              }}
             >
               Go to Dashboard <ArrowRight className="h-4 w-4 ml-1" />
             </Button>

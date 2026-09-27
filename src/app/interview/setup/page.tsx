@@ -10,8 +10,7 @@ import { FormField } from '@/components/ui/form-field';
 import { Breadcrumb } from '@/components/ui/breadcrumb';
 import { EmptyState } from '@/components/ui/empty-state';
 import { LoadingState } from '@/components/ui/loading-state';
-import { getStudentProfile, getCatalogItems } from '@/lib/profile/actions';
-import { startInterview } from '@/lib/ai/actions-interview';
+import { getInterviewTargetRoles, startInterview } from '@/lib/ai/actions-interview';
 import {
   ArrowRight,
   BriefcaseBusiness,
@@ -34,14 +33,11 @@ export default function InterviewSetupPage() {
   const [error, setError] = useState('');
 
   useEffect(() => {
-    void Promise.all([getStudentProfile(), getCatalogItems()]).then(([profile, catalog]) => {
-      const ids =
-        profile.success && profile.studentProfile && Array.isArray(profile.studentProfile.target_careers)
-          ? profile.studentProfile.target_careers
-          : [];
-      const available = catalog.careerRoles.filter((item) => ids.includes(item.id));
+    void getInterviewTargetRoles().then((result) => {
+      const available = result.success ? result.roles : [];
       setRoles(available);
       if (available[0]) setRole(available[0].id);
+      if (!result.success) setError(result.error || 'Target careers could not be loaded.');
       setLoading(false);
     });
   }, []);

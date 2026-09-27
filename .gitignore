@@ -21,6 +21,12 @@ yarn-error.log*
 .env*.local
 .env
 
+# Playwright authentication state and reports
+/playwright/.auth/
+/playwright-report/
+/test-results/
+.env.playwright.local
+
 # vercel
 .vercel
 

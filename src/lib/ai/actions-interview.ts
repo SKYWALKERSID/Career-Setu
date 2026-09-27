@@ -6,6 +6,7 @@ import { createClient } from '@/lib/supabase/server';
 import { aiClient } from '@/lib/ai/client';
 import { InterviewEvaluationSchema, InterviewQuestionSchema, InterviewReportSchema } from '@/lib/ai/schemas';
 import { INTERVIEW_EVALUATION_PROMPT, INTERVIEW_EVALUATION_PROMPT_VERSION, INTERVIEW_QUESTION_PROMPT, INTERVIEW_QUESTION_PROMPT_VERSION, INTERVIEW_REPORT_PROMPT, INTERVIEW_REPORT_PROMPT_VERSION } from '@/lib/ai/prompts/interview';
+import { resolveTargetCareerIds } from '@/lib/career/target-roles';
 
 const MAX_QUESTIONS = 5;
 const DIFFICULTIES = ['easy', 'medium', 'hard'] as const;
@@ -25,6 +26,26 @@ async function aiCall<T>(supabase: Awaited<ReturnType<typeof createClient>>, stu
   return { result, runId: run?.id };
 }
 
+export async function getInterviewTargetRoles() {
+  const supabase = await createClient();
+  const student = await authStudent(supabase);
+  if (!student) return { success: false, roles: [], error: 'Unauthorized: Authentication required.' };
+
+  const [{ data: profile }, { data: recommendations }] = await Promise.all([
+    supabase.from('student_profiles').select('target_careers').eq('id', student.id).single(),
+    supabase.from('career_recommendations').select('role_id').eq('student_id', student.id),
+  ]);
+  const { data: roles } = await supabase.from('career_roles').select('id, title, category');
+  const targetIds = resolveTargetCareerIds(profile?.target_careers || [], roles || []);
+  const recommendationIds = (recommendations || []).map((item) => item.role_id);
+  const allowedIds = new Set([...targetIds, ...recommendationIds]);
+
+  return {
+    success: true,
+    roles: (roles || []).filter((role) => allowedIds.has(role.id)),
+  };
+}
+
 export async function startInterview(roleId: string, difficulty: string) {
   const supabase = await createClient(); const student = await authStudent(supabase);
   if (!student) return { success: false, error: 'Unauthorized: Authentication required.' };
@@ -33,7 +54,11 @@ export async function startInterview(roleId: string, difficulty: string) {
     supabase.from('career_roles').select('id, title, description, career_role_skills(skill_id, skills(id, name))').eq('id', roleId).single(),
     supabase.from('career_recommendations').select('role_id').eq('student_id', student.id).eq('role_id', roleId).maybeSingle(),
   ]);
-  if (!role || (!(student.target_careers || []).includes(roleId) && !recommendation)) return { success: false, error: 'Career role is not valid for this student.' };
+  const targetReferences = (student.target_careers || []) as string[];
+  const legacyTitleTarget = role
+    ? targetReferences.some((reference) => reference.trim().toLowerCase() === role.title.trim().toLowerCase())
+    : false;
+  if (!role || (!targetReferences.includes(roleId) && !legacyTitleTarget && !recommendation)) return { success: false, error: 'Career role is not valid for this student.' };
   const context = JSON.stringify({ role, difficulty, previous_turns: [], known_student_skills: [] });
   const { result } = await aiCall(supabase, student.id, 'interview_question', INTERVIEW_QUESTION_PROMPT_VERSION, INTERVIEW_QUESTION_PROMPT.replace('{{context}}', context), InterviewQuestionSchema);
   if (!result.success || !result.data) return { success: false, error: 'Interview question generation is temporarily unavailable.' };

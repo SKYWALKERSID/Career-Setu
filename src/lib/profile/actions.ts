@@ -3,6 +3,7 @@
 import { createClient } from '@/lib/supabase/server';
 import { StudentProfileSchema, calculateProfileCompletion, type StudentProfileInput } from './validation';
 import { revalidatePath } from 'next/cache';
+import { resolveTargetCareerIds } from '@/lib/career/target-roles';
 
 export async function getStudentProfile() {
   const supabase = await createClient();
@@ -59,6 +60,38 @@ export async function saveStudentProfile(input: StudentProfileInput) {
   }
 
   const data = validationResult.data;
+
+  const { data: careerRoles, error: careerRolesError } = await supabase
+    .from('career_roles')
+    .select('id, title')
+    .in('id', data.target_careers.filter((value) => value.includes('-')));
+
+  if (careerRolesError) {
+    return { success: false, error: 'Career roles could not be validated.' };
+  }
+
+  const normalizedTargetCareers = resolveTargetCareerIds(
+    data.target_careers,
+    careerRoles || [],
+  );
+
+  if (normalizedTargetCareers.length !== data.target_careers.length) {
+    const { data: allCareerRoles, error: allCareerRolesError } = await supabase
+      .from('career_roles')
+      .select('id, title');
+
+    if (allCareerRolesError) {
+      return { success: false, error: 'Career roles could not be validated.' };
+    }
+
+    const resolved = resolveTargetCareerIds(data.target_careers, allCareerRoles || []);
+    if (resolved.length !== data.target_careers.length) {
+      return { success: false, error: 'Select valid catalog career roles.' };
+    }
+    data.target_careers = resolved;
+  } else {
+    data.target_careers = normalizedTargetCareers;
+  }
 
   // 1. Ensure `profiles` record exists for user_id
   let { data: profile } = await supabase
