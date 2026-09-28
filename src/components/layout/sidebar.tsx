@@ -60,7 +60,7 @@ export function Sidebar() {
         </div>
         <div>
           <h1 className="font-bold text-[#10295d] text-base leading-tight">MP CareerSetu</h1>
-          <p className="text-xs text-slate-500 font-medium">Government of MP</p>
+          <p className="text-xs text-slate-500 font-medium">Student platform</p>
         </div>
       </div>
 

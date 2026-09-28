@@ -40,7 +40,7 @@ export async function generateCareerRoadmap(): Promise<{ success: boolean; roadm
   let aiResult;
   try { aiResult = await provider.generateStructuredOutput(ROADMAP_PROMPT.replace('{{context}}', context), RoadmapSchema, 'You are a catalog-constrained roadmap service. Output JSON only.'); }
   catch { aiResult = { success: false, error: 'AI roadmap generation failed.', provider: provider.name, model: provider.modelName, latencyMs: Date.now() - started }; }
-  const { data: run } = await supabase.from('ai_runs').insert({ feature: 'career_roadmap', model: provider.modelName, prompt_version: ROADMAP_PROMPT_VERSION, student_id: student.id, latency_ms: Date.now() - started, tokens_used: aiResult.tokensUsed ?? null, success: aiResult.success, error_message: aiResult.success ? null : aiResult.error }).select('id').single();
+  const { data: run } = await supabase.from('ai_runs').insert({ feature: 'career_roadmap', model: provider.modelName, prompt_version: ROADMAP_PROMPT_VERSION, student_id: student.id, latency_ms: Date.now() - started, tokens_used: aiResult.tokensUsed ?? null, success: aiResult.success, error_message: aiResult.success ? null : `${aiResult.errorCategory || 'AI_UNKNOWN_ERROR'}: ${aiResult.error || 'Career roadmap generation failed.'}` }).select('id').single();
   if (!aiResult.success || !aiResult.data || !run?.id) return { success: false, error: 'Career roadmap is temporarily unavailable.' };
   const validated = validateRoadmap(aiResult.data, catalog);
   if (!validated.success) { await supabase.from('ai_runs').update({ success: false, error_message: validated.error }).eq('id', run.id); return { success: false, error: validated.error }; }

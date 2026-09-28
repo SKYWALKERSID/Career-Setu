@@ -16,7 +16,7 @@ export function AuthVisualPanel() {
           <span>
             <strong className="block text-[15px] leading-tight">MP CareerSetu</strong>
             <small className="block text-[10px] text-slate-600">
-              Government of Madhya Pradesh
+              Student career platform
             </small>
           </span>
         </Link>
@@ -38,8 +38,7 @@ export function AuthVisualPanel() {
           </div>
         </div>
         <p className="text-sm italic text-[#536987]">
-          “Empowering youth for a stronger Madhya Pradesh.”<br />
-          <span className="text-xs not-italic">— Government of Madhya Pradesh</span>
+          “Personalized guidance for your next career step.”
         </p>
       </div>
     </section>

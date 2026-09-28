@@ -60,6 +60,7 @@ export async function runAIInfrastructureTest() {
       prompt_version: 'v1.0-test',
       latency_ms: latencyMs,
       success: aiResult.success,
+      error_message: aiResult.success ? null : `${aiResult.errorCategory || 'AI_UNKNOWN_ERROR'}: ${aiResult.error || 'AI infrastructure test failed.'}`,
     });
   } catch (logErr) {
     console.error('ai_runs telemetry logging failed:', logErr);

@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Sparkles, CheckCircle2 } from 'lucide-react';
+import { CheckCircle2 } from 'lucide-react';
 
 export function OnboardingCompletionVisual() {
   return (
@@ -27,14 +27,13 @@ export function OnboardingCompletionVisual() {
         {/* Bottom Editorial Copy */}
         <div className="max-w-[460px] pb-12">
           <div className="mb-3 flex items-center gap-2 text-xs font-bold uppercase tracking-[0.2em] text-emerald-300">
-            <Sparkles className="h-4 w-4 text-emerald-300" />
             Ready to Explore
           </div>
           <h2 className="text-4xl font-extrabold leading-tight text-white tracking-[-0.01em]">
             Your Journey Starts Here.
           </h2>
           <p className="mt-3 text-sm leading-6 text-slate-200">
-            Learn. Build. Grow. Unlock personalized career pathways, government-backed courses, and real opportunities across Madhya Pradesh.
+            Learn. Build. Grow. Unlock personalized career pathways, catalog courses, and real opportunities.
           </p>
         </div>
       </div>

@@ -1,9 +1,11 @@
 import { z } from 'zod';
-import { AIProvider, AIResponse } from '../types';
+import { AIErrorCategory, AIProvider, AIResponse } from '../types';
 
 // Basic server-side rate limiting: track last call timestamp per feature
 const rateLimitMap = new Map<string, number>();
 const RATE_LIMIT_COOLDOWN_MS = 3000; // 3 seconds between calls per feature
+const MAX_TRANSIENT_RETRIES = 2;
+const MAX_RETRY_DELAY_MS = 1500;
 
 function checkRateLimit(featureKey: string): string | null {
   const now = Date.now();
@@ -18,7 +20,7 @@ function checkRateLimit(featureKey: string): string | null {
 
 export class GeminiProvider implements AIProvider {
   name = 'Gemini (Google DeepMind)';
-  modelName = 'gemini-2.5-flash';
+  modelName = process.env.GEMINI_MODEL || 'gemini-3.8-flash';
   private apiKey: string;
 
   constructor(apiKey?: string) {
@@ -32,6 +34,23 @@ export class GeminiProvider implements AIProvider {
     return null;
   }
 
+  private failure<T>(
+    error: string,
+    errorCategory: AIErrorCategory,
+    startTime: number,
+    tokensUsed?: number
+  ): AIResponse<T> {
+    return {
+      success: false,
+      error,
+      errorCategory,
+      provider: this.name,
+      model: this.modelName,
+      latencyMs: Date.now() - startTime,
+      tokensUsed,
+    };
+  }
+
   private buildRequestBody(prompt: string, systemInstruction?: string, jsonMode = false) {
     const body: Record<string, unknown> = {
       contents: [
@@ -41,19 +60,43 @@ export class GeminiProvider implements AIProvider {
         },
       ],
       generationConfig: {
-        temperature: 0.2,
+        thinkingConfig: {
+          thinkingLevel: process.env.GEMINI_THINKING_LEVEL || 'low',
+        },
         ...(jsonMode ? { responseMimeType: 'application/json' } : {}),
       },
     };
 
-    // Use Gemini's native system_instruction field for better model behavior
+    // Gemini REST expects the camelCase systemInstruction field.
     if (systemInstruction) {
-      body.system_instruction = {
+      body.systemInstruction = {
         parts: [{ text: systemInstruction }],
       };
     }
 
     return body;
+  }
+
+  private async request(body: Record<string, unknown>): Promise<Response> {
+    const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(this.modelName)}:generateContent`;
+
+    for (let attempt = 0; ; attempt += 1) {
+      const response = await fetch(endpoint, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-goog-api-key': this.apiKey,
+        },
+        body: JSON.stringify(body),
+      });
+
+      if (![429, 503].includes(response.status) || attempt >= MAX_TRANSIENT_RETRIES) {
+        return response;
+      }
+
+      const delayMs = Math.min(250 * 2 ** attempt, MAX_RETRY_DELAY_MS);
+      await new Promise((resolve) => setTimeout(resolve, delayMs));
+    }
   }
 
   async generateStructuredOutput<T>(
@@ -65,37 +108,17 @@ export class GeminiProvider implements AIProvider {
 
     const apiKeyError = this.getApiKeyError();
     if (apiKeyError) {
-      return {
-        success: false,
-        error: apiKeyError,
-        provider: this.name,
-        model: this.modelName,
-        latencyMs: Date.now() - startTime,
-      };
+      return this.failure(apiKeyError, 'AI_CONFIG_ERROR', startTime);
     }
 
     // Basic rate limit check
     const rateLimitError = checkRateLimit('structured');
     if (rateLimitError) {
-      return {
-        success: false,
-        error: rateLimitError,
-        provider: this.name,
-        model: this.modelName,
-        latencyMs: Date.now() - startTime,
-      };
+      return this.failure(rateLimitError, 'AI_RATE_LIMIT_ERROR', startTime);
     }
 
     try {
-      const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${this.modelName}:generateContent?key=${this.apiKey}`;
-
-      const response = await fetch(endpoint, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(this.buildRequestBody(prompt, systemInstruction, true)),
-      });
+      const response = await this.request(this.buildRequestBody(prompt, systemInstruction, true));
 
       if (!response.ok) {
         const errorBody = await response.text();
@@ -106,13 +129,8 @@ export class GeminiProvider implements AIProvider {
         } catch {
           // ignore parsing error
         }
-        return {
-          success: false,
-          error: `Gemini Provider Error: ${parsedErr}`,
-          provider: this.name,
-          model: this.modelName,
-          latencyMs: Date.now() - startTime,
-        };
+        const category = response.status === 429 || response.status === 503 ? 'AI_CAPACITY_ERROR' : 'AI_PROVIDER_ERROR';
+        return this.failure(`Gemini Provider Error (HTTP ${response.status}): ${parsedErr}`, category, startTime);
       }
 
       const resJson = await response.json();
@@ -120,14 +138,7 @@ export class GeminiProvider implements AIProvider {
       const tokensUsed = resJson.usageMetadata?.totalTokenCount;
 
       if (!rawText) {
-        return {
-          success: false,
-          error: 'Gemini Provider returned empty response candidates.',
-          provider: this.name,
-          model: this.modelName,
-          latencyMs: Date.now() - startTime,
-          tokensUsed,
-        };
+        return this.failure('Gemini Provider returned empty response candidates.', 'AI_EMPTY_RESPONSE', startTime, tokensUsed);
       }
 
       // Parse JSON
@@ -136,26 +147,14 @@ export class GeminiProvider implements AIProvider {
         parsedJson = JSON.parse(rawText);
       } catch (jsonErr: unknown) {
         const message = jsonErr instanceof Error ? jsonErr.message : 'Unknown JSON parsing error';
-        return {
-          success: false,
-          error: `Malformed JSON response from Gemini model: ${message}`,
-          provider: this.name,
-          model: this.modelName,
-          latencyMs: Date.now() - startTime,
-        };
+        return this.failure(`Malformed JSON response from Gemini model: ${message}`, 'AI_PARSE_ERROR', startTime);
       }
 
       // Zod Validation
       const parseResult = schema.safeParse(parsedJson);
       if (!parseResult.success) {
         const zodErrMsg = parseResult.error.errors.map((e) => `${e.path.join('.')}: ${e.message}`).join(', ');
-        return {
-          success: false,
-          error: `Zod validation failed for model response: ${zodErrMsg}`,
-          provider: this.name,
-          model: this.modelName,
-          latencyMs: Date.now() - startTime,
-        };
+        return this.failure(`Zod validation failed for model response: ${zodErrMsg}`, 'AI_SCHEMA_ERROR', startTime);
       }
 
       return {
@@ -168,13 +167,7 @@ export class GeminiProvider implements AIProvider {
       };
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Failed to call Gemini provider';
-      return {
-        success: false,
-        error: message,
-        provider: this.name,
-        model: this.modelName,
-        latencyMs: Date.now() - startTime,
-      };
+      return this.failure(message, 'AI_NETWORK_ERROR', startTime);
     }
   }
 
@@ -186,37 +179,17 @@ export class GeminiProvider implements AIProvider {
 
     const apiKeyError = this.getApiKeyError();
     if (apiKeyError) {
-      return {
-        success: false,
-        error: apiKeyError,
-        provider: this.name,
-        model: this.modelName,
-        latencyMs: Date.now() - startTime,
-      };
+      return this.failure(apiKeyError, 'AI_CONFIG_ERROR', startTime);
     }
 
     // Basic rate limit check
     const rateLimitError = checkRateLimit('text');
     if (rateLimitError) {
-      return {
-        success: false,
-        error: rateLimitError,
-        provider: this.name,
-        model: this.modelName,
-        latencyMs: Date.now() - startTime,
-      };
+      return this.failure(rateLimitError, 'AI_RATE_LIMIT_ERROR', startTime);
     }
 
     try {
-      const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${this.modelName}:generateContent?key=${this.apiKey}`;
-
-      const response = await fetch(endpoint, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(this.buildRequestBody(prompt, systemInstruction, false)),
-      });
+      const response = await this.request(this.buildRequestBody(prompt, systemInstruction, false));
 
       if (!response.ok) {
         const errorBody = await response.text();
@@ -227,13 +200,8 @@ export class GeminiProvider implements AIProvider {
         } catch {
           // ignore parsing error
         }
-        return {
-          success: false,
-          error: `Gemini Provider Error: ${parsedErr}`,
-          provider: this.name,
-          model: this.modelName,
-          latencyMs: Date.now() - startTime,
-        };
+        const category = response.status === 429 || response.status === 503 ? 'AI_CAPACITY_ERROR' : 'AI_PROVIDER_ERROR';
+        return this.failure(`Gemini Provider Error (HTTP ${response.status}): ${parsedErr}`, category, startTime);
       }
 
       const resJson = await response.json();
@@ -241,13 +209,7 @@ export class GeminiProvider implements AIProvider {
       const tokensUsed = resJson.usageMetadata?.totalTokenCount;
 
       if (!rawText) {
-        return {
-          success: false,
-          error: 'Gemini Provider returned empty response candidates.',
-          provider: this.name,
-          model: this.modelName,
-          latencyMs: Date.now() - startTime,
-        };
+        return this.failure('Gemini Provider returned empty response candidates.', 'AI_EMPTY_RESPONSE', startTime);
       }
 
       return {
@@ -260,13 +222,7 @@ export class GeminiProvider implements AIProvider {
       };
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Failed to call Gemini provider';
-      return {
-        success: false,
-        error: message,
-        provider: this.name,
-        model: this.modelName,
-        latencyMs: Date.now() - startTime,
-      };
+      return this.failure(message, 'AI_NETWORK_ERROR', startTime);
     }
   }
 }

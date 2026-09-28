@@ -57,7 +57,7 @@ export default function DashboardPage() {
   const semesterFormatted = formatSemesterOrdinal(sp?.semester);
   const collegeSubtitle = sp?.college
     ? (semesterFormatted ? `${sp.college} · ${semesterFormatted}` : sp.college)
-    : 'Madhya Pradesh Student Employability Portal';
+    : 'Student career platform';
 
   async function handleGenerateRecommendations() {
     setRecommendationsLoading(true);

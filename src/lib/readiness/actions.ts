@@ -95,6 +95,28 @@ export async function calculateAndSaveReadinessAssessment(): Promise<{
     latestInterviewScore: latestInterview?.overall_score ?? null,
   });
 
+  const { data: previousAssessment } = await supabase
+    .from('readiness_assessments')
+    .select('id, overall_score, technical_score, academic_score, project_score, resume_score, interview_score, alignment_score')
+    .eq('student_id', student.id)
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  const sameAssessment = previousAssessment && [
+    ['overall_score', assessment.overallScore],
+    ['technical_score', assessment.dimensions.technical.score],
+    ['academic_score', assessment.dimensions.academic.score],
+    ['project_score', assessment.dimensions.projects.score],
+    ['resume_score', assessment.dimensions.resume.score],
+    ['interview_score', assessment.dimensions.interview.score],
+    ['alignment_score', assessment.dimensions.alignment.score],
+  ].every(([key, value]) => previousAssessment[key as keyof typeof previousAssessment] === value);
+
+  if (sameAssessment) {
+    return { success: true, assessment, assessmentId: previousAssessment.id };
+  }
+
   // 8. Persist new historical record to readiness_assessments
   // For pending dimensions, store null (NULL = pending/no evidence, 0 = calculated score of zero)
   const { data: savedRecord, error: insertError } = await supabase

@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/server';
 import { StudentProfileSchema, calculateProfileCompletion, type StudentProfileInput } from './validation';
 import { revalidatePath } from 'next/cache';
 import { resolveTargetCareerIds } from '@/lib/career/target-roles';
+import { calculateAndSaveReadinessAssessment } from '@/lib/readiness/actions';
 
 export async function getStudentProfile() {
   const supabase = await createClient();
@@ -189,6 +190,8 @@ export async function saveStudentProfile(input: StudentProfileInput) {
       }
     }
   }
+
+  await calculateAndSaveReadinessAssessment();
 
   revalidatePath('/dashboard');
   revalidatePath('/onboarding');

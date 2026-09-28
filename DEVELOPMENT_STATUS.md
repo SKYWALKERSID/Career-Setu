@@ -376,3 +376,38 @@ Quality, Security & Reliability is complete. Deployment/Demo and Final UI recons
 
 
 
+### Manual QA Stabilization Pass (IN PROGRESS)
+
+- Removed nonfunctional shared top-nav search, language, and notification controls and tightened the responsive profile/logout group.
+- Fresh onboarding now begins with empty profile evidence, no automatic domain or target-role selection, and ordinal semester labels.
+- Canonical stored career IDs are resolved back to catalog titles when loading onboarding.
+- Removed application-owned government branding/filler copy from the landing, auth, onboarding, sidebar, and completion surfaces.
+- Added a lightweight `/privacy` page and dismissible essential-storage consent notice.
+- Removed the student-facing RLS implementation-detail card from Settings.
+- Career catalog querying now uses persisted student recommendation rows for the default recommendation view and catalog data for search/filter exploration.
+- Validation: TypeScript exit 0; ESLint exit 0; production build exit 0.
+- Remaining stabilization work: complete real browser verification and continue wiring the remaining recommendation, roadmap, course, opportunity, resume, interview, progress, and truthful pending/error states without fabricated data.
+
+### Stabilization Pass 2 (PARTIAL)
+
+- Root cause identified: profile persistence did not invoke readiness calculation; this left dashboard/readiness consumers without a persisted assessment after onboarding.
+- Readiness calculation is now invoked after authenticated profile/skill persistence and suppresses duplicate historical rows when the computed evidence and scores have not changed.
+- Career recommendation browsing now distinguishes persisted recommendations from full catalog retrieval, while preserving catalog-constrained server-side recommendation generation.
+- Course platform filtering now matches the real provider field; course category/platform filters remain catalog-backed.
+- Opportunity deadlines now render complete readable dates instead of month/day fragments.
+- Static checks: TypeScript exit 0, ESLint exit 0, production build exit 0.
+- Browser verification against the deployed Vercel target remains pending for this pass; resume/interview provider-backed flows and full roadmap persistence require live QA execution and are not claimed complete.
+
+### AI Pipeline Diagnostic + Repair (PARTIAL)
+
+- Provider diagnosis found the shared Gemini REST payload used `system_instruction` instead of Gemini REST's required `systemInstruction` field. The request contract is corrected without changing provider selection or client-side security.
+- The hardcoded retired default model `gemini-2.5-flash` was replaced with the current server-configurable default `gemini-3.8-flash`; `GEMINI_MODEL` remains available as a server-side override.
+- AI responses now carry safe internal error categories and `ai_runs.error_message` records the category without secrets, allowing configuration, provider, parsing, schema, rate-limit, and network failures to be distinguished.
+- Direct provider smoke testing reached Gemini successfully after the repair, but Gemini returned a provider-side high-demand error for `gemini-3.8-flash` on two attempts. Personalized feature flows therefore remain unverified until the production deployment has the repaired code and the provider accepts requests.
+- Local validation: TypeScript exit 0, ESLint exit 0, production build exit 0. No AI feature is claimed complete from these static checks alone.
+
+### Final AI Provider Reliability Check (PARTIAL)
+
+- Gemini 3.8 request compatibility was tightened: the server now uses `systemInstruction`, `x-goog-api-key`, `thinkingConfig.thinkingLevel`, and bounded retries for HTTP 429/503 responses. Legacy `temperature`, `topP`, `topK`, `candidateCount`, and `thinking_budget` parameters are not sent.
+- The provider smoke test reached `gemini-3.8-flash` and returned HTTP 503 (`AI_CAPACITY_ERROR`) after bounded retries. No fake output or fallback result was produced.
+- Local TypeScript, ESLint, and production build all exit 0. Deployment and live product-flow verification remain pending because Vercel CLI/project metadata is not configured in this workspace.

@@ -25,7 +25,8 @@ export function formatSemesterOrdinal(sem?: number | null): string {
   if (j === 1 && k !== 11) return `${sem}st Sem`;
   if (j === 2 && k !== 12) return `${sem}nd Sem`;
   if (j === 3 && k !== 13) return `${sem}rd Sem`;
-  return `${sem}th Sem`;
+  const suffix = sem % 100 >= 11 && sem % 100 <= 13 ? 'th' : ({ 1: 'st', 2: 'nd', 3: 'rd' } as Record<number, string>)[sem % 10] || 'th';
+  return `${sem}${suffix} Sem`;
 }
 
 /**

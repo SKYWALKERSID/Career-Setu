@@ -526,12 +526,6 @@ export default function SettingsPage() {
                   </div>
                 </Card>
 
-                <div className="rounded-[3px] border border-[#dbe8f5] bg-[#edf6ff] p-5">
-                  <h3 className="text-lg sm:text-xl font-bold text-[#10285a]">Data Ownership & Security</h3>
-                  <p className="mt-2 text-[11px] leading-4 text-slate-600">
-                    Your profile data is protected by Supabase RLS (`user_id = auth.uid()`). Updates are stored securely and never shared publicly.
-                  </p>
-                </div>
               </aside>
             </div>
           </form>

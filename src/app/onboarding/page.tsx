@@ -15,16 +15,22 @@ import { calculateProfileCompletion } from '@/lib/profile/validation';
 import { OnboardingCompletionVisual } from '@/components/onboarding/onboarding-completion-visual';
 
 const AVAILABLE_DOMAIN_INTERESTS = [
-  'Software Engineering',
+  'Software Development',
   'Data Science & Analytics',
   'Cloud Computing & DevOps',
   'Cybersecurity & Defense',
   'UI/UX & Product Design',
-  'Artificial Intelligence / ML',
+  'Artificial Intelligence & Machine Learning',
   'Hardware & Embedded Systems',
-  'E-Governance & Public IT',
-  'Digital Marketing & Media',
+  'Government & Public Sector Careers',
+  'Business & Entrepreneurship',
 ];
+
+function formatSemester(value: number) {
+  if (!value) return 'Not provided';
+  const suffix = value % 100 >= 11 && value % 100 <= 13 ? 'th' : ({ 1: 'st', 2: 'nd', 3: 'rd' } as Record<number, string>)[value % 10] || 'th';
+  return `${value}${suffix}`;
+}
 
 export default function OnboardingPage() {
   const router = useRouter();
@@ -45,14 +51,14 @@ export default function OnboardingPage() {
   // Form State
   const [formData, setFormData] = useState({
     name: '',
-    location: 'Bhopal, MP',
+    location: '',
     college: '',
-    course: 'B.Tech',
-    branch: 'Computer Science & Engineering',
-    semester: 7,
-    cgpa: '8.0',
-    interests: ['Software Engineering', 'Data Science & Analytics'] as string[],
-    selectedCareerTitles: ['Software Developer'] as string[],
+    course: '',
+    branch: '',
+    semester: 0,
+    cgpa: '',
+    interests: [] as string[],
+    selectedCareerTitles: [] as string[],
     selectedSkillIds: [] as string[],
   });
 
@@ -73,14 +79,14 @@ export default function OnboardingPage() {
 
           setFormData({
             name: sp.name || '',
-            location: sp.location || 'Bhopal, MP',
+            location: sp.location || '',
             college: sp.college || '',
-            course: sp.course || 'B.Tech',
-            branch: sp.branch || 'Computer Science & Engineering',
-            semester: sp.semester || 7,
-            cgpa: sp.cgpa ? String(sp.cgpa) : '8.0',
-            interests: sp.interests && sp.interests.length > 0 ? sp.interests : ['Software Engineering'],
-            selectedCareerTitles: sp.target_careers && sp.target_careers.length > 0 ? sp.target_careers : ['Software Developer'],
+            course: sp.course || '',
+            branch: sp.branch || '',
+            semester: sp.semester || 0,
+            cgpa: sp.cgpa ? String(sp.cgpa) : '',
+            interests: sp.interests || [],
+            selectedCareerTitles: (sp.target_careers || []).map((value: string) => catalogRes.careerRoles.find((role) => role.id === value)?.title || value),
             selectedSkillIds: userSkills,
           });
         }
@@ -171,7 +177,6 @@ export default function OnboardingPage() {
             </span>
             <span>
               <strong className="block text-[15px] text-[#10295d]">MP CareerSetu</strong>
-              <small className="text-[10px] text-slate-500">Government of Madhya Pradesh</small>
             </span>
           </div>
           <div className="mt-12 max-w-[440px]">
@@ -332,7 +337,7 @@ export default function OnboardingPage() {
                     onChange={(e) => setFormData({ ...formData, semester: Number(e.target.value) })}
                   >
                     {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((sem) => (
-                      <option key={sem} value={sem}>{sem}th Semester</option>
+                      <option key={sem} value={sem}>{formatSemester(sem)} Semester</option>
                     ))}
                   </Select>
                 </FormField>
@@ -594,7 +599,7 @@ export default function OnboardingPage() {
             <div className="my-6 bg-slate-50 border border-slate-200 rounded-xl p-4 text-left space-y-2 text-xs">
               <p><span className="font-semibold text-slate-700">Full Name:</span> {formData.name}</p>
               <p><span className="font-semibold text-slate-700">College:</span> {formData.college}</p>
-              <p><span className="font-semibold text-slate-700">Academic:</span> {formData.course} ({formData.branch}) • {formData.semester}th Sem • CGPA {formData.cgpa}</p>
+              <p><span className="font-semibold text-slate-700">Academic:</span> {formData.course} ({formData.branch}) • {formatSemester(formData.semester)} Sem • CGPA {formData.cgpa || 'Not provided'}</p>
               <p><span className="font-semibold text-slate-700">Domain Interests:</span> {formData.interests.join(', ')}</p>
               <p><span className="font-semibold text-slate-700">Selected Skills ({formData.selectedSkillIds.length}):</span> {formData.selectedSkillIds.length} skills mapped</p>
               <p><span className="font-semibold text-slate-700">Target Roles:</span> {formData.selectedCareerTitles.join(', ')}</p>

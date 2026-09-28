@@ -22,7 +22,7 @@ async function authStudent(supabase: Awaited<ReturnType<typeof createClient>>) {
 async function aiCall<T>(supabase: Awaited<ReturnType<typeof createClient>>, studentId: string, feature: string, promptVersion: string, prompt: string, schema: z.ZodSchema<T>) {
   const provider = aiClient.getProvider(); const started = Date.now();
   const result = await provider.generateStructuredOutput(prompt, schema, 'You are a safe structured mock interview service.');
-  const { data: run } = await supabase.from('ai_runs').insert({ feature, model: provider.modelName, prompt_version: promptVersion, student_id: studentId, latency_ms: Date.now() - started, tokens_used: result.tokensUsed ?? null, success: result.success, error_message: result.success ? null : result.error || 'Interview AI operation failed.' }).select('id').single();
+  const { data: run } = await supabase.from('ai_runs').insert({ feature, model: provider.modelName, prompt_version: promptVersion, student_id: studentId, latency_ms: Date.now() - started, tokens_used: result.tokensUsed ?? null, success: result.success, error_message: result.success ? null : `${result.errorCategory || 'AI_UNKNOWN_ERROR'}: ${result.error || 'Interview AI operation failed.'}` }).select('id').single();
   return { result, runId: run?.id };
 }
 

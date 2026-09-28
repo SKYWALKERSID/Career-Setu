@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Search, Bell, LogOut } from 'lucide-react';
+import { LogOut } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { getCurrentUserProfileSummary, UserProfileSummary } from '@/lib/profile/user-profile-summary';
 
@@ -39,31 +39,10 @@ export function TopNav() {
 
   return (
     <header className="flex h-[62px] min-w-0 items-center justify-between gap-3 border-b border-[#dce7f2] bg-white px-4 sticky top-0 z-30 sm:px-7">
-      {/* Global Search Bar */}
-      <div className="relative min-w-0 flex-1 sm:w-[390px] sm:flex-none sm:max-w-[48vw]">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-        <input
-          type="text"
-          placeholder="Search for careers, courses, colleges, opportunities..."
-          className="w-full h-10 pl-9 pr-4 text-sm bg-[#f4f8fd] border border-[#dce7f2] rounded-md text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500"
-        />
-      </div>
+      <div className="min-w-0 flex-1" aria-hidden="true" />
 
       {/* Right Controls */}
       <div className="flex shrink-0 items-center gap-1 sm:gap-4">
-        {/* Language Toggle */}
-        <div className="hidden text-xs font-medium text-slate-600 sm:block">
-          <span className="cursor-pointer hover:text-slate-900">हिंदी</span>
-          <span className="mx-1">|</span>
-          <span className="font-semibold text-slate-900">English</span>
-        </div>
-
-        {/* Notification Bell */}
-        <button className="relative p-2 text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors">
-          <Bell className="h-4 w-4" />
-          <span className="absolute top-1 right-1 h-2 w-2 rounded-full bg-brand-600" />
-        </button>
-
         {/* User Profile Summary & Logout */}
         <div className="flex items-center gap-1 border-l border-slate-200 pl-2 sm:gap-2 sm:pl-4">
           <Link href="/settings" className="flex items-center gap-2.5 hover:opacity-90 transition-opacity">
@@ -75,7 +54,7 @@ export function TopNav() {
                 {profile?.name || 'Student'}
               </p>
               <p className="text-xs text-slate-500 font-medium truncate">
-                {profile?.academicSubtitle || 'Madhya Pradesh Student'}
+                {profile?.academicSubtitle || 'Student career profile'}
               </p>
             </div>
           </Link>

@@ -82,7 +82,7 @@ export async function uploadAndAnalyzeResume(formData: FormData): Promise<{ succ
   const context = JSON.stringify({ skills: skills || [], target_roles: roles || [], role_required_skill_ids: roleSkills });
   const provider = aiClient.getProvider(); const started = Date.now();
   const result = await provider.generateStructuredOutput(RESUME_PROMPT.replace('{{context}}', context).replace('{{resume}}', text), ResumeParseSchema, 'Fact-preserving structured resume parser.');
-  const { data: run } = await supabase.from('ai_runs').insert({ feature: 'resume_parse', model: provider.modelName, prompt_version: RESUME_PROMPT_VERSION, student_id: student.id, latency_ms: Date.now() - started, tokens_used: result.tokensUsed ?? null, success: result.success, error_message: result.success ? null : result.error || 'Resume analysis failed.' }).select('id').single();
+  const { data: run } = await supabase.from('ai_runs').insert({ feature: 'resume_parse', model: provider.modelName, prompt_version: RESUME_PROMPT_VERSION, student_id: student.id, latency_ms: Date.now() - started, tokens_used: result.tokensUsed ?? null, success: result.success, error_message: result.success ? null : `${result.errorCategory || 'AI_UNKNOWN_ERROR'}: ${result.error || 'Resume analysis failed.'}` }).select('id').single();
   if (!result.success || !result.data) return { success: false, resumeId: resume.id, error: 'Resume analysis is temporarily unavailable. The uploaded file was preserved without a score.' };
   const parsed = result.data as ResumeParsedData;
   const catalogSkillIds = new Set((skills || []).map((skill) => skill.id)); const validRoleSkills = new Set(roleSkills);

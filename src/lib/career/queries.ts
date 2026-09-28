@@ -5,7 +5,7 @@ import { getStudentProfile } from '@/lib/profile/actions';
 import { revalidatePath } from 'next/cache';
 import { calculateSkillGaps } from '@/lib/skill-gap/scoring';
 
-export async function getCareerRolesList(search = '', categoryFilter = '') {
+export async function getCareerRolesList(search = '', categoryFilter = '', showAll = false) {
   const supabase = await createClient();
 
   let query = supabase
@@ -26,8 +26,22 @@ export async function getCareerRolesList(search = '', categoryFilter = '') {
   // Extract unique categories for filter dropdown
   const categories = Array.from(new Set(roles.map((r: { category: string }) => r.category))).sort();
 
+  // Get student context (target careers) if logged in
+  const profileRes = await getStudentProfile();
+  const targetCareers = profileRes.success && profileRes.studentProfile ? (profileRes.studentProfile.target_careers || []) : [];
+  const studentSkillIds = profileRes.success ? (profileRes.studentSkills || []).map((s: { skill_id: string }) => s.skill_id) : [];
+
   // Perform case-insensitive search filtering across title, category, description, and skill names
   let filtered = roles;
+  if (!showAll && !search.trim() && (!categoryFilter || categoryFilter === 'all')) {
+    const { data: recommendations } = await supabase
+      .from('career_recommendations')
+      .select('role_id')
+      .eq('student_id', profileRes.success && profileRes.studentProfile ? profileRes.studentProfile.id : '')
+      .order('score', { ascending: false });
+    const ids = new Set((recommendations || []).map((item) => item.role_id));
+    filtered = roles.filter((role) => ids.has(role.id));
+  }
   if (search.trim()) {
     const q = search.toLowerCase();
     filtered = roles.filter((role: { title: string; category: string; description: string; career_role_skills?: Array<{ skills?: { name?: string } }> }) => {
@@ -38,11 +52,6 @@ export async function getCareerRolesList(search = '', categoryFilter = '') {
       return matchTitle || matchCat || matchDesc || matchSkill;
     });
   }
-
-  // Get student context (target careers) if logged in
-  const profileRes = await getStudentProfile();
-  const targetCareers = profileRes.success && profileRes.studentProfile ? (profileRes.studentProfile.target_careers || []) : [];
-  const studentSkillIds = profileRes.success ? (profileRes.studentSkills || []).map((s: { skill_id: string }) => s.skill_id) : [];
 
   return {
     success: true,
