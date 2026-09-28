@@ -13,7 +13,7 @@ import { LoadingState } from '@/components/ui/loading-state';
 import { getDashboardData, type DashboardData } from '@/lib/dashboard/queries';
 import { getStudentSkillGaps } from '@/lib/skill-gap/actions';
 import { generateCareerRoadmap } from '@/lib/ai/actions-roadmap';
-import { submitRoadmapTaskEvidence, updateRoadmapTaskStatus } from '@/lib/roadmap/actions';
+import { saveRoadmap, submitRoadmapTaskEvidence, updateRoadmapTaskStatus } from '@/lib/roadmap/actions';
 
 type Gap = { skill_id: string; skill_name: string; status: 'acquired' | 'developing' | 'missing'; priority: number; importance?: string };
 
@@ -21,18 +21,21 @@ export default function RoadmapPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const requestedRoleId = searchParams.get('role') || '';
+  const requestedRoadmapId = searchParams.get('id') || '';
   const [data, setData] = useState<DashboardData | null>(null);
   const [gaps, setGaps] = useState<Gap[]>([]);
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState(false);
   const [updatingTask, setUpdatingTask] = useState<string | null>(null);
   const [evidenceTask, setEvidenceTask] = useState<string | null>(null);
+  const [generatedRoadmapId, setGeneratedRoadmapId] = useState<string | null>(null);
+  const [saveState, setSaveState] = useState<'ready' | 'saving' | 'saved' | 'failed'>('ready');
   const [error, setError] = useState('');
 
   const load = useCallback(async () => {
     setLoading(true); setError('');
     try {
-      const result = await getDashboardData(requestedRoleId || undefined);
+      const result = await getDashboardData(requestedRoleId || undefined, requestedRoadmapId || undefined);
       if (!result.success || !result.data) throw new Error(result.error || 'Roadmap data is unavailable.');
       setData(result.data);
       const roleId = result.data.targetCareer?.id || '';
@@ -44,7 +47,7 @@ export default function RoadmapPage() {
       }
     } catch (err: unknown) { setError(err instanceof Error ? err.message : 'Roadmap data is unavailable.'); }
     finally { setLoading(false); }
-  }, [requestedRoleId, router]);
+  }, [requestedRoleId, requestedRoadmapId, router]);
 
   useEffect(() => { void load(); }, [load]);
 
@@ -53,8 +56,16 @@ export default function RoadmapPage() {
     const roleId = data?.targetCareer?.id;
     if (!roleId) { setError('Choose a target career before generating a roadmap.'); return; }
     const result = await generateCareerRoadmap(roleId);
-    if (result.success) await load(); else setError(result.error || 'Career roadmap is temporarily unavailable.');
+    if (result.success) { setGeneratedRoadmapId(result.roadmapId || null); setSaveState('ready'); await load(); } else setError(result.error || 'Career roadmap is temporarily unavailable.');
     setGenerating(false);
+  }
+
+  async function handleSave() {
+    const roadmapId = generatedRoadmapId || data?.roadmap?.id;
+    if (!roadmapId) { setSaveState('failed'); setError('Generate a roadmap before saving it.'); return; }
+    setSaveState('saving');
+    const result = await saveRoadmap(roadmapId);
+    if (result.success) setSaveState('saved'); else { setSaveState('failed'); setError(result.error || 'Roadmap could not be saved.'); }
   }
 
   async function handleTaskStatus(task: DashboardData['roadmapTasks'][number]) {
@@ -92,9 +103,10 @@ export default function RoadmapPage() {
     </section>
     <section className="grid grid-cols-1 gap-4 xl:grid-cols-[1.35fr_0.65fr]">
       <SkillTable gaps={gaps} roleId={data?.targetCareer?.id || ''} missing={missing.length} developing={developing.length} acquired={acquired.length} />
-      <RoadmapTimeline tasks={tasks} generating={generating} updatingTask={updatingTask} evidenceTask={evidenceTask} onTaskStatus={handleTaskStatus} onEvidence={handleEvidence} onGenerate={handleGenerate} />
+      <RoadmapTimeline tasks={tasks} generating={generating} updatingTask={updatingTask} evidenceTask={evidenceTask} saveState={saveState} onTaskStatus={handleTaskStatus} onEvidence={handleEvidence} onSave={handleSave} onGenerate={handleGenerate} />
     </section>
     <section className="grid grid-cols-1 gap-4 lg:grid-cols-[1.35fr_0.65fr]"><Resources courses={data?.previewCourses || []} /><ProgressCard tasks={tasks} completed={completed} progress={progress} generating={generating} onGenerate={handleGenerate} /></section>
+    <SavedRoadmaps roadmaps={data?.savedRoadmaps || []} />
   </main></Shell>;
 }
 
@@ -108,7 +120,9 @@ function SummaryCard({ missing, developing, acquired }: { missing: number; devel
 
 function SkillTable({ gaps, roleId, missing, developing, acquired }: { gaps: Gap[]; roleId: string; missing: number; developing: number; acquired: number }) { return <section className="border border-[#dce7f2] bg-white"><div className="border-b border-[#e5edf5] px-5 py-4"><h2 className="text-lg font-bold text-[#10295d]">Skill gap analysis</h2><p className="mt-1 text-xs text-slate-500">Required catalog skills compared with your current evidence.</p><p className="mt-1 text-xs text-slate-400">{acquired} acquired · {developing} developing · {missing} missing</p></div>{gaps.length ? <div className="divide-y divide-[#e5edf5]">{gaps.map((gap) => <div key={gap.skill_id} className="grid gap-2 px-5 py-3 text-sm sm:grid-cols-[1.2fr_0.8fr_0.7fr_0.7fr] sm:items-center"><span className="font-semibold text-[#10295d]">{gap.skill_name}</span><Badge variant={gap.status === 'acquired' ? 'success' : gap.status === 'developing' ? 'warning' : 'info'} className="w-fit text-xs">{gap.status === 'missing' ? 'Needs focus' : gap.status === 'developing' ? 'In progress' : 'Strong'}</Badge><span className="text-xs text-slate-500">{gap.importance || `Priority ${gap.priority}`}</span><Link href={`/courses?career=${encodeURIComponent(roleId)}&skill=${encodeURIComponent(gap.skill_id)}`} className="text-xs font-semibold text-[#1559c7]">{gap.status === 'acquired' ? 'Review courses' : 'Learn next'} <ArrowRight className="inline h-3.5 w-3.5" /></Link></div>)}</div> : <div className="p-8"><EmptyState icon={<Compass className="h-8 w-8 text-slate-400" />} title="Skill gaps pending" description="Choose a target career to compare your skills with catalog requirements." /></div>}</section>; }
 
-function RoadmapTimeline({ tasks, generating, updatingTask, evidenceTask, onTaskStatus, onEvidence, onGenerate }: { tasks: DashboardData['roadmapTasks']; generating: boolean; updatingTask: string | null; evidenceTask: string | null; onTaskStatus: (task: DashboardData['roadmapTasks'][number]) => void; onEvidence: (taskId: string, url: string, note: string) => void; onGenerate: () => void }) { return <section className="border border-[#dce7f2] bg-white"><div className="flex items-center justify-between border-b border-[#e5edf5] px-5 py-4"><h2 className="flex items-center gap-2 text-lg font-bold text-[#10295d]"><CalendarDays className="h-4.5 w-4.5 text-[#1559c7]" />Your learning roadmap</h2><span className="text-xs text-slate-500">90 days</span></div><div className="p-5">{tasks.length ? <div className="relative space-y-5 before:absolute before:left-[9px] before:top-2 before:h-[calc(100%-12px)] before:w-px before:bg-[#cfe0f5]">{tasks.map((task) => <RoadmapTaskCard key={task.id} task={task} updating={updatingTask === task.id} evidenceBusy={evidenceTask === task.id} onTaskStatus={onTaskStatus} onEvidence={onEvidence} />)}</div> : <EmptyState icon={<CalendarDays className="h-8 w-8 text-slate-400" />} title="No roadmap yet" description="Generate a catalog-grounded plan from your profile and readiness evidence." actionLabel={generating ? 'Generating...' : 'Generate roadmap'} onAction={onGenerate} />}</div></section>; }
+function RoadmapTimeline({ tasks, generating, updatingTask, evidenceTask, saveState, onTaskStatus, onEvidence, onSave, onGenerate }: { tasks: DashboardData['roadmapTasks']; generating: boolean; updatingTask: string | null; evidenceTask: string | null; saveState: 'ready' | 'saving' | 'saved' | 'failed'; onTaskStatus: (task: DashboardData['roadmapTasks'][number]) => void; onEvidence: (taskId: string, url: string, note: string) => void; onSave: () => void; onGenerate: () => void }) { return <section className="border border-[#dce7f2] bg-white"><div className="flex flex-wrap items-center justify-between gap-2 border-b border-[#e5edf5] px-5 py-4"><h2 className="flex items-center gap-2 text-lg font-bold text-[#10295d]"><CalendarDays className="h-4.5 w-4.5 text-[#1559c7]" />Your learning roadmap</h2>{tasks.length > 0 && <Button variant={saveState === 'saved' ? 'outline' : 'govt'} size="sm" disabled={saveState === 'saving' || saveState === 'saved'} onClick={onSave}>{saveState === 'saving' ? 'Saving...' : saveState === 'saved' ? 'Roadmap Saved' : saveState === 'failed' ? 'Save Failed - Retry' : 'Save Roadmap'}</Button>}<span className="text-xs text-slate-500">90 days</span></div><div className="p-5">{tasks.length ? <div className="relative space-y-5 before:absolute before:left-[9px] before:top-2 before:h-[calc(100%-12px)] before:w-px before:bg-[#cfe0f5]">{tasks.map((task) => <RoadmapTaskCard key={task.id} task={task} updating={updatingTask === task.id} evidenceBusy={evidenceTask === task.id} onTaskStatus={onTaskStatus} onEvidence={onEvidence} />)}</div> : <EmptyState icon={<CalendarDays className="h-8 w-8 text-slate-400" />} title="No roadmap yet" description="Generate a catalog-grounded plan from your profile and readiness evidence." actionLabel={generating ? 'Generating...' : 'Generate roadmap'} onAction={onGenerate} />}</div></section>; }
+
+function SavedRoadmaps({ roadmaps }: { roadmaps: DashboardData['savedRoadmaps'] }) { return <section className="border border-[#dce7f2] bg-white p-5"><div className="flex items-center justify-between"><div><h2 className="text-lg font-bold text-[#10295d]">My saved roadmaps</h2><p className="mt-1 text-xs text-slate-500">Open a persisted plan without generating it again.</p></div><span className="text-xs text-slate-500">{roadmaps.length} saved</span></div>{roadmaps.length ? <div className="mt-4 grid gap-3 md:grid-cols-2 lg:grid-cols-3">{roadmaps.map((roadmap) => { const progress = roadmap.task_count ? Math.round(roadmap.completed_tasks / roadmap.task_count * 100) : 0; return <article key={roadmap.id} className="border border-[#e5edf5] p-4"><h3 className="font-bold text-[#10295d]">{roadmap.career_roles?.title || 'Selected career'}</h3><p className="mt-1 text-xs text-slate-500">{roadmap.duration_days}-Day Roadmap · {new Date(roadmap.generated_at).toLocaleDateString()}</p><p className="mt-2 text-xs text-slate-600">{progress}% complete · {roadmap.task_count} tasks</p><Link href={`/roadmap?id=${encodeURIComponent(roadmap.id)}&role=${encodeURIComponent(roadmap.target_role_id)}`} className="mt-3 inline-flex text-xs font-semibold text-[#1559c7]">Open roadmap <ArrowRight className="ml-1 h-3.5 w-3.5" /></Link></article>; })}</div> : <div className="mt-4 border border-dashed border-[#cbdbea] p-5 text-sm text-slate-500">No saved roadmaps yet. Generate a roadmap for one of your target careers.</div>}</section>; }
 
 function RoadmapTaskCard({ task, updating, evidenceBusy, onTaskStatus, onEvidence }: { task: DashboardData['roadmapTasks'][number]; updating: boolean; evidenceBusy: boolean; onTaskStatus: (task: DashboardData['roadmapTasks'][number]) => void; onEvidence: (taskId: string, url: string, note: string) => void }) { const [url, setUrl] = useState(task.evidence_url || ''); const [note, setNote] = useState(task.evidence_note || ''); return <div className="relative flex gap-3"><div className={`z-10 flex h-5 w-5 shrink-0 items-center justify-center rounded-full ${task.status === 'completed' ? 'bg-emerald-500 text-white' : 'bg-[#1559c7] text-white'}`}>{task.status === 'completed' ? <CheckCircle2 className="h-3.5 w-3.5" /> : <span className="text-xs font-bold">{task.week}</span>}</div><div className="min-w-0 flex-1"><h3 className="text-lg sm:text-xl font-bold text-[#10295d]">{task.title}</h3><p className="mt-1 text-xs leading-5 text-slate-500">Week {task.week} · {task.description}</p>{task.evidence_required && <p className="mt-1 text-xs text-slate-400">Evidence requested: {task.evidence_required}</p>}<Button variant="outline" size="sm" className="mt-3 text-xs" disabled={updating} onClick={() => onTaskStatus(task)}>{updating ? 'Saving...' : task.status === 'completed' ? 'Mark incomplete' : 'Mark complete'}</Button><div className="mt-3 border border-[#e5edf5] bg-[#fbfdff] p-3"><p className="text-xs font-semibold text-[#10295d]">Evidence {task.evidence_submitted_at ? 'submitted' : 'to support this task'}</p><div className="mt-2 grid gap-2 sm:grid-cols-2"><input aria-label={`Evidence URL for ${task.title}`} value={url} onChange={(event) => setUrl(event.target.value)} placeholder="https://github.com/..." className="h-8 border border-[#cbdbea] px-2 text-xs" /><input aria-label={`Evidence note for ${task.title}`} value={note} onChange={(event) => setNote(event.target.value)} placeholder="What did you produce?" className="h-8 border border-[#cbdbea] px-2 text-xs" /></div><Button variant="outline" size="sm" className="mt-2 text-xs" disabled={evidenceBusy} onClick={() => onEvidence(task.id, url, note)}>{evidenceBusy ? 'Saving evidence...' : task.evidence_submitted_at ? 'Update evidence' : 'Submit evidence'}</Button>{task.evidence_submitted_at && <p className="mt-2 text-[11px] text-emerald-700">Evidence saved. Verification is not implied.</p>}</div></div></div>; }
 

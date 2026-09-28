@@ -36,3 +36,15 @@ export async function submitRoadmapTaskEvidence(taskId: string, evidenceUrl: str
   revalidatePath('/roadmap'); revalidatePath('/progress');
   return { success: true };
 }
+
+export async function saveRoadmap(roadmapId: string) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { success: false, error: 'Unauthorized: Authentication required.' };
+  const { data: student } = await supabase.from('student_profiles').select('id').eq('user_id', user.id).single();
+  if (!student) return { success: false, error: 'Student profile not found.' };
+  const { data: roadmap } = await supabase.from('roadmaps').select('id').eq('id', roadmapId).eq('student_id', student.id).single();
+  if (!roadmap) return { success: false, error: 'Roadmap not found.' };
+  revalidatePath('/roadmap'); revalidatePath('/progress'); revalidatePath('/dashboard');
+  return { success: true, roadmapId: roadmap.id };
+}

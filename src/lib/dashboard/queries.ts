@@ -16,11 +16,12 @@ export interface DashboardData {
   careerRecommendations: CareerRecommendation[];
   roadmap: Roadmap | null;
   roadmapTasks: RoadmapTask[];
+  savedRoadmaps: Array<{ id: string; target_role_id: string; duration_days: number; generated_at: string; career_roles?: { title?: string } | null; task_count: number; completed_tasks: number }>;
   previewCourses: Course[];
   previewOpportunities: Opportunity[];
 }
 
-export async function getDashboardData(requestedRoleId?: string): Promise<{ success: boolean; data?: DashboardData; error?: string }> {
+export async function getDashboardData(requestedRoleId?: string, requestedRoadmapId?: string): Promise<{ success: boolean; data?: DashboardData; error?: string }> {
   const supabase = await createClient();
 
   const { data: { user }, error: authError } = await supabase.auth.getUser();
@@ -43,6 +44,7 @@ export async function getDashboardData(requestedRoleId?: string): Promise<{ succ
         careerRecommendations: [],
         roadmap: null,
         roadmapTasks: [],
+        savedRoadmaps: [],
         previewCourses: [],
         previewOpportunities: [],
       },
@@ -96,8 +98,15 @@ export async function getDashboardData(requestedRoleId?: string): Promise<{ succ
     .from('roadmaps')
     .select('*, career_roles(title)')
     .eq('student_id', sp.id);
-  if (activeRoleId) roadmapQuery = roadmapQuery.eq('target_role_id', activeRoleId);
+  if (requestedRoadmapId) roadmapQuery = roadmapQuery.eq('id', requestedRoadmapId);
+  else if (activeRoleId) roadmapQuery = roadmapQuery.eq('target_role_id', activeRoleId);
   const { data: roadmap } = await roadmapQuery.order('generated_at', { ascending: false }).limit(1).maybeSingle();
+
+  const { data: savedRoadmapRows } = await supabase.from('roadmaps').select('id, target_role_id, duration_days, generated_at, career_roles(title), roadmap_tasks(status)').eq('student_id', sp.id).order('generated_at', { ascending: false });
+  const savedRoadmaps = (savedRoadmapRows || []).map((item) => {
+    const tasks = (item.roadmap_tasks || []) as Array<{ status: string }>;
+    return { id: item.id, target_role_id: item.target_role_id, duration_days: item.duration_days, generated_at: item.generated_at, career_roles: Array.isArray(item.career_roles) ? item.career_roles[0] : item.career_roles, task_count: tasks.length, completed_tasks: tasks.filter((task) => task.status === 'completed').length };
+  });
 
   let roadmapTasks: RoadmapTask[] = [];
   if (roadmap) {
@@ -139,6 +148,7 @@ export async function getDashboardData(requestedRoleId?: string): Promise<{ succ
       })) as unknown as CareerRecommendation[],
       roadmap: roadmap || null,
       roadmapTasks,
+      savedRoadmaps,
       previewCourses: previewCourses || [],
       previewOpportunities: (previewOpportunities || []) as unknown as Opportunity[],
     },
