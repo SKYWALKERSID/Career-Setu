@@ -127,8 +127,10 @@ export const RoadmapSchema = z.preprocess((value) => {
   return {
     target_role_id: output.target_role_id ?? output.targetRoleId ?? output.role_id ?? output.roleId,
     duration_days: output.duration_days ?? output.durationDays ?? 90,
-    rationale: output.rationale ?? output.summary ?? output.overview,
-    tasks: Array.isArray(tasks) ? tasks : [],
+    rationale: typeof (output.rationale ?? output.summary ?? output.overview) === 'string'
+      ? String(output.rationale ?? output.summary ?? output.overview).slice(0, 600)
+      : output.rationale ?? output.summary ?? output.overview,
+    tasks: tasks.slice(0, 13),
   };
 }, RoadmapSchemaBase);
 
