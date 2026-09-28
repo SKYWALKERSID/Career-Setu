@@ -26,6 +26,15 @@ function idArray(value: unknown): string[] {
   }).filter((item): item is string => Boolean(item));
 }
 
+function weekNumber(value: unknown): number | undefined {
+  if (typeof value === 'number') return value;
+  if (typeof value === 'string') {
+    const match = value.match(/\d+/);
+    return match ? Number(match[0]) : undefined;
+  }
+  return undefined;
+}
+
 // Infrastructure Test Output Schema
 export const AIInfrastructureTestSchema = z.object({
   summary: z.string().min(1, 'Summary cannot be empty').max(1000),
@@ -86,10 +95,10 @@ const RoadmapTaskSchema = z.preprocess((value) => {
   if (!value || typeof value !== 'object') return value;
   const item = value as Record<string, unknown>;
   return {
-    week: item.week ?? item.week_number ?? item.weekNumber,
+    week: weekNumber(item.week ?? item.week_number ?? item.weekNumber),
     task_type: item.task_type ?? item.taskType ?? 'learning',
-    title: item.title ?? item.name,
-    description: item.description ?? item.details ?? item.task,
+    title: item.title ?? item.name ?? item.objective ?? item.focus ?? item.action,
+    description: item.description ?? item.details ?? item.task ?? item.objective ?? item.focus ?? item.action,
     skill_ids: idArray(item.skill_ids ?? item.skillIds ?? item.skills),
     course_ids: idArray(item.course_ids ?? item.courseIds ?? item.courses),
   };
@@ -107,7 +116,14 @@ export const RoadmapSchema = z.preprocess((value) => {
   const source = value as Record<string, unknown>;
   const nested = [source.roadmap, source.plan, source.roadmap_plan].find((item) => item && typeof item === 'object');
   const output = (nested && typeof nested === 'object' ? nested : source) as Record<string, unknown>;
-  const tasks = output.tasks ?? output.milestones ?? output.weeks;
+  const sourceTasks = output.tasks ?? output.milestones ?? output.weeks;
+  const tasks = Array.isArray(sourceTasks) ? sourceTasks.flatMap((item) => {
+    if (!item || typeof item !== 'object') return [item];
+    const record = item as Record<string, unknown>;
+    const activities = record.activities ?? record.actions;
+    if (!Array.isArray(activities)) return [item];
+    return activities.map((activity) => ({ ...record, title: textValue(activity) ?? record.title ?? record.focus, description: textValue(activity) ?? record.description ?? record.focus }));
+  }) : [];
   return {
     target_role_id: output.target_role_id ?? output.targetRoleId ?? output.role_id ?? output.roleId,
     duration_days: output.duration_days ?? output.durationDays ?? 90,

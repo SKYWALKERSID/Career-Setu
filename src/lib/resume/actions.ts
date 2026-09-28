@@ -81,7 +81,12 @@ export async function uploadAndAnalyzeResume(formData: FormData): Promise<{ succ
   const roleSkills = (roles || []).flatMap((role) => role.career_role_skills || []).map((item) => item.skill_id);
   const context = JSON.stringify({ skills: skills || [], target_roles: roles || [], role_required_skill_ids: roleSkills });
   const provider = aiClient.getProvider(); const started = Date.now();
-  const result = await provider.generateStructuredOutput(RESUME_PROMPT.replace('{{context}}', context).replace('{{resume}}', text), ResumeParseSchema, 'Fact-preserving structured resume parser.');
+  const resumePrompt = RESUME_PROMPT.replace('{{context}}', context).replace('{{resume}}', text);
+  let result = await provider.generateStructuredOutput(resumePrompt, ResumeParseSchema, 'Fact-preserving structured resume parser.');
+  if (!result.success && result.errorCategory === 'AI_PROVIDER_ERROR' && result.error?.includes('HTTP 400')) {
+    const retryPrompt = `Return one valid JSON object only. Extract only facts explicitly present in this resume. Use empty arrays for absent sections. Every list item must be a plain string. Use only supplied UUIDs for evidence arrays. Exact keys: contact, education, skills, projects, experience, certifications, achievements, evidenced_skill_ids, role_required_skill_ids, not_evidenced_skill_ids, strengths, improvement_areas, suggestions.\nCATALOG: ${context}\nRESUME: ${text}`;
+    result = await provider.generateStructuredOutput(retryPrompt, ResumeParseSchema, 'Return valid JSON only for a fact-preserving resume parser.');
+  }
   const { data: run } = await supabase.from('ai_runs').insert({ feature: 'resume_parse', model: provider.modelName, prompt_version: RESUME_PROMPT_VERSION, student_id: student.id, latency_ms: Date.now() - started, tokens_used: result.tokensUsed ?? null, success: result.success, error_message: result.success ? null : `${result.errorCategory || 'AI_UNKNOWN_ERROR'}: ${result.error || 'Resume analysis failed.'}` }).select('id').single();
   if (!result.success || !result.data) return { success: false, resumeId: resume.id, error: 'Resume analysis is temporarily unavailable. The uploaded file was preserved without a score.' };
   const parsed = result.data as ResumeParsedData;
