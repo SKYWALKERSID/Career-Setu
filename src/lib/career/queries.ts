@@ -6,7 +6,9 @@ import { revalidatePath } from 'next/cache';
 import { calculateSkillGaps } from '@/lib/skill-gap/scoring';
 import { ensureCareerRecommendations } from '@/lib/ai/actions-recommendations';
 
-export async function getCareerRolesList(search = '', categoryFilter = '', showAll = false) {
+export type CareerExplorerMode = 'recommended' | 'explore' | 'targets';
+
+export async function getCareerRolesList(search = '', categoryFilter = '', showAll = false, mode: CareerExplorerMode = 'recommended') {
   const supabase = await createClient();
 
   let query = supabase
@@ -30,11 +32,16 @@ export async function getCareerRolesList(search = '', categoryFilter = '', showA
   // Get student context (target careers) if logged in
   const profileRes = await getStudentProfile();
   const targetCareers = profileRes.success && profileRes.studentProfile ? (profileRes.studentProfile.target_careers || []) : [];
-  const studentSkillIds = profileRes.success ? (profileRes.studentSkills || []).map((s: { skill_id: string }) => s.skill_id) : [];
+  const studentSkills = profileRes.success ? (profileRes.studentSkills || []) : [];
+  const studentSkillIds = studentSkills.map((s: { skill_id: string }) => s.skill_id);
+  const interests = profileRes.success && profileRes.studentProfile ? profileRes.studentProfile.interests || [] : [];
 
   // Perform case-insensitive search filtering across title, category, description, and skill names
   let filtered = roles;
-  if (!showAll && !search.trim() && (!categoryFilter || categoryFilter === 'all')) {
+  if (mode === 'targets') {
+    const ids = new Set(targetCareers);
+    filtered = roles.filter((role) => ids.has(role.id) || ids.has(role.title));
+  } else if (mode === 'recommended' && !showAll && !search.trim() && (!categoryFilter || categoryFilter === 'all')) {
     let { data: recommendations, error: recommendationsError } = await supabase
       .from('career_recommendations')
       .select('role_id')
@@ -74,9 +81,27 @@ export async function getCareerRolesList(search = '', categoryFilter = '', showA
     });
   }
 
+  const interestText = interests.join(' ').toLowerCase();
+  const enriched = filtered.map((role) => {
+    const requirements = role.career_role_skills || [];
+    const matched = requirements.filter((item: { skill_id: string }) => studentSkillIds.includes(item.skill_id));
+    const missing = requirements.filter((item: { skill_id: string }) => !studentSkillIds.includes(item.skill_id));
+    const skillScore = requirements.length ? Math.round(matched.length / requirements.length * 50) : 0;
+    const interestScore = interestText && `${role.category} ${role.title}`.toLowerCase().split(/[^a-z0-9]+/).some((term) => term.length > 3 && interestText.includes(term)) ? 20 : 0;
+    const targetScore = targetCareers.includes(role.id) || targetCareers.includes(role.title) ? 10 : 0;
+    const compatibilityScore = Math.min(100, skillScore + interestScore + targetScore);
+    return {
+      ...role,
+      compatibility_score: compatibilityScore,
+      matched_skill_names: matched.map((item: { skills?: { name?: string } }) => item.skills?.name).filter(Boolean),
+      missing_skill_names: missing.map((item: { skills?: { name?: string } }) => item.skills?.name).filter(Boolean),
+      fit_reason: targetScore ? 'Selected target career with catalog skill alignment.' : interestScore ? 'Profile interests align with this catalog category.' : matched.length ? 'Recorded skills overlap with this role requirements.' : 'Potential path to explore from the catalog.',
+    };
+  });
+
   return {
     success: true,
-    roles: filtered,
+    roles: enriched,
     allCategories: categories,
     studentTargetCareers: targetCareers,
     studentSkillIds,
@@ -156,6 +181,7 @@ export async function getCareerRoleById(roleId: string) {
     studentSkillsToDevelop: skillsToDevelop,
     studentSkillGaps: skillGaps,
     studentSkillIds,
+    studentSkills: profileRes.studentSkills || [],
   };
 }
 
