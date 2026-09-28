@@ -1,15 +1,19 @@
 import { AIProvider } from './types';
 import { GeminiProvider } from './providers/gemini';
+import { GroqProvider } from './providers/groq';
 
 class AIServiceClient {
   private activeProvider: AIProvider;
 
   constructor() {
-    const providerName = process.env.AI_PROVIDER || 'gemini';
+    const providerName = process.env.AI_PROVIDER || 'groq';
 
     switch (providerName.toLowerCase()) {
       case 'gemini':
         this.activeProvider = new GeminiProvider();
+        break;
+      case 'groq':
+        this.activeProvider = new GroqProvider();
         break;
       case 'unsupported_test':
         // Test class for unsupported provider validation
@@ -37,7 +41,7 @@ class AIServiceClient {
         };
         break;
       default:
-        this.activeProvider = new GeminiProvider();
+        this.activeProvider = new GroqProvider();
         break;
     }
   }
