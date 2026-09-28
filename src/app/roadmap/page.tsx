@@ -28,7 +28,7 @@ export default function RoadmapPage() {
       const result = await getDashboardData();
       if (!result.success || !result.data) throw new Error(result.error || 'Roadmap data is unavailable.');
       setData(result.data);
-      const roleId = result.data.roadmap?.target_role_id || result.data.careerRecommendations?.[0]?.role?.id;
+      const roleId = result.data.roadmap?.target_role_id || result.data.studentProfile?.target_careers?.[0] || result.data.careerRecommendations?.[0]?.role?.id;
       if (roleId) {
         const gapResult = await getStudentSkillGaps(roleId);
         if (gapResult.success) setGaps((gapResult.gaps || []) as Gap[]);
