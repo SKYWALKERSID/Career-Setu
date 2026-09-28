@@ -19,6 +19,6 @@ export function calculateReadinessProgress(history: ReadinessAssessment[] | null
   return { current, history: records, trend: change > 0 ? 'up' : change < 0 ? 'down' : 'stable', change };
 }
 
-export function buildProgressSnapshot(input: { tasks?: RoadmapTask[] | null; readiness?: ReadinessAssessment[] | null; currentSkills: number; completedInterviews: number; analyzedResumes: number }): import('./types').ProgressSnapshot {
-  return { roadmap: calculateRoadmapProgress(input.tasks), readiness: calculateReadinessProgress(input.readiness), currentSkills: Math.max(0, input.currentSkills), completedInterviews: Math.max(0, input.completedInterviews), analyzedResumes: Math.max(0, input.analyzedResumes), unsupported: { courseCompletion: 'unavailable', opportunityApplications: 'unavailable' } };
+export function buildProgressSnapshot(input: { tasks?: RoadmapTask[] | null; readiness?: ReadinessAssessment[] | null; currentSkills: number; completedInterviews: number; analyzedResumes: number; skillGaps?: import('@/lib/skill-gap/types').SkillGapResult[] }): import('./types').ProgressSnapshot {
+  return { roadmap: calculateRoadmapProgress(input.tasks), readiness: calculateReadinessProgress(input.readiness), currentSkills: Math.max(0, input.currentSkills), completedInterviews: Math.max(0, input.completedInterviews), analyzedResumes: Math.max(0, input.analyzedResumes), skillGaps: (input.skillGaps || []).map((gap) => ({ skill_id: gap.skill_id, skill_name: gap.skill_name, status: gap.status, priority: gap.priority, course_ids: gap.course_ids })), unsupported: { courseCompletion: 'unavailable', opportunityApplications: 'unavailable' } };
 }

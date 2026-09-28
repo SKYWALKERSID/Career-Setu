@@ -190,6 +190,8 @@ export interface RoadmapTask {
   description: string;
   status: 'pending' | 'in_progress' | 'completed';
   evidence_required?: string;
+  skill_id?: string | null;
+  completed_at?: string | null;
 }
 
 export interface Roadmap {

@@ -102,7 +102,7 @@ export async function getDashboardData(): Promise<{ success: boolean; data?: Das
       .select('*')
       .eq('roadmap_id', roadmap.id)
       .order('week', { ascending: true })
-      .limit(4);
+      .limit(100);
     roadmapTasks = (tasks || []) as RoadmapTask[];
   }
 

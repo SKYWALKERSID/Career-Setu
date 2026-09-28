@@ -286,6 +286,18 @@ export default function ProgressPage() {
                 </Card>
               </div>
 
+              {snapshot.skillGaps.length > 0 && (
+                <Card className="rounded-[3px] border border-[#dfe8f1] bg-white p-6 shadow-[0_2px_9px_rgba(27,63,105,0.04)]">
+                  <div className="flex items-center justify-between border-b border-[#edf3f8] pb-4">
+                    <div><h2 className="text-lg font-bold text-[#10285a]">Skill Progress</h2><p className="mt-1 text-xs text-slate-500">Current states come from the canonical target-career skill engine.</p></div>
+                    <Link href="/roadmap" className="text-xs font-bold text-[#1769d4]">Open roadmap <ChevronRight className="inline h-3.5 w-3.5" /></Link>
+                  </div>
+                  <div className="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+                    {snapshot.skillGaps.map((gap) => <div key={gap.skill_id} className="border border-[#e5edf5] bg-[#fbfdff] p-3"><div className="flex items-start justify-between gap-2"><p className="text-sm font-bold text-[#10285a]">{gap.skill_name}</p><Badge variant={gap.status === 'acquired' ? 'success' : gap.status === 'developing' ? 'warning' : 'info'} className="text-xs">{gap.status}</Badge></div><p className="mt-2 text-xs text-slate-500">{gap.status === 'acquired' ? 'Evidence meets the current role requirement.' : 'Open the roadmap or learn from mapped courses.'}</p></div>)}
+                  </div>
+                </Card>
+              )}
+
               {/* Bottom Row: History & Recommended Next Actions */}
               <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_340px]">
                 {/* Readiness Assessment History Log */}
