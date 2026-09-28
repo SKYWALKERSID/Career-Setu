@@ -42,6 +42,8 @@ The existing recommendation architecture was preserved. A server-side `ensureCar
 
 The recommendation contract now also requires decimal confidence and safely normalizes numeric provider percentages above `1` before validation; values that remain invalid are still rejected. No mock data, catalog duplication, service-role access, or client-side AI credentials were added.
 
+The latest live run also proved the provider and schema succeeded before catalog validation rejected a cross-role skill ID. The validator was not weakened; the prompt now requires every skill evidence ID to come from the same role's requirements.
+
 ## Provider Evidence
 
 - Active local provider: Groq.
@@ -51,7 +53,7 @@ The recommendation contract now also requires decimal confidence and safely norm
 
 ## Unverified Features
 
-Personalized career recommendations, target-career persistence in the live environment, skill gaps, roadmap generation, resume AI analysis, interview question/evaluation/report generation, and progress aggregation remain unverified until the fourth contract repair is deployed and exercised live.
+Personalized career recommendations, target-career persistence in the live environment, skill gaps, roadmap generation, resume AI analysis, interview question/evaluation/report generation, and progress aggregation remain unverified until the fifth contract repair is deployed and exercised live.
 
 ## Security Notes
 

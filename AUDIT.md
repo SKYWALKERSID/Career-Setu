@@ -54,6 +54,8 @@ The live deployment has not yet demonstrated the repaired path. Until a deployed
 
 The repair also makes the decimal `confidence` contract explicit and normalizes numeric provider percentages above `1` before the existing Zod/catalog validation. Values that remain outside `0..1` still fail validation. The domain still persists only validated canonical role IDs and scores.
 
+The next live failure was after successful provider/schema validation: catalog validation rejected a recommendation because its skill evidence referenced a skill outside that role's requirements. The validator remains strict; the prompt now explicitly requires per-role skill subsets and empty arrays when evidence is uncertain.
+
 ## Security Review Notes
 
 - Groq credentials are read in the server provider only.

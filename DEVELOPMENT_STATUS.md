@@ -449,3 +449,10 @@ Quality, Security & Reliability is complete. Deployment/Demo and Final UI recons
 - The third live attempt still reported a confidence value above the decimal range. The normalization now handles numeric provider percentages above `1`; values that remain outside `0..1` continue to fail Zod.
 - Focused schema/catalog test, TypeScript, ESLint, and production build all exit 0.
 - This repair is pushed for deployment; live career acceptance remains pending.
+
+### Production Career Runtime Prompt Repair 5 (IN PROGRESS)
+
+- The fourth live run proved provider/schema success but failed strict catalog validation because a generated skill evidence ID belonged outside the recommended role's requirements.
+- Tightened the existing prompt contract to require per-role skill subsets and empty arrays when uncertain. The catalog validator remains unchanged and continues rejecting invalid IDs.
+- Focused schema/catalog test, TypeScript, ESLint, and production build all exit 0.
+- Live acceptance remains pending deployment and browser verification.
