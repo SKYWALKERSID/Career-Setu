@@ -28,9 +28,17 @@ export const CareerRecommendationItemSchema = z.preprocess((value) => {
   confidence: z.number().min(0).max(1),
 }));
 
-export const CareerRecommendationsSchema = z.object({
+export const CareerRecommendationsSchema = z.preprocess((value) => {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return value;
+  const output = value as Record<string, unknown>;
+  // Keep the domain contract stable when a provider names the wrapper after the feature.
+  if (output.recommendations === undefined && Array.isArray(output.career_recommendations)) {
+    return { ...output, recommendations: output.career_recommendations };
+  }
+  return value;
+}, z.object({
   recommendations: z.array(CareerRecommendationItemSchema).min(1).max(5),
-});
+}));
 
 export type CareerRecommendationAIResult = z.infer<typeof CareerRecommendationsSchema>;
 

@@ -48,7 +48,7 @@ The career page previously read only persisted `career_recommendations` and had 
 
 The live deployment at commit `851bb30` did execute the `/career` server action. Authenticated RLS telemetry for the QA student showed Groq model `openai/gpt-oss-120b` and repeated `AI_SCHEMA_ERROR` failures: `recommendations.0.score: Required` and `recommendations.1.score: Required`. Therefore the first failing point was provider response contract validation, not deployment, authentication, RLS ownership, or catalog lookup. No recommendation rows were persisted because validation correctly rejected the malformed structured output.
 
-The repair makes the required `score` key explicit in the recommendation prompt and normalizes the equivalent provider alias `match_score` before the existing Zod/catalog validation. The domain still persists only validated canonical role IDs and scores.
+The repair makes the required `score` key and `recommendations` wrapper explicit in the recommendation prompt and normalizes the equivalent provider aliases `match_score` and `career_recommendations` before the existing Zod/catalog validation. The domain still persists only validated canonical role IDs and scores.
 
 The live deployment has not yet demonstrated the repaired path. Until a deployed recommendation row is generated and rendered, downstream target-career, skill-gap, roadmap, and interview claims remain unverified.
 
@@ -62,5 +62,5 @@ The live deployment has not yet demonstrated the repaired path. Until a deployed
 ## Open Blockers
 
 1. Confirm production `AI_PROVIDER=groq`, `GROQ_MODEL=openai/gpt-oss-120b`, and a usable `GROQ_API_KEY` without exposing secrets.
-2. Re-run the live career recommendation flow and capture a successful persisted result after deployment.
+2. Deploy this contract repair and re-run the live career recommendation flow, then capture a successful persisted result.
 4. Only after that, verify target career, skill gaps, roadmap, resume analysis, and interview end to end.

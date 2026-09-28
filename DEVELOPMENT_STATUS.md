@@ -429,3 +429,10 @@ Quality, Security & Reliability is complete. Deployment/Demo and Final UI recons
 - Repaired only the shared recommendation contract: the prompt now specifies the exact canonical output shape and the schema normalizes the equivalent `match_score` provider alias to `score` before existing catalog validation. No UI, database schema, RLS, or fake data was added.
 - Focused schema test, TypeScript, ESLint, and production build all exit 0.
 - Production re-verification is pending deployment of this commit; downstream career, roadmap, resume, interview, and progress flows remain unclaimed until live browser evidence succeeds.
+
+### Production Career Runtime Contract Repair 2 (IN PROGRESS)
+
+- The first deployed repair changed the telemetry failure from missing item scores to a missing top-level `recommendations` wrapper, confirming provider output-shape variability rather than a missing trigger or catalog problem.
+- The shared recommendation schema now accepts only the canonical validated domain shape, with explicit normalization for the equivalent `career_recommendations` wrapper and `match_score` item field. The prompt explicitly forbids both aliases and requires the canonical JSON shape.
+- Focused schema/catalog test, TypeScript, ESLint, and production build all exit 0.
+- This second repair still requires deployment and live browser verification before career recommendations or downstream P0 flows can be marked complete.
