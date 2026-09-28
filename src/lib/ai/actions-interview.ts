@@ -37,13 +37,15 @@ export async function getInterviewHistory() {
 
   const { data: sessions, error } = await supabase
     .from('interviews')
-    .select('id, role_id, difficulty, session_status, overall_score, created_at, career_roles(title), interview_turns(count)')
+    .select('id, role_id, difficulty, session_status, overall_score, created_at, career_roles(title)')
     .eq('student_id', student.id)
     .in('session_status', ['active', 'completed'])
     .order('created_at', { ascending: false });
   if (error) return { success: false, active: null, history: [], error: 'Interview history could not be loaded.' };
 
-  const items = (sessions || []).map((session) => ({
+  const items = await Promise.all((sessions || []).map(async (session) => {
+    const { count } = await supabase.from('interview_turns').select('id', { count: 'exact', head: true }).eq('interview_id', session.id);
+    return {
     id: session.id,
     role_id: session.role_id,
     role_title: (session.career_roles as { title?: string } | null)?.title || 'Target Career',
@@ -51,8 +53,9 @@ export async function getInterviewHistory() {
     session_status: session.session_status as InterviewHistoryItem['session_status'],
     overall_score: session.overall_score,
     created_at: session.created_at,
-    question_count: Number((session.interview_turns as Array<{ count?: number }> | null)?.[0]?.count || 0),
-  } satisfies InterviewHistoryItem));
+    question_count: count || 0,
+    } satisfies InterviewHistoryItem;
+  }));
 
   return {
     success: true,
