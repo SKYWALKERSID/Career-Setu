@@ -84,3 +84,26 @@ export async function generateCareerRecommendations(): Promise<{ success: boolea
   revalidatePath('/career');
   return { success: true, count: validated.data.recommendations.length };
 }
+
+export async function ensureCareerRecommendations(): Promise<{ success: boolean; count?: number; error?: string }> {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { success: false, error: 'Unauthorized: Authentication required.' };
+
+  const { data: student } = await supabase
+    .from('student_profiles')
+    .select('id')
+    .eq('user_id', user.id)
+    .single();
+  if (!student) return { success: false, error: 'Student profile not found.' };
+
+  const { data: existing, error: existingError } = await supabase
+    .from('career_recommendations')
+    .select('id')
+    .eq('student_id', student.id)
+    .limit(1);
+  if (existingError) return { success: false, error: 'Career recommendations could not be loaded.' };
+  if (existing?.length) return { success: true, count: existing.length };
+
+  return generateCareerRecommendations();
+}

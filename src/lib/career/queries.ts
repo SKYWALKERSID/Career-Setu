@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/server';
 import { getStudentProfile } from '@/lib/profile/actions';
 import { revalidatePath } from 'next/cache';
 import { calculateSkillGaps } from '@/lib/skill-gap/scoring';
+import { ensureCareerRecommendations } from '@/lib/ai/actions-recommendations';
 
 export async function getCareerRolesList(search = '', categoryFilter = '', showAll = false) {
   const supabase = await createClient();
@@ -34,11 +35,31 @@ export async function getCareerRolesList(search = '', categoryFilter = '', showA
   // Perform case-insensitive search filtering across title, category, description, and skill names
   let filtered = roles;
   if (!showAll && !search.trim() && (!categoryFilter || categoryFilter === 'all')) {
-    const { data: recommendations } = await supabase
+    let { data: recommendations, error: recommendationsError } = await supabase
       .from('career_recommendations')
       .select('role_id')
       .eq('student_id', profileRes.success && profileRes.studentProfile ? profileRes.studentProfile.id : '')
       .order('score', { ascending: false });
+
+    if (recommendationsError) {
+      return { success: false, error: 'Career recommendations could not be loaded.', roles: [], categories: [] };
+    }
+
+    if (!recommendations?.length && profileRes.success && profileRes.studentProfile) {
+      const ensured = await ensureCareerRecommendations();
+      if (!ensured.success) {
+        return { success: false, error: ensured.error || 'Career recommendations are temporarily unavailable.', roles: [], categories: [] };
+      }
+      const refreshed = await supabase
+        .from('career_recommendations')
+        .select('role_id')
+        .eq('student_id', profileRes.studentProfile.id)
+        .order('score', { ascending: false });
+      recommendations = refreshed.data;
+      recommendationsError = refreshed.error;
+      if (recommendationsError) return { success: false, error: 'Career recommendations could not be loaded.', roles: [], categories: [] };
+    }
+
     const ids = new Set((recommendations || []).map((item) => item.role_id));
     filtered = roles.filter((role) => ids.has(role.id));
   }

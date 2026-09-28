@@ -5,6 +5,7 @@ import { StudentProfileSchema, calculateProfileCompletion, type StudentProfileIn
 import { revalidatePath } from 'next/cache';
 import { resolveTargetCareerIds } from '@/lib/career/target-roles';
 import { calculateAndSaveReadinessAssessment } from '@/lib/readiness/actions';
+import { generateCareerRecommendations } from '@/lib/ai/actions-recommendations';
 
 export async function getStudentProfile() {
   const supabase = await createClient();
@@ -192,6 +193,7 @@ export async function saveStudentProfile(input: StudentProfileInput) {
   }
 
   await calculateAndSaveReadinessAssessment();
+  await generateCareerRecommendations();
 
   revalidatePath('/dashboard');
   revalidatePath('/onboarding');
