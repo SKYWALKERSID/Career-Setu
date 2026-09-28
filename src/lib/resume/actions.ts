@@ -7,6 +7,7 @@ import { ResumeParseSchema } from '@/lib/ai/schemas';
 import { RESUME_PROMPT, RESUME_PROMPT_VERSION } from '@/lib/ai/prompts/resume';
 import { calculateResumeScore } from './scoring';
 import type { ResumeParsedData } from './types';
+import { resolveTargetCareerIds } from '@/lib/career/target-roles';
 
 const MAX_BYTES = 5 * 1024 * 1024;
 const ALLOWED = new Map([['application/pdf', '.pdf'], ['text/plain', '.txt']]);
@@ -71,10 +72,12 @@ export async function uploadAndAnalyzeResume(formData: FormData): Promise<{ succ
   if (uploadError) return { success: false, error: 'Resume upload failed.' };
   const { data: resume, error: resumeError } = await supabase.from('resumes').insert({ student_id: student.id, storage_path: storagePath, extracted_text: text, score: null, version }).select('id').single();
   if (resumeError || !resume) { await supabase.storage.from('private-resumes').remove([storagePath]); return { success: false, error: 'Resume record could not be created.' }; }
-  const [{ data: skills }, { data: roles }] = await Promise.all([
+  const [{ data: skills }, { data: allRoles }] = await Promise.all([
     supabase.from('skills').select('id, name'),
-    supabase.from('career_roles').select('id, title, career_role_skills(skill_id, skills(id, name))').in('id', student.target_careers || []),
+    supabase.from('career_roles').select('id, title, career_role_skills(skill_id, skills(id, name))'),
   ]);
+  const targetRoleIds = resolveTargetCareerIds(student.target_careers || [], allRoles || []);
+  const roles = (allRoles || []).filter((role) => targetRoleIds.includes(role.id));
   const roleSkills = (roles || []).flatMap((role) => role.career_role_skills || []).map((item) => item.skill_id);
   const context = JSON.stringify({ skills: skills || [], target_roles: roles || [], role_required_skill_ids: roleSkills });
   const provider = aiClient.getProvider(); const started = Date.now();

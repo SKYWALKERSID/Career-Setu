@@ -38,9 +38,9 @@ export function TopNav() {
   };
 
   return (
-    <header className="h-[62px] border-b border-[#dce7f2] bg-white px-7 flex items-center justify-between sticky top-0 z-30">
+    <header className="flex h-[62px] min-w-0 items-center justify-between gap-3 border-b border-[#dce7f2] bg-white px-4 sticky top-0 z-30 sm:px-7">
       {/* Global Search Bar */}
-      <div className="relative w-[390px] max-w-[48vw]">
+      <div className="relative min-w-0 flex-1 sm:w-[390px] sm:flex-none sm:max-w-[48vw]">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
         <input
           type="text"
@@ -50,9 +50,9 @@ export function TopNav() {
       </div>
 
       {/* Right Controls */}
-      <div className="flex items-center gap-4">
+      <div className="flex shrink-0 items-center gap-1 sm:gap-4">
         {/* Language Toggle */}
-        <div className="text-xs text-slate-600 font-medium">
+        <div className="hidden text-xs font-medium text-slate-600 sm:block">
           <span className="cursor-pointer hover:text-slate-900">हिंदी</span>
           <span className="mx-1">|</span>
           <span className="font-semibold text-slate-900">English</span>
@@ -65,7 +65,7 @@ export function TopNav() {
         </button>
 
         {/* User Profile Summary & Logout */}
-        <div className="flex items-center gap-2 border-l border-slate-200 pl-4">
+        <div className="flex items-center gap-1 border-l border-slate-200 pl-2 sm:gap-2 sm:pl-4">
           <Link href="/settings" className="flex items-center gap-2.5 hover:opacity-90 transition-opacity">
             <div className="h-8 w-8 rounded-full bg-brand-700 text-white font-bold text-xs flex items-center justify-center shadow-sm">
               {profile?.initials || '..'}
@@ -83,7 +83,7 @@ export function TopNav() {
           <button
             onClick={handleLogout}
             title="Sign Out"
-            className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors ml-2"
+            className="ml-1 rounded-lg p-1.5 text-slate-400 transition-colors hover:bg-red-50 hover:text-red-600 sm:ml-2"
           >
             <LogOut className="h-4 w-4" />
           </button>

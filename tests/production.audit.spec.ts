@@ -1,8 +1,10 @@
 import { test, expect } from '@playwright/test';
+import { loginAsQaStudent } from './support/auth';
 
 const protectedRoutes = ['/dashboard', '/career', '/roadmap', '/courses', '/opportunities', '/resume', '/interview', '/progress', '/settings', '/admin'];
 
 test('audit authenticated CareerSetu routes and responsive layout', async ({ page }, testInfo) => {
+  await loginAsQaStudent(page);
   const consoleErrors: string[] = [];
   const failedRequests: string[] = [];
   page.on('console', (message) => { if (message.type() === 'error') consoleErrors.push(message.text()); });

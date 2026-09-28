@@ -3,6 +3,7 @@
 import { createClient } from '@/lib/supabase/server';
 import { calculateSkillGaps } from './scoring';
 import type { SkillGapImportance } from './types';
+import { resolveTargetCareerIds } from '@/lib/career/target-roles';
 
 export async function getStudentSkillGaps(roleId: string) {
   const supabase = await createClient();
@@ -12,7 +13,7 @@ export async function getStudentSkillGaps(roleId: string) {
   if (!student) return { success: false, error: 'Student profile not found.', gaps: [] };
   const { data: role } = await supabase.from('career_roles').select('id, title').eq('id', roleId).single();
   if (!role) return { success: false, error: 'Career role not found.', gaps: [] };
-  const relevant = (student.target_careers || []).includes(roleId);
+  const relevant = resolveTargetCareerIds(student.target_careers || [], [{ id: role.id, title: role.title }]).includes(roleId);
   const { data: recommendation } = await supabase.from('career_recommendations').select('role_id').eq('student_id', student.id).eq('role_id', roleId).maybeSingle();
   if (!relevant && !recommendation) return { success: false, error: 'Career role is not relevant to this student.', gaps: [] };
   const [{ data: requirements }, { data: studentSkills }, { data: courseSkills }] = await Promise.all([

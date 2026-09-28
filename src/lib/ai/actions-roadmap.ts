@@ -7,6 +7,7 @@ import { RoadmapSchema } from '@/lib/ai/schemas';
 import { ROADMAP_PROMPT, ROADMAP_PROMPT_VERSION } from '@/lib/ai/prompts/roadmap';
 import { validateRoadmap } from '@/lib/ai/roadmap';
 import { calculateSkillGaps } from '@/lib/skill-gap/scoring';
+import { resolveTargetCareerIds } from '@/lib/career/target-roles';
 
 type RoleRow = { id: string; title: string; description: string; career_role_skills: Array<{ skill_id: string; required: boolean; importance: string; skills: { id: string; name: string } | null }> };
 
@@ -25,7 +26,8 @@ export async function generateCareerRoadmap(): Promise<{ success: boolean; roadm
     supabase.from('courses').select('id, title, provider, url, course_skills(skill_id)'),
   ]);
   const roleRows = (roles || []) as unknown as RoleRow[];
-  const selected = (student.target_careers || []).find((id: string) => roleRows.some((role) => role.id === id)) || recommendations?.[0]?.role_id;
+  const targetRoleIds = resolveTargetCareerIds(student.target_careers || [], roleRows);
+  const selected = targetRoleIds[0] || recommendations?.[0]?.role_id;
   const role = roleRows.find((candidate) => candidate.id === selected);
   if (!role) return { success: false, error: 'Select a target career or generate career recommendations first.' };
   const courseRows = (courses || []) as unknown as Array<{ id: string; title: string; provider: string; url: string; course_skills: Array<{ skill_id: string }> }>;

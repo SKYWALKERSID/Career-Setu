@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/server';
 import { calculateReadinessScore } from './scoring';
 import { ReadinessScoreResult } from './types';
 import { revalidatePath } from 'next/cache';
+import { resolveTargetCareerIds } from '@/lib/career/target-roles';
 
 export async function calculateAndSaveReadinessAssessment(): Promise<{
   success: boolean;
@@ -38,7 +39,8 @@ export async function calculateAndSaveReadinessAssessment(): Promise<{
 
   // 4. Fetch target career role skill requirements
   let targetRoleSkills: Array<{ role_id: string; skill_id: string; required: boolean; importance: 'high' | 'medium' | 'low' | null }> = [];
-  const targetCareerIds: string[] = student.target_careers || [];
+  const { data: careerRoles } = await supabase.from('career_roles').select('id, title');
+  const targetCareerIds = resolveTargetCareerIds(student.target_careers || [], careerRoles || []);
   if (targetCareerIds.length > 0) {
     const { data: roleSkills } = await supabase
       .from('career_role_skills')
