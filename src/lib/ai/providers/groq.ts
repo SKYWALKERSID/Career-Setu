@@ -96,7 +96,9 @@ export class GroqProvider implements AIProvider {
       return this.failure('AI provider not configured: GROQ_API_KEY is missing or invalid.', 'AI_CONFIG_ERROR', startTime);
     }
 
-    const rateLimitError = checkRateLimit('structured');
+    // Throttle identical retries, while allowing a sequential interview turn or
+    // another distinct product operation to make its own provider request.
+    const rateLimitError = checkRateLimit(`structured:${prompt.slice(0, 160)}`);
     if (rateLimitError) return this.failure(rateLimitError, 'AI_RATE_LIMIT_ERROR', startTime);
 
     try {
@@ -154,7 +156,7 @@ export class GroqProvider implements AIProvider {
       return this.failure('AI provider not configured: GROQ_API_KEY is missing or invalid.', 'AI_CONFIG_ERROR', startTime);
     }
 
-    const rateLimitError = checkRateLimit('text');
+    const rateLimitError = checkRateLimit(`text:${prompt.slice(0, 160)}`);
     if (rateLimitError) return this.failure(rateLimitError, 'AI_RATE_LIMIT_ERROR', startTime);
 
     try {
