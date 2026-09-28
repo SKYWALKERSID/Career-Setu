@@ -21,7 +21,11 @@ async function authStudent(supabase: Awaited<ReturnType<typeof createClient>>) {
 
 async function aiCall<T>(supabase: Awaited<ReturnType<typeof createClient>>, studentId: string, feature: string, promptVersion: string, prompt: string, schema: z.ZodSchema<T>) {
   const provider = aiClient.getProvider(); const started = Date.now();
-  const result = await provider.generateStructuredOutput(prompt, schema, 'You are a safe structured mock interview service.');
+  let result = await provider.generateStructuredOutput(prompt, schema, 'You are a safe structured mock interview service.');
+  if (!result.success && result.errorCategory === 'AI_SCHEMA_ERROR' && feature === 'interview_answer_evaluation') {
+    const retryPrompt = `Return valid JSON only with exactly these keys: rubric_score, correctness, relevance, depth, clarity, feedback. Each score is an integer from 0 to 100. Evaluate the supplied answer against the supplied question and role. Do not invent facts.\nCONTEXT:\n${prompt.slice(prompt.indexOf('CONTEXT:') + 'CONTEXT:'.length)}`;
+    result = await provider.generateStructuredOutput(retryPrompt, schema, 'Return exact JSON for a rubric-based answer evaluation.');
+  }
   const { data: run } = await supabase.from('ai_runs').insert({ feature, model: provider.modelName, prompt_version: promptVersion, student_id: studentId, latency_ms: Date.now() - started, tokens_used: result.tokensUsed ?? null, success: result.success, error_message: result.success ? null : `${result.errorCategory || 'AI_UNKNOWN_ERROR'}: ${result.error || 'Interview AI operation failed.'}` }).select('id').single();
   return { result, runId: run?.id };
 }
