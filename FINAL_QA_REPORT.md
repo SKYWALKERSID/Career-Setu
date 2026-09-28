@@ -7,7 +7,7 @@ Target: `https://career-setu-hslc.vercel.app`
 
 **PARTIAL / NOT READY**
 
-The repository builds cleanly and the local Groq provider abstraction passes a real structured smoke request. The deployed application has not yet demonstrated the personalized recommendation row required to unlock the downstream target-career, skill-gap, roadmap, and interview flow.
+The repository builds cleanly and the local Groq provider abstraction passes a real structured smoke request. The deployed application’s first failing point was proven through authenticated telemetry: Groq returned recommendation objects without the required `score` field, causing Zod rejection before persistence. A minimal contract repair is now prepared; live acceptance remains pending deployment and re-test.
 
 ## Repository Validation
 
@@ -16,6 +16,7 @@ The repository builds cleanly and the local Groq provider abstraction passes a r
 | `npx tsc --noEmit` | EXIT CODE 0 |
 | `npm run lint` | EXIT CODE 0 |
 | `npm run build` | EXIT CODE 0 |
+| Focused recommendation schema test | EXIT CODE 0 |
 | Local Groq structured smoke | PASS |
 
 ## Live Focused Verification
@@ -32,11 +33,12 @@ The repository builds cleanly and the local Groq provider abstraction passes a r
 - Reproduction: authenticate with the configured QA account, open `/career`, and look for the target-role control used to persist a catalog role before opening interview setup.
 - Expected: at least one real persisted recommendation or catalog-backed selectable role with a target control.
 - Actual: the live page showed no career roles and no `Set target role` / `Remove target role` control; the integration test could not reach `/interview/setup`.
+- Root cause: authenticated `ai_runs` telemetry recorded `AI_SCHEMA_ERROR` for missing `recommendations.0.score` and `recommendations.1.score` while using Groq `openai/gpt-oss-120b`.
 - Impact: target-career selection, skill gaps, roadmap generation, and interview question generation cannot be truthfully marked end to end.
 
 ## Implemented Source Change
 
-The existing recommendation architecture was preserved. A server-side `ensureCareerRecommendations` path now invokes the existing catalog-constrained generator for an authenticated student with no cached recommendation rows. Profile save also invokes that generator after readiness persistence. No mock data, catalog duplication, service-role access, or client-side AI credentials were added.
+The existing recommendation architecture was preserved. A server-side `ensureCareerRecommendations` path invokes the existing catalog-constrained generator for an authenticated student with no cached recommendation rows. Profile save also invokes that generator after readiness persistence. The recommendation schema now explicitly requests canonical `score` output and safely normalizes the equivalent `match_score` alias before validation. No mock data, catalog duplication, service-role access, or client-side AI credentials were added.
 
 ## Provider Evidence
 
@@ -47,7 +49,7 @@ The existing recommendation architecture was preserved. A server-side `ensureCar
 
 ## Unverified Features
 
-Personalized career recommendations, target-career persistence in the live environment, skill gaps, roadmap generation, resume AI analysis, interview question/evaluation/report generation, and progress aggregation remain unverified because the live recommendation handoff is still blocked.
+Personalized career recommendations, target-career persistence in the live environment, skill gaps, roadmap generation, resume AI analysis, interview question/evaluation/report generation, and progress aggregation remain unverified until the repaired deployment is exercised live.
 
 ## Security Notes
 

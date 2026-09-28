@@ -421,3 +421,11 @@ Quality, Security & Reliability is complete. Deployment/Demo and Final UI recons
 - Local validation: `npx tsc --noEmit` exit 0, `npm run lint` exit 0, and `npm run build` exit 0.
 - Live focused Playwright verification: authentication setup passed; the resume fixture honest-state test passed; the career-to-interview test failed because the deployed QA session still had no selectable target-role control. Personalized recommendations and downstream AI flows are not claimed complete.
 - Current release status: not ready for a production-complete claim until the deployed build/provider configuration and authenticated recommendation generation are verified live.
+
+### Production Career Runtime Diagnostic + Minimal Repair (IN PROGRESS)
+
+- Live runtime tracing proved that `/career` executes a server action and resolves Groq model `openai/gpt-oss-120b`.
+- Authenticated RLS telemetry identified the first failure as `AI_SCHEMA_ERROR`: Groq returned recommendation objects without the required `score` field (`recommendations.0.score` and `.1.score`), so Zod correctly rejected the response before catalog mapping or persistence.
+- Repaired only the shared recommendation contract: the prompt now specifies the exact canonical output shape and the schema normalizes the equivalent `match_score` provider alias to `score` before existing catalog validation. No UI, database schema, RLS, or fake data was added.
+- Focused schema test, TypeScript, ESLint, and production build all exit 0.
+- Production re-verification is pending deployment of this commit; downstream career, roadmap, resume, interview, and progress flows remain unclaimed until live browser evidence succeeds.

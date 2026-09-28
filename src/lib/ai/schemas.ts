@@ -10,14 +10,23 @@ export const AIInfrastructureTestSchema = z.object({
 
 export type AIInfrastructureTestResult = z.infer<typeof AIInfrastructureTestSchema>;
 
-export const CareerRecommendationItemSchema = z.object({
+export const CareerRecommendationItemSchema = z.preprocess((value) => {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return value;
+  const item = value as Record<string, unknown>;
+  // Some OpenAI-compatible models name this bounded catalog score `match_score`.
+  // Normalize that equivalent field before the shared domain schema validates it.
+  if (item.score === undefined && item.match_score !== undefined) {
+    return { ...item, score: item.match_score };
+  }
+  return value;
+}, z.object({
   role_id: z.string().uuid(),
   score: z.number().int().min(0).max(100),
   rationale: z.string().min(1).max(600),
   strengths: z.array(z.string().uuid()).max(10),
   missing_skill_ids: z.array(z.string().uuid()).max(20),
   confidence: z.number().min(0).max(1),
-});
+}));
 
 export const CareerRecommendationsSchema = z.object({
   recommendations: z.array(CareerRecommendationItemSchema).min(1).max(5),

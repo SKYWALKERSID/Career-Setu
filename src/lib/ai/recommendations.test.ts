@@ -16,6 +16,9 @@ function assert(condition: boolean, message: string) {
 
 console.log('--- RUNNING CAREER RECOMMENDATION TESTS ---');
 assert(CareerRecommendationsSchema.safeParse(valid).success, 'Valid AI output should pass schema validation');
+const providerAlias = { recommendations: [{ ...valid.recommendations[0], score: undefined, match_score: 82 }] };
+const aliasResult = CareerRecommendationsSchema.safeParse(providerAlias);
+assert(aliasResult.success && aliasResult.data.recommendations[0].score === 82, 'Equivalent provider score alias should normalize before validation');
 assert(!validateCareerRecommendations({ recommendations: [{ ...valid.recommendations[0], role_id: otherSkillId }] }, catalog).success, 'Invalid role ID should be rejected');
 assert(!validateCareerRecommendations({ recommendations: [{ ...valid.recommendations[0], missing_skill_ids: [otherSkillId] }] }, catalog).success, 'Invalid skill ID should be rejected');
 const pendingContext = { readiness: { project_score: null, resume_score: null, interview_score: null } };
