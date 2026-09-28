@@ -278,6 +278,12 @@ export default function ProgressPage() {
                     </div>
 
                     <div className="rounded border border-[#e5edf5] bg-[#f8fbfe] p-3.5">
+                      <p className="text-xs font-semibold text-slate-500">Submitted Evidence</p>
+                      <p className="mt-1 text-2xl font-extrabold text-[#10285a]">{snapshot.evidenceSubmitted}</p>
+                      <p className="mt-1 text-xs text-slate-400">Roadmap task evidence</p>
+                    </div>
+
+                    <div className="rounded border border-[#e5edf5] bg-[#f8fbfe] p-3.5">
                       <p className="text-xs font-semibold text-slate-500">Course Completion</p>
                       <p className="mt-1 text-xs font-bold text-slate-400">Unavailable</p>
                       <p className="mt-1 text-xs text-slate-400">Not tracked in backend</p>

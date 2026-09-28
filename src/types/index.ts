@@ -192,6 +192,9 @@ export interface RoadmapTask {
   evidence_required?: string;
   skill_id?: string | null;
   completed_at?: string | null;
+  evidence_url?: string | null;
+  evidence_note?: string | null;
+  evidence_submitted_at?: string | null;
 }
 
 export interface Roadmap {
