@@ -456,3 +456,10 @@ Quality, Security & Reliability is complete. Deployment/Demo and Final UI recons
 - Tightened the existing prompt contract to require per-role skill subsets and empty arrays when uncertain. The catalog validator remains unchanged and continues rejecting invalid IDs.
 - Focused schema/catalog test, TypeScript, ESLint, and production build all exit 0.
 - Live acceptance remains pending deployment and browser verification.
+
+### Career Recommendation Runtime Verified (COMPLETED)
+
+- Production telemetry proved the final successful run used Groq model `openai/gpt-oss-120b`.
+- Authenticated RLS verification found 2 persisted recommendation rows, 2 valid catalog mappings, canonical target IDs, and scores 72 and 68.
+- Live focused Playwright acceptance passed: QA authentication setup and career target selection availability in interview setup (`2 passed`).
+- The career pipeline is verified through recommendation persistence and target-career handoff. Roadmap, resume AI, full interview completion/report, and progress remain separate unverified flows.

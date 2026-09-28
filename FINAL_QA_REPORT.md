@@ -58,3 +58,9 @@ Personalized career recommendations, target-career persistence in the live envir
 ## Security Notes
 
 No service-role key or AI key was used in Playwright. Local environment files and Playwright storage state remain gitignored. No credentials or tokens are included in this report.
+
+## Final Career Pipeline Result
+
+After the prompt repair deployed, the authenticated live flow passed. The QA student has 2 persisted recommendation rows, both map to real catalog roles, and the focused Playwright career-to-interview test passed both authentication setup and target-career availability. The active Groq model was observed in QA-owned telemetry as `openai/gpt-oss-120b`.
+
+This confirms the career recommendation runtime from profile/session through Groq response, schema/catalog validation, persistence, rendered career roles, target selection, and interview setup availability. It does not claim roadmap, resume AI, full interview completion, or progress completion.

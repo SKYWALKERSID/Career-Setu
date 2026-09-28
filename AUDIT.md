@@ -66,5 +66,5 @@ The next live failure was after successful provider/schema validation: catalog v
 ## Open Blockers
 
 1. Confirm production `AI_PROVIDER=groq`, `GROQ_MODEL=openai/gpt-oss-120b`, and a usable `GROQ_API_KEY` without exposing secrets.
-2. Deploy this contract repair and re-run the live career recommendation flow, then capture a successful persisted result.
+2. Deploy this contract repair and re-run the live career recommendation flow, then capture a successful persisted result. **Completed:** the final live flow produced 2 QA-owned recommendation rows, both mapped to catalog roles, with scores 72 and 68; the career-to-interview focused test passed.
 4. Only after that, verify target career, skill gaps, roadmap, resume analysis, and interview end to end.
