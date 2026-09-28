@@ -9,6 +9,7 @@ import { StudentProfile, StudentSkill, ReadinessAssessment, CareerRecommendation
 export interface DashboardData {
   studentProfile: StudentProfile | null;
   targetCareer: { id: string; title: string } | null;
+  targetCareers: Array<{ id: string; title: string }>;
   studentSkills: StudentSkill[];
   completionScore: number;
   readinessAssessment: ReadinessAssessment | null;
@@ -19,7 +20,7 @@ export interface DashboardData {
   previewOpportunities: Opportunity[];
 }
 
-export async function getDashboardData(): Promise<{ success: boolean; data?: DashboardData; error?: string }> {
+export async function getDashboardData(requestedRoleId?: string): Promise<{ success: boolean; data?: DashboardData; error?: string }> {
   const supabase = await createClient();
 
   const { data: { user }, error: authError } = await supabase.auth.getUser();
@@ -35,6 +36,7 @@ export async function getDashboardData(): Promise<{ success: boolean; data?: Das
       data: {
         studentProfile: null,
         targetCareer: null,
+        targetCareers: [],
         studentSkills: [],
         completionScore: 0,
         readinessAssessment: null,
@@ -50,10 +52,13 @@ export async function getDashboardData(): Promise<{ success: boolean; data?: Das
   const sp = profileRes.studentProfile;
   const skills = profileRes.studentSkills || [];
 
-  // Resolve the first persisted canonical target to catalog metadata for
-  // downstream consumers. The ID remains the source of truth for actions.
-  const { data: targetCareer } = sp.target_careers?.length
-    ? await supabase.from('career_roles').select('id, title').eq('id', sp.target_careers[0]).maybeSingle()
+  const { data: targetCareers } = sp.target_careers?.length
+    ? await supabase.from('career_roles').select('id, title').in('id', sp.target_careers)
+    : { data: [] };
+  const validTargets = (targetCareers || []) as Array<{ id: string; title: string }>;
+  const activeRoleId = requestedRoleId ? (validTargets.some((role) => role.id === requestedRoleId) ? requestedRoleId : null) : validTargets[0]?.id || null;
+  const { data: targetCareer } = activeRoleId
+    ? await supabase.from('career_roles').select('id, title').eq('id', activeRoleId).maybeSingle()
     : { data: null };
 
   const completionScore = calculateProfileCompletion({
@@ -87,13 +92,12 @@ export async function getDashboardData(): Promise<{ success: boolean; data?: Das
     .limit(3);
 
   // 4. Query Roadmap & Tasks (if generated)
-  const { data: roadmap } = await supabase
+  let roadmapQuery = supabase
     .from('roadmaps')
     .select('*, career_roles(title)')
-    .eq('student_id', sp.id)
-    .order('generated_at', { ascending: false })
-    .limit(1)
-    .maybeSingle();
+    .eq('student_id', sp.id);
+  if (activeRoleId) roadmapQuery = roadmapQuery.eq('target_role_id', activeRoleId);
+  const { data: roadmap } = await roadmapQuery.order('generated_at', { ascending: false }).limit(1).maybeSingle();
 
   let roadmapTasks: RoadmapTask[] = [];
   if (roadmap) {
@@ -125,6 +129,7 @@ export async function getDashboardData(): Promise<{ success: boolean; data?: Das
     data: {
       studentProfile: sp,
       targetCareer: targetCareer || null,
+      targetCareers: validTargets,
       studentSkills: skills as unknown as StudentSkill[],
       completionScore,
       readinessAssessment: readinessAssessment || null,

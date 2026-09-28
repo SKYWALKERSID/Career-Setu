@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useMemo, useState } from 'react';
+import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowRight, BriefcaseBusiness, CalendarDays, Filter, MapPin, Search, Target } from 'lucide-react';
 import { Sidebar } from '@/components/layout/sidebar';
@@ -16,8 +17,9 @@ import { getOpportunityMatches } from '@/lib/matching/actions';
 type Match = { opportunity: { id: string; title: string; organization: string; location: string; application_deadline?: string; source: string; source_url?: string; is_verified: boolean; type?: string; status?: string }; score: number; reasons: string[]; eligibility?: 'satisfied' | 'unknown' | 'not_established' };
 
 export default function OpportunitiesPage() {
+  const searchParams = useSearchParams(); const requestedCareer = searchParams.get('career') || '';
   const [matches, setMatches] = useState<Match[]>([]); const [loading, setLoading] = useState(true); const [error, setError] = useState(''); const [search, setSearch] = useState(''); const [tab, setTab] = useState('All Opportunities'); const [type, setType] = useState('all'); const [location, setLocation] = useState('all'); const [selected, setSelected] = useState<Match | null>(null);
-  useEffect(() => { void getOpportunityMatches().then((result) => { if (result.success) { const next = (result.matches || []) as Match[]; setMatches(next); setSelected(next[0] || null); } else setError(result.error || 'Opportunities are unavailable.'); setLoading(false); }).catch(() => { setError('Opportunities are unavailable.'); setLoading(false); }); }, []);
+  useEffect(() => { setLoading(true); void getOpportunityMatches(requestedCareer || undefined).then((result) => { if (result.success) { const next = (result.matches || []) as Match[]; setMatches(next); setSelected(next[0] || null); } else setError(result.error || 'Opportunities are unavailable.'); setLoading(false); }).catch(() => { setError('Opportunities are unavailable.'); setLoading(false); }); }, [requestedCareer]);
   const types = useMemo(() => Array.from(new Set(matches.map((match) => match.opportunity.type).filter(Boolean))) as string[], [matches]); const locations = useMemo(() => Array.from(new Set(matches.map((match) => match.opportunity.location).filter(Boolean))) as string[], [matches]);
   const filtered = useMemo(() => matches.filter((match) => { const opportunity = match.opportunity; const haystack = `${opportunity.title} ${opportunity.organization} ${opportunity.location}`.toLowerCase(); const tabMatch = tab === 'All Opportunities' || opportunity.type?.toLowerCase() === tab.toLowerCase().replace(/s$/, ''); const typeMatch = type === 'all' || opportunity.type === type; const locationMatch = location === 'all' || opportunity.location === location; return tabMatch && typeMatch && locationMatch && haystack.includes(search.toLowerCase()); }), [matches, search, tab, type, location]);
   useEffect(() => { if (selected && !filtered.some((match) => match.opportunity.id === selected.opportunity.id)) setSelected(filtered[0] || null); }, [filtered, selected]);

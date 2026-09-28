@@ -12,12 +12,12 @@ async function getAuthenticatedStudent() {
   return { supabase, student };
 }
 
-async function buildMatches(opportunityId?: string) {
+async function buildMatches(opportunityId?: string, roleId?: string) {
   const { supabase, student } = await getAuthenticatedStudent();
   if (!student) return { success: false, error: 'Unauthorized: Authentication required.', matches: [] };
   const [{ data: studentSkills }, { data: roleSkills }, { data: opportunities }] = await Promise.all([
     supabase.from('student_skills').select('skill_id, proficiency').eq('student_id', student.id),
-    supabase.from('career_role_skills').select('skill_id').in('role_id', student.target_careers || []),
+    supabase.from('career_role_skills').select('skill_id').in('role_id', roleId && (student.target_careers || []).includes(roleId) ? [roleId] : (student.target_careers || [])),
     supabase.from('opportunities').select('*, opportunity_skills(skill_id, skills(id, name, category))').eq('status', 'active').eq(opportunityId ? 'id' : 'status', opportunityId ? opportunityId : 'active'),
   ]);
   if (opportunityId && !(opportunities || []).some((item) => item.id === opportunityId)) return { success: false, error: 'Opportunity not found.', matches: [] };
@@ -28,5 +28,5 @@ async function buildMatches(opportunityId?: string) {
   return { success: true, matches };
 }
 
-export async function getOpportunityMatches() { return buildMatches(); }
-export async function getOpportunityMatch(opportunityId: string) { return buildMatches(opportunityId); }
+export async function getOpportunityMatches(roleId?: string) { return buildMatches(undefined, roleId); }
+export async function getOpportunityMatch(opportunityId: string, roleId?: string) { return buildMatches(opportunityId, roleId); }

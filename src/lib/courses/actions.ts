@@ -6,14 +6,15 @@ import type { SkillGapImportance } from '@/lib/skill-gap/types';
 import { rankCourseMatches } from './scoring';
 import type { CourseCatalogItem } from './types';
 
-async function loadContext() {
+async function loadContext(roleId?: string) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { supabase, student: null, context: null };
   const { data: student } = await supabase.from('student_profiles').select('id, target_careers, interests').eq('user_id', user.id).single();
   if (!student) return { supabase, student: null, context: null };
+  const selectedRoleIds = roleId && (student.target_careers || []).includes(roleId) ? [roleId] : (student.target_careers || []);
   const [{ data: requirements }, { data: studentSkills }, { data: courseSkills }] = await Promise.all([
-    supabase.from('career_role_skills').select('skill_id, required, importance, skills(id, name)').in('role_id', student.target_careers || []),
+    supabase.from('career_role_skills').select('skill_id, required, importance, skills(id, name)').in('role_id', selectedRoleIds),
     supabase.from('student_skills').select('skill_id, proficiency').eq('student_id', student.id),
     supabase.from('course_skills').select('course_id, skill_id'),
   ]);
@@ -25,8 +26,8 @@ async function loadContext() {
   return { supabase, student, context: { skills: studentSkills || [], gaps, targetRoleSkillIds: new Set((requirements || []).map((item) => item.skill_id)), interests: student.interests || [], courseSkillMap } };
 }
 
-async function discover(courseId?: string) {
-  const { supabase, student, context } = await loadContext();
+async function discover(courseId?: string, roleId?: string) {
+  const { supabase, student, context } = await loadContext(roleId);
   if (!student || !context) return { success: false, error: 'Unauthorized or incomplete student profile.', courses: [] };
   const query = supabase.from('courses').select('*').eq(courseId ? 'id' : 'id', courseId || '00000000-0000-0000-0000-000000000000');
   const { data: rows, error } = courseId ? await query : await supabase.from('courses').select('*');
@@ -40,5 +41,5 @@ async function discover(courseId?: string) {
   return { success: true, courses: rankCourseMatches(courses, context) };
 }
 
-export async function getCourseRecommendations() { return discover(); }
-export async function getCourseRecommendation(courseId: string) { return discover(courseId); }
+export async function getCourseRecommendations(roleId?: string) { return discover(undefined, roleId); }
+export async function getCourseRecommendation(courseId: string, roleId?: string) { return discover(courseId, roleId); }

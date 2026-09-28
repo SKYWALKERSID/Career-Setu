@@ -1,7 +1,8 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { ArrowRight, BookOpen, CalendarDays, CheckCircle2, Compass, RefreshCw, Target, TrendingUp } from 'lucide-react';
 import { Sidebar } from '@/components/layout/sidebar';
 import { TopNav } from '@/components/layout/top-nav';
@@ -17,6 +18,9 @@ import { submitRoadmapTaskEvidence, updateRoadmapTaskStatus } from '@/lib/roadma
 type Gap = { skill_id: string; skill_name: string; status: 'acquired' | 'developing' | 'missing'; priority: number; importance?: string };
 
 export default function RoadmapPage() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const requestedRoleId = searchParams.get('role') || '';
   const [data, setData] = useState<DashboardData | null>(null);
   const [gaps, setGaps] = useState<Gap[]>([]);
   const [loading, setLoading] = useState(true);
@@ -25,26 +29,30 @@ export default function RoadmapPage() {
   const [evidenceTask, setEvidenceTask] = useState<string | null>(null);
   const [error, setError] = useState('');
 
-  async function load() {
+  const load = useCallback(async () => {
     setLoading(true); setError('');
     try {
-      const result = await getDashboardData();
+      const result = await getDashboardData(requestedRoleId || undefined);
       if (!result.success || !result.data) throw new Error(result.error || 'Roadmap data is unavailable.');
       setData(result.data);
-      const roleId = result.data.roadmap?.target_role_id || result.data.studentProfile?.target_careers?.[0] || result.data.careerRecommendations?.[0]?.role?.id;
+      const roleId = result.data.targetCareer?.id || '';
+      if (!requestedRoleId && roleId) router.replace(`/roadmap?role=${encodeURIComponent(roleId)}`);
+      if (requestedRoleId && !roleId) setError('Career not found. Choose one of your selected target careers.');
       if (roleId) {
         const gapResult = await getStudentSkillGaps(roleId);
         if (gapResult.success) setGaps((gapResult.gaps || []) as Gap[]);
       }
     } catch (err: unknown) { setError(err instanceof Error ? err.message : 'Roadmap data is unavailable.'); }
     finally { setLoading(false); }
-  }
+  }, [requestedRoleId, router]);
 
-  useEffect(() => { void load(); }, []);
+  useEffect(() => { void load(); }, [load]);
 
   async function handleGenerate() {
     setGenerating(true); setError('');
-    const result = await generateCareerRoadmap();
+    const roleId = data?.targetCareer?.id;
+    if (!roleId) { setError('Choose a target career before generating a roadmap.'); return; }
+    const result = await generateCareerRoadmap(roleId);
     if (result.success) await load(); else setError(result.error || 'Career roadmap is temporarily unavailable.');
     setGenerating(false);
   }
@@ -72,7 +80,7 @@ export default function RoadmapPage() {
   const developing = gaps.filter((gap) => gap.status === 'developing');
   const acquired = gaps.filter((gap) => gap.status === 'acquired');
   const roadmap = data?.roadmap as (DashboardData['roadmap'] & { career_roles?: { title?: string } }) | null;
-  const roleName = roadmap?.career_roles?.title || data?.targetCareer?.title || (data?.studentProfile?.target_careers?.length ? 'Selected target career' : 'Target career not selected');
+  const roleName = roadmap?.career_roles?.title || data?.targetCareer?.title || 'Target career not selected';
 
   return <Shell><main className="mx-auto w-full max-w-[1440px] flex-1 space-y-4 p-4 sm:p-6">
     <Hero />
@@ -80,10 +88,10 @@ export default function RoadmapPage() {
     <section className="grid grid-cols-1 gap-4 lg:grid-cols-3">
       <ReadinessCard assessment={data?.readinessAssessment || null} />
       <SummaryCard missing={missing.length} developing={developing.length} acquired={acquired.length} />
-      <section className="border border-[#dce7f2] bg-white p-5"><h2 className="flex items-center gap-2 text-sm font-bold text-[#10295d]"><Target className="h-4 w-4 text-[#1559c7]" />Your target role</h2><h3 className="mt-4 text-lg font-extrabold text-[#10295d]">{roleName}</h3><p className="mt-1 text-xs text-slate-500">{data?.roadmap ? 'Roadmap role from the persisted career plan.' : 'Ground your analysis in a selected catalog career.'}</p><Link href="/career" className="mt-4 inline-flex text-xs font-semibold text-[#1559c7]">Change target role <ArrowRight className="ml-1 h-3.5 w-3.5" /></Link></section>
+      <section className="border border-[#dce7f2] bg-white p-5"><h2 className="flex items-center gap-2 text-sm font-bold text-[#10295d]"><Target className="h-4 w-4 text-[#1559c7]" />Target career</h2>{data?.targetCareers?.length ? <><label htmlFor="target-career" className="mt-4 block text-xs font-semibold text-slate-600">Choose the career you want to analyze and build a roadmap for.</label><select id="target-career" value={data.targetCareer?.id || ''} onChange={(event) => router.push(`/roadmap?role=${encodeURIComponent(event.target.value)}`)} className="mt-2 h-10 w-full border border-[#cbdbea] bg-white px-3 text-sm font-semibold text-[#10295d]">{data.targetCareers.map((role) => <option key={role.id} value={role.id}>{role.title}</option>)}</select><p className="mt-2 text-xs text-slate-500">{data?.roadmap ? `Roadmap loaded for ${roleName}.` : `No roadmap for ${roleName} yet.`}</p></> : <><h3 className="mt-4 text-lg font-extrabold text-[#10295d]">No target career selected yet.</h3><Link href="/career" className="mt-4 inline-flex text-xs font-semibold text-[#1559c7]">Choose a career <ArrowRight className="ml-1 h-3.5 w-3.5" /></Link></>}</section>
     </section>
     <section className="grid grid-cols-1 gap-4 xl:grid-cols-[1.35fr_0.65fr]">
-      <SkillTable gaps={gaps} missing={missing.length} developing={developing.length} acquired={acquired.length} />
+      <SkillTable gaps={gaps} roleId={data?.targetCareer?.id || ''} missing={missing.length} developing={developing.length} acquired={acquired.length} />
       <RoadmapTimeline tasks={tasks} generating={generating} updatingTask={updatingTask} evidenceTask={evidenceTask} onTaskStatus={handleTaskStatus} onEvidence={handleEvidence} onGenerate={handleGenerate} />
     </section>
     <section className="grid grid-cols-1 gap-4 lg:grid-cols-[1.35fr_0.65fr]"><Resources courses={data?.previewCourses || []} /><ProgressCard tasks={tasks} completed={completed} progress={progress} generating={generating} onGenerate={handleGenerate} /></section>
@@ -98,7 +106,7 @@ function ReadinessCard({ assessment }: { assessment: DashboardData['readinessAss
 
 function SummaryCard({ missing, developing, acquired }: { missing: number; developing: number; acquired: number }) { return <section className="border border-[#dce7f2] bg-white p-5"><h2 className="flex items-center gap-2 text-lg font-bold text-[#10295d]"><Compass className="h-4.5 w-4.5 text-[#1559c7]" />Skill gap summary</h2><div className="mt-4 grid grid-cols-3 gap-2 text-center"><div className="bg-[#fff1f1] p-3"><strong className="block text-2xl text-[#c84f5b]">{missing}</strong><span className="text-xs font-medium text-[#c84f5b]">Needs focus</span></div><div className="bg-[#fff8e8] p-3"><strong className="block text-2xl text-[#b27b19]">{developing}</strong><span className="text-xs font-medium text-[#b27b19]">In progress</span></div><div className="bg-[#eefaf2] p-3"><strong className="block text-2xl text-[#368d50]">{acquired}</strong><span className="text-xs font-medium text-[#368d50]">Strong skills</span></div></div></section>; }
 
-function SkillTable({ gaps, missing, developing, acquired }: { gaps: Gap[]; missing: number; developing: number; acquired: number }) { return <section className="border border-[#dce7f2] bg-white"><div className="border-b border-[#e5edf5] px-5 py-4"><h2 className="text-lg font-bold text-[#10295d]">Skill gap analysis</h2><p className="mt-1 text-xs text-slate-500">Required catalog skills compared with your current evidence.</p><p className="mt-1 text-xs text-slate-400">{acquired} acquired · {developing} developing · {missing} missing</p></div>{gaps.length ? <div className="divide-y divide-[#e5edf5]">{gaps.map((gap) => <div key={gap.skill_id} className="grid gap-2 px-5 py-3 text-sm sm:grid-cols-[1.2fr_0.8fr_0.7fr_0.7fr] sm:items-center"><span className="font-semibold text-[#10295d]">{gap.skill_name}</span><Badge variant={gap.status === 'acquired' ? 'success' : gap.status === 'developing' ? 'warning' : 'info'} className="w-fit text-xs">{gap.status === 'missing' ? 'Needs focus' : gap.status === 'developing' ? 'In progress' : 'Strong'}</Badge><span className="text-xs text-slate-500">{gap.importance || `Priority ${gap.priority}`}</span><Link href={`/courses?skill=${encodeURIComponent(gap.skill_id)}`} className="text-xs font-semibold text-[#1559c7]">{gap.status === 'acquired' ? 'Review courses' : 'Learn next'} <ArrowRight className="inline h-3.5 w-3.5" /></Link></div>)}</div> : <div className="p-8"><EmptyState icon={<Compass className="h-8 w-8 text-slate-400" />} title="Skill gaps pending" description="Select a relevant target role to compare your skills with catalog requirements." /></div>}</section>; }
+function SkillTable({ gaps, roleId, missing, developing, acquired }: { gaps: Gap[]; roleId: string; missing: number; developing: number; acquired: number }) { return <section className="border border-[#dce7f2] bg-white"><div className="border-b border-[#e5edf5] px-5 py-4"><h2 className="text-lg font-bold text-[#10295d]">Skill gap analysis</h2><p className="mt-1 text-xs text-slate-500">Required catalog skills compared with your current evidence.</p><p className="mt-1 text-xs text-slate-400">{acquired} acquired · {developing} developing · {missing} missing</p></div>{gaps.length ? <div className="divide-y divide-[#e5edf5]">{gaps.map((gap) => <div key={gap.skill_id} className="grid gap-2 px-5 py-3 text-sm sm:grid-cols-[1.2fr_0.8fr_0.7fr_0.7fr] sm:items-center"><span className="font-semibold text-[#10295d]">{gap.skill_name}</span><Badge variant={gap.status === 'acquired' ? 'success' : gap.status === 'developing' ? 'warning' : 'info'} className="w-fit text-xs">{gap.status === 'missing' ? 'Needs focus' : gap.status === 'developing' ? 'In progress' : 'Strong'}</Badge><span className="text-xs text-slate-500">{gap.importance || `Priority ${gap.priority}`}</span><Link href={`/courses?career=${encodeURIComponent(roleId)}&skill=${encodeURIComponent(gap.skill_id)}`} className="text-xs font-semibold text-[#1559c7]">{gap.status === 'acquired' ? 'Review courses' : 'Learn next'} <ArrowRight className="inline h-3.5 w-3.5" /></Link></div>)}</div> : <div className="p-8"><EmptyState icon={<Compass className="h-8 w-8 text-slate-400" />} title="Skill gaps pending" description="Choose a target career to compare your skills with catalog requirements." /></div>}</section>; }
 
 function RoadmapTimeline({ tasks, generating, updatingTask, evidenceTask, onTaskStatus, onEvidence, onGenerate }: { tasks: DashboardData['roadmapTasks']; generating: boolean; updatingTask: string | null; evidenceTask: string | null; onTaskStatus: (task: DashboardData['roadmapTasks'][number]) => void; onEvidence: (taskId: string, url: string, note: string) => void; onGenerate: () => void }) { return <section className="border border-[#dce7f2] bg-white"><div className="flex items-center justify-between border-b border-[#e5edf5] px-5 py-4"><h2 className="flex items-center gap-2 text-lg font-bold text-[#10295d]"><CalendarDays className="h-4.5 w-4.5 text-[#1559c7]" />Your learning roadmap</h2><span className="text-xs text-slate-500">90 days</span></div><div className="p-5">{tasks.length ? <div className="relative space-y-5 before:absolute before:left-[9px] before:top-2 before:h-[calc(100%-12px)] before:w-px before:bg-[#cfe0f5]">{tasks.map((task) => <RoadmapTaskCard key={task.id} task={task} updating={updatingTask === task.id} evidenceBusy={evidenceTask === task.id} onTaskStatus={onTaskStatus} onEvidence={onEvidence} />)}</div> : <EmptyState icon={<CalendarDays className="h-8 w-8 text-slate-400" />} title="No roadmap yet" description="Generate a catalog-grounded plan from your profile and readiness evidence." actionLabel={generating ? 'Generating...' : 'Generate roadmap'} onAction={onGenerate} />}</div></section>; }
 

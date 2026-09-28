@@ -11,7 +11,7 @@ import { resolveTargetCareerIds } from '@/lib/career/target-roles';
 
 type RoleRow = { id: string; title: string; description: string; career_role_skills: Array<{ skill_id: string; required: boolean; importance: string; skills: { id: string; name: string } | null }> };
 
-export async function generateCareerRoadmap(): Promise<{ success: boolean; roadmapId?: string; error?: string }> {
+export async function generateCareerRoadmap(roleId: string): Promise<{ success: boolean; roadmapId?: string; error?: string }> {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { success: false, error: 'Unauthorized: Authentication required.' };
@@ -27,8 +27,7 @@ export async function generateCareerRoadmap(): Promise<{ success: boolean; roadm
   ]);
   const roleRows = (roles || []) as unknown as RoleRow[];
   const targetRoleIds = resolveTargetCareerIds(student.target_careers || [], roleRows);
-  const selected = targetRoleIds[0] || recommendations?.[0]?.role_id;
-  const role = roleRows.find((candidate) => candidate.id === selected);
+  const role = roleRows.find((candidate) => candidate.id === roleId && targetRoleIds.includes(candidate.id));
   if (!role) return { success: false, error: 'Select a target career or generate career recommendations first.' };
   const courseRows = (courses || []) as unknown as Array<{ id: string; title: string; provider: string; url: string; course_skills: Array<{ skill_id: string }> }>;
   const catalog = { roleIds: new Set(roleRows.map((item) => item.id)), skillIds: new Set(role.career_role_skills.map((item) => item.skill_id)), courseIds: new Set(courseRows.map((item) => item.id)) };
