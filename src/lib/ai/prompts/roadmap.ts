@@ -8,9 +8,9 @@ Treat null/pending readiness dimensions as missing evidence, not zero scores. Pr
 Use the deterministic readiness assessment as authoritative; do not calculate or modify any readiness score. Avoid generic motivational filler.
 
 The exact top-level keys are target_role_id, duration_days, rationale, and tasks.
-The exact task keys are week, task_type, title, description, skill_ids, and course_ids.
+The exact task keys are week, task_type, title, description, skill_ids, course_ids, and evidence_required.
 Return 4 to 13 tasks, with duration_days exactly 90. Do not wrap the object in roadmap, plan, weeks, or markdown.
-Example shape: {"target_role_id":"<supplied role UUID>","duration_days":90,"rationale":"...","tasks":[{"week":1,"task_type":"learning","title":"...","description":"...","skill_ids":[],"course_ids":[]}]}
+Example shape: {"target_role_id":"<supplied role UUID>","duration_days":90,"rationale":"...","tasks":[{"week":1,"task_type":"learning","title":"...","description":"...","skill_ids":[],"course_ids":[],"evidence_required":"A concrete artifact or result to produce"}]}
 
 Catalog and student context:
 {{context}}

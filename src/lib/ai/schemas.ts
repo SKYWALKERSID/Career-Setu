@@ -106,6 +106,7 @@ const RoadmapTaskSchemaBase = z.object({
   description: z.string().min(1).max(500),
   skill_ids: z.array(z.string().uuid()).max(6),
   course_ids: z.array(z.string().uuid()).max(3),
+  evidence_required: z.string().max(300).optional(),
 });
 
 const RoadmapTaskSchema = z.preprocess((value) => {
@@ -118,6 +119,7 @@ const RoadmapTaskSchema = z.preprocess((value) => {
     description: item.description ?? item.details ?? item.task ?? item.objective ?? item.focus ?? item.action,
     skill_ids: idArray(item.skill_ids ?? item.skillIds ?? item.skills),
     course_ids: idArray(item.course_ids ?? item.courseIds ?? item.courses),
+    evidence_required: typeof (item.evidence_required ?? item.evidenceRequired ?? item.evidence) === 'string' ? String(item.evidence_required ?? item.evidenceRequired ?? item.evidence).slice(0, 300) : undefined,
   };
 }, RoadmapTaskSchemaBase);
 

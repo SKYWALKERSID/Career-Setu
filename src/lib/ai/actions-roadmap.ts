@@ -64,7 +64,7 @@ export async function generateCareerRoadmap(): Promise<{ success: boolean; roadm
   let roadmapId = existing?.id;
   if (roadmapId) { await supabase.from('roadmap_tasks').delete().eq('roadmap_id', roadmapId); await supabase.from('roadmaps').update({ duration_days: 90, ai_run_id: run.id, generated_at: new Date().toISOString() }).eq('id', roadmapId); }
   else { const { data: created, error } = await supabase.from('roadmaps').insert({ student_id: student.id, target_role_id: role.id, duration_days: 90, ai_run_id: run.id }).select('id').single(); if (error || !created) return { success: false, error: 'Career roadmap could not be saved.' }; roadmapId = created.id; }
-  const { error: taskError } = await supabase.from('roadmap_tasks').insert(validated.data.tasks.map((task) => ({ roadmap_id: roadmapId, week: task.week, task_type: task.task_type, title: task.title, description: `${task.description}${task.course_ids.length ? ` Courses: ${task.course_ids.join(', ')}` : ''}`, skill_id: task.skill_ids[0] || null, status: 'pending' })));
+  const { error: taskError } = await supabase.from('roadmap_tasks').insert(validated.data.tasks.map((task) => ({ roadmap_id: roadmapId, week: task.week, task_type: task.task_type, title: task.title, description: `${task.description}${task.course_ids.length ? ` Courses: ${task.course_ids.join(', ')}` : ''}`, skill_id: task.skill_ids[0] || null, evidence_required: task.evidence_required || null, status: 'pending' })));
   if (taskError) return { success: false, error: 'Career roadmap tasks could not be saved.' };
   revalidatePath('/roadmap'); revalidatePath('/dashboard');
   return { success: true, roadmapId };

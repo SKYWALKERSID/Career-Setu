@@ -10,6 +10,7 @@ import { LoadingState } from '@/components/ui/loading-state';
 import { Award, BriefcaseBusiness, CheckCircle2, Download, FileText, FolderKanban, GraduationCap, Lightbulb, Link2, RefreshCw, ShieldCheck, Sparkles, UserRound } from 'lucide-react';
 import { getLatestResume, uploadAndAnalyzeResume } from '@/lib/resume/actions';
 import type { ResumeParsedData } from '@/lib/resume/types';
+import { calculateResumeBreakdown } from '@/lib/resume/scoring';
 
 type ResumeRecord = { id?: string; score: number | null; version: number; parsed_json?: ResumeParsedData | null };
 const sections = [['Personal Information', UserRound], ['Education', GraduationCap], ['Skills', Sparkles], ['Projects', FolderKanban], ['Work Experience', BriefcaseBusiness], ['Certifications', Award], ['Achievements', ShieldCheck], ['Additional Sections', Link2]] as const;
@@ -26,7 +27,8 @@ export default function ResumePage() {
   useEffect(() => { void refresh(); }, []);
   async function handleUpload(event: React.ChangeEvent<HTMLInputElement>) { const file = event.target.files?.[0]; if (!file) return; setBusy(true); setError(''); const form = new FormData(); form.set('file', file); const result = await uploadAndAnalyzeResume(form); if (!result.success) setError(result.error || 'Resume processing failed.'); await refresh(); setBusy(false); event.target.value = ''; }
   const parsed = resume?.parsed_json; const score = resume?.score ?? null;
-  const scoreItems = [['Content', null], ['Skills', null], ['Evidence', null], ['Formatting', null]] as const;
+  const breakdown = parsed ? calculateResumeBreakdown(parsed) : null;
+  const scoreItems = [['ATS / Parsing', breakdown?.ats ?? null], ['Content', breakdown?.content ?? null], ['Skills / Evidence', breakdown?.skills ?? null], ['Target alignment', breakdown?.alignment ?? null]] as const;
   return <div className="min-h-screen bg-[#f4f8fc] flex"><Sidebar /><div className="flex-1 min-w-0 flex flex-col"><TopNav /><main className="mx-auto w-full max-w-[1440px] px-4 pb-10 sm:px-6 lg:px-8"><Breadcrumb items={[{ label: 'Home', href: '/dashboard' }, { label: 'Resume Copilot' }]} />
     <section className="relative mt-2 min-h-[160px] overflow-hidden rounded-[3px] border border-[#dbe7f3] bg-[#e9f3fb] bg-cover bg-center shadow-[0_2px_10px_rgba(29,67,110,0.04)]" style={{ backgroundImage: "url('/resume-hero.jpg')" }}><div className="absolute inset-0 bg-gradient-to-r from-[#edf6fd]/98 via-[#edf6fd]/88 to-transparent" /><div className="relative max-w-[650px] px-7 py-7 sm:px-10 sm:py-8"><p className="text-xs font-bold tracking-widest text-[#1d5bb5]">RESUME COPILOT</p><h1 className="mt-2 max-w-[520px] text-3xl font-extrabold leading-[1.04] tracking-[-0.03em] text-[#10285a] sm:text-4xl">Resume Analysis</h1><p className="mt-3 max-w-[460px] text-base leading-6 text-[#46627f]">Upload your PDF or plain-text resume. The system extracts facts from your file and provides role-aligned suggestions without inventing any information.</p></div></section>
 
