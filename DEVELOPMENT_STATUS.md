@@ -411,3 +411,13 @@ Quality, Security & Reliability is complete. Deployment/Demo and Final UI recons
 - Gemini 3.8 request compatibility was tightened: the server now uses `systemInstruction`, `x-goog-api-key`, `thinkingConfig.thinkingLevel`, and bounded retries for HTTP 429/503 responses. Legacy `temperature`, `topP`, `topK`, `candidateCount`, and `thinking_budget` parameters are not sent.
 - The provider smoke test reached `gemini-3.8-flash` and returned HTTP 503 (`AI_CAPACITY_ERROR`) after bounded retries. No fake output or fallback result was produced.
 - Local TypeScript, ESLint, and production build all exit 0. Deployment and live product-flow verification remain pending because Vercel CLI/project metadata is not configured in this workspace.
+
+### Final Productionization Audit (PARTIAL)
+
+- Added `AUDIT.md` with the current authenticated data-pipeline map, production evidence, security notes, and release blockers.
+- Added `PLAN.md` with the ordered release-gate plan for provider, recommendations, target career, skill gaps, roadmap, resume, interview, and downstream progress verification.
+- Added a server-side recommendation trigger path: profile save invokes the existing recommendation generator after readiness persistence, and the default career query attempts generation when the authenticated student has no persisted recommendation rows.
+- Local Groq provider smoke test passed through the shared abstraction with structured JSON and Zod validation. Groq remains server-side and Gemini remains available as an alternate provider.
+- Local validation: `npx tsc --noEmit` exit 0, `npm run lint` exit 0, and `npm run build` exit 0.
+- Live focused Playwright verification: authentication setup passed; the resume fixture honest-state test passed; the career-to-interview test failed because the deployed QA session still had no selectable target-role control. Personalized recommendations and downstream AI flows are not claimed complete.
+- Current release status: not ready for a production-complete claim until the deployed build/provider configuration and authenticated recommendation generation are verified live.
