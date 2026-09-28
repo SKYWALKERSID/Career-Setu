@@ -52,6 +52,8 @@ The repair makes the required `score` key and `recommendations` wrapper explicit
 
 The live deployment has not yet demonstrated the repaired path. Until a deployed recommendation row is generated and rendered, downstream target-career, skill-gap, roadmap, and interview claims remain unverified.
 
+The repair also makes the decimal `confidence` contract explicit and normalizes only bounded percentage confidence values before the existing Zod/catalog validation. The domain still persists only validated canonical role IDs and scores.
+
 ## Security Review Notes
 
 - Groq credentials are read in the server provider only.

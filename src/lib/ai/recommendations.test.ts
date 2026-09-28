@@ -22,6 +22,9 @@ assert(aliasResult.success && aliasResult.data.recommendations[0].score === 82, 
 const wrapperAlias = { career_recommendations: [valid.recommendations[0]] };
 const wrapperResult = CareerRecommendationsSchema.safeParse(wrapperAlias);
 assert(wrapperResult.success && wrapperResult.data.recommendations.length === 1, 'Equivalent provider wrapper alias should normalize before validation');
+const percentageConfidence = { recommendations: [{ ...valid.recommendations[0], confidence: 84 }] };
+const confidenceResult = CareerRecommendationsSchema.safeParse(percentageConfidence);
+assert(confidenceResult.success && confidenceResult.data.recommendations[0].confidence === 0.84, 'Percentage confidence should normalize before validation');
 assert(!validateCareerRecommendations({ recommendations: [{ ...valid.recommendations[0], role_id: otherSkillId }] }, catalog).success, 'Invalid role ID should be rejected');
 assert(!validateCareerRecommendations({ recommendations: [{ ...valid.recommendations[0], missing_skill_ids: [otherSkillId] }] }, catalog).success, 'Invalid skill ID should be rejected');
 const pendingContext = { readiness: { project_score: null, resume_score: null, interview_score: null } };

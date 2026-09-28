@@ -436,3 +436,10 @@ Quality, Security & Reliability is complete. Deployment/Demo and Final UI recons
 - The shared recommendation schema now accepts only the canonical validated domain shape, with explicit normalization for the equivalent `career_recommendations` wrapper and `match_score` item field. The prompt explicitly forbids both aliases and requires the canonical JSON shape.
 - Focused schema/catalog test, TypeScript, ESLint, and production build all exit 0.
 - This second repair still requires deployment and live browser verification before career recommendations or downstream P0 flows can be marked complete.
+
+### Production Career Runtime Contract Repair 3 (IN PROGRESS)
+
+- The second deployed repair passed the wrapper and score checks, then telemetry identified the next strict schema failure: both recommendation items returned percentage confidence values above the schema's decimal `0..1` range.
+- Added bounded normalization from a provider percentage (`1..100`) to the domain decimal range, while the prompt explicitly requires decimal confidence. No unbounded coercion or recommendation fallback was added.
+- Focused schema/catalog test, TypeScript, ESLint, and production build all exit 0.
+- Production re-verification remains required before the career pipeline can be marked working.

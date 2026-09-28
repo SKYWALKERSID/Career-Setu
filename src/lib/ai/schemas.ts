@@ -15,8 +15,13 @@ export const CareerRecommendationItemSchema = z.preprocess((value) => {
   const item = value as Record<string, unknown>;
   // Some OpenAI-compatible models name this bounded catalog score `match_score`.
   // Normalize that equivalent field before the shared domain schema validates it.
-  if (item.score === undefined && item.match_score !== undefined) {
-    return { ...item, score: item.match_score };
+  let normalized = item;
+  if (normalized.score === undefined && normalized.match_score !== undefined) normalized = { ...normalized, score: normalized.match_score };
+  if (typeof item.confidence === 'number' && item.confidence > 1 && item.confidence <= 100) {
+    normalized = { ...normalized, confidence: item.confidence / 100 };
+  }
+  if (normalized !== item) {
+    return normalized;
   }
   return value;
 }, z.object({

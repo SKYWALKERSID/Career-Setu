@@ -10,6 +10,7 @@ Rules:
 - Use only supplied skill IDs for strengths and missing_skill_ids.
 - Use these exact output keys for every recommendation: role_id, score, rationale, strengths, missing_skill_ids, confidence.
 - score is an integer from 0 to 100. Do not call it match_score, match_percentage, or any other name.
+- confidence is a decimal from 0 to 1, not a percentage.
 - Return an object shaped exactly as {"recommendations":[{"role_id":"<catalog UUID>","score":0,"rationale":"...","strengths":[],"missing_skill_ids":[],"confidence":0}]}.
 - Use the exact top-level key recommendations. Do not use career_recommendations, roles, results, or an array at the top level.
 - Missing evidence is not zero. Treat pending readiness dimensions as unknown and explain uncertainty through confidence.
