@@ -19,6 +19,48 @@ async function authStudent(supabase: Awaited<ReturnType<typeof createClient>>) {
   return student;
 }
 
+export type InterviewHistoryItem = {
+  id: string;
+  role_id: string;
+  role_title: string;
+  difficulty: string;
+  session_status: 'active' | 'completed' | 'pending';
+  overall_score: number | null;
+  created_at: string;
+  question_count: number;
+};
+
+export async function getInterviewHistory() {
+  const supabase = await createClient();
+  const student = await authStudent(supabase);
+  if (!student) return { success: false, active: null, history: [], error: 'Unauthorized: Authentication required.' };
+
+  const { data: sessions, error } = await supabase
+    .from('interviews')
+    .select('id, role_id, difficulty, session_status, overall_score, created_at, career_roles(title), interview_turns(count)')
+    .eq('student_id', student.id)
+    .in('session_status', ['active', 'completed'])
+    .order('created_at', { ascending: false });
+  if (error) return { success: false, active: null, history: [], error: 'Interview history could not be loaded.' };
+
+  const items = (sessions || []).map((session) => ({
+    id: session.id,
+    role_id: session.role_id,
+    role_title: (session.career_roles as { title?: string } | null)?.title || 'Target Career',
+    difficulty: session.difficulty,
+    session_status: session.session_status as InterviewHistoryItem['session_status'],
+    overall_score: session.overall_score,
+    created_at: session.created_at,
+    question_count: Number((session.interview_turns as Array<{ count?: number }> | null)?.[0]?.count || 0),
+  } satisfies InterviewHistoryItem));
+
+  return {
+    success: true,
+    active: items.find((item) => item.session_status === 'active') || null,
+    history: items.filter((item) => item.session_status === 'completed'),
+  };
+}
+
 async function aiCall<T>(supabase: Awaited<ReturnType<typeof createClient>>, studentId: string, feature: string, promptVersion: string, prompt: string, schema: z.ZodSchema<T>) {
   const provider = aiClient.getProvider(); const started = Date.now();
   let result = await provider.generateStructuredOutput(prompt, schema, 'You are a safe structured mock interview service.');

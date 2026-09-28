@@ -11,15 +11,17 @@ import { LoadingState } from '@/components/ui/loading-state';
 import { Badge } from '@/components/ui/badge';
 import {
   ArrowRight,
+  CalendarDays,
   CheckCircle2,
   Clock3,
   FileQuestion,
   HelpCircle,
   MessageSquare,
+  Play,
   Send,
   ShieldCheck,
 } from 'lucide-react';
-import { getInterviewSession, submitInterviewAnswer } from '@/lib/ai/actions-interview';
+import { getInterviewHistory, getInterviewSession, submitInterviewAnswer, type InterviewHistoryItem } from '@/lib/ai/actions-interview';
 
 type Session = {
   id: string;
@@ -42,11 +44,21 @@ export default function InterviewPage() {
   const [busy, setBusy] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [activeHistory, setActiveHistory] = useState<InterviewHistoryItem | null>(null);
+  const [history, setHistory] = useState<InterviewHistoryItem[]>([]);
 
   useEffect(() => {
     const id = new URLSearchParams(window.location.search).get('session');
     if (!id) {
-      setLoading(false);
+      void getInterviewHistory().then((result) => {
+        if (result.success) {
+          setActiveHistory(result.active);
+          setHistory(result.history);
+        } else {
+          setError(result.error || 'Interview history could not be loaded.');
+        }
+        setLoading(false);
+      });
       return;
     }
     void getInterviewSession(id).then((result) => {
@@ -264,17 +276,21 @@ export default function InterviewPage() {
               </div>
             </>
           ) : (
-            <div className="mt-6 bg-white p-8">
-              <EmptyState
-                title="No Active Interview Session"
-                description="Start a new mock interview session from the setup page."
-                actionLabel="Configure Setup"
-                onAction={() => router.push('/interview/setup')}
-              />
-            </div>
+            <InterviewHistoryLanding active={activeHistory} history={history} onStart={() => router.push('/interview/setup')} onContinue={(id) => router.push(`/interview?session=${id}`)} onViewReport={(id) => router.push(`/interview/report?session=${id}`)} />
           )}
         </main>
       </div>
     </div>
   );
+}
+
+function InterviewHistoryLanding({ active, history, onStart, onContinue, onViewReport }: { active: InterviewHistoryItem | null; history: InterviewHistoryItem[]; onStart: () => void; onContinue: (id: string) => void; onViewReport: (id: string) => void }) {
+  return <div className="space-y-5">
+    <section className="flex flex-wrap items-center justify-between gap-4 rounded-[3px] border border-[#dbe7f3] bg-white p-6 shadow-[0_2px_9px_rgba(27,63,105,0.04)]">
+      <div><p className="text-xs font-bold uppercase tracking-widest text-[#1769d4]">MOCK INTERVIEW</p><h1 className="mt-2 text-3xl font-extrabold text-[#10285a] sm:text-4xl">Interview History</h1><p className="mt-2 text-sm text-slate-600">Continue an active session or review a saved report from a completed interview.</p></div>
+      <Button variant="govt" onClick={onStart}><Play className="mr-2 h-4 w-4 fill-current" />Start New Interview</Button>
+    </section>
+    <section className="rounded-[3px] border border-[#dfe8f1] bg-white p-5"><h2 className="text-xl font-bold text-[#10285a]">Active Interview</h2>{active ? <div className="mt-4 flex flex-wrap items-center justify-between gap-4 border border-[#cfe0f5] bg-[#f5f9ff] p-4"><div><h3 className="text-lg font-bold text-[#10285a]">{active.role_title}</h3><p className="mt-1 text-sm text-slate-600">{active.difficulty} · {active.question_count} question{active.question_count === 1 ? '' : 's'} saved</p></div><Button variant="outline" onClick={() => onContinue(active.id)}>Continue Interview <ArrowRight className="ml-2 h-4 w-4" /></Button></div> : <p className="mt-3 text-sm text-slate-500">No active interview session.</p>}</section>
+    <section className="rounded-[3px] border border-[#dfe8f1] bg-white p-5"><h2 className="text-xl font-bold text-[#10285a]">Previous Interviews</h2>{history.length ? <div className="mt-4 divide-y divide-[#e5edf5]">{history.map((item) => <div key={item.id} className="flex flex-wrap items-center justify-between gap-4 py-4"><div><h3 className="text-lg font-bold text-[#10285a]">{item.role_title}</h3><p className="mt-1 flex items-center gap-2 text-sm text-slate-500"><span className="capitalize">{item.difficulty}</span><span>·</span><CalendarDays className="h-3.5 w-3.5" />{new Date(item.created_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}<span>·</span>{item.question_count} questions</p></div><div className="flex items-center gap-3"><strong className="text-xl text-[#10285a]">{item.overall_score ?? '—'}<span className="ml-1 text-xs font-normal text-slate-500">/100</span></strong><Button variant="outline" size="sm" onClick={() => onViewReport(item.id)}>View Report <ArrowRight className="ml-1 h-3.5 w-3.5" /></Button></div></div>)}</div> : <div className="mt-4"><EmptyState title="No previous interviews yet" description="Complete your first mock interview to save a report here." actionLabel="Start your first interview" onAction={onStart} /></div>}</section>
+  </div>;
 }
