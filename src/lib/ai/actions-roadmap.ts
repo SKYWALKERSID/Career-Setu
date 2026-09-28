@@ -38,8 +38,24 @@ export async function generateCareerRoadmap(): Promise<{ success: boolean; roadm
   const provider = aiClient.getProvider();
   const started = Date.now();
   let aiResult;
-  try { aiResult = await provider.generateStructuredOutput(ROADMAP_PROMPT.replace('{{context}}', context), RoadmapSchema, 'You are a catalog-constrained roadmap service. Output JSON only.'); }
+  const systemInstruction = 'You are a catalog-constrained roadmap service. Output JSON only.';
+  try { aiResult = await provider.generateStructuredOutput(ROADMAP_PROMPT.replace('{{context}}', context), RoadmapSchema, systemInstruction); }
   catch { aiResult = { success: false, error: 'AI roadmap generation failed.', provider: provider.name, model: provider.modelName, latencyMs: Date.now() - started }; }
+  // Groq can reject a large JSON-mode generation before schema validation. A
+  // single compact retry keeps the operation provider-backed while reducing
+  // ambiguity and explicitly bounding every array to the domain contract.
+  if (!aiResult.success) {
+    const compactContext = JSON.stringify({
+      target_role: { id: role.id, title: role.title, description: role.description },
+      gaps: skillGaps.map((gap) => ({ skill_id: gap.skill_id, skill_name: gap.skill_name, status: gap.status, importance: gap.importance })),
+      student_skills: (skills || []).map((skill) => ({ skill_id: skill.skill_id, proficiency: skill.proficiency })),
+      courses: courseRows.slice(0, 12).map((course) => ({ id: course.id, title: course.title, provider: course.provider, skill_ids: course.course_skills.map((item) => item.skill_id) })),
+      readiness: readiness ? { overall_score: readiness.overall_score, pending: ['project_score', 'resume_score', 'interview_score'].filter((key) => readiness[key as keyof typeof readiness] == null) } : null,
+    });
+    const compactPrompt = `Return exactly one JSON object with these top-level keys: target_role_id, duration_days, rationale, tasks. Use target_role_id "${role.id}" and duration_days 90. Create exactly 6 tasks across weeks 1, 3, 5, 7, 9, and 11. Each task must have task_type learning, project, or interview_prep; title; description; skill_ids with at most 2 IDs from the supplied gaps; and course_ids with at most 1 ID from the supplied courses. Use only supplied UUIDs. Do not invent IDs, markdown, nested objects, or extra keys. Keep rationale under 200 characters and descriptions under 300 characters. Context: ${compactContext}`;
+    try { aiResult = await provider.generateStructuredOutput(compactPrompt, RoadmapSchema, systemInstruction); }
+    catch { aiResult = { success: false, error: 'AI roadmap generation failed.', provider: provider.name, model: provider.modelName, latencyMs: Date.now() - started }; }
+  }
   const { data: run } = await supabase.from('ai_runs').insert({ feature: 'career_roadmap', model: provider.modelName, prompt_version: ROADMAP_PROMPT_VERSION, student_id: student.id, latency_ms: Date.now() - started, tokens_used: aiResult.tokensUsed ?? null, success: aiResult.success, error_message: aiResult.success ? null : `${aiResult.errorCategory || 'AI_UNKNOWN_ERROR'}: ${aiResult.error || 'Career roadmap generation failed.'}` }).select('id').single();
   if (!aiResult.success || !aiResult.data || !run?.id) return { success: false, error: 'Career roadmap is temporarily unavailable.' };
   const validated = validateRoadmap(aiResult.data, catalog);
