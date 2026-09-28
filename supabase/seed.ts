@@ -95,6 +95,90 @@ export const SEED_CAREER_ROLES = [
   { title: 'Database Administrator', category: 'Data & Analytics', description: 'Ensures database availability, backup recovery, security access controls and query optimization.', salary_range: '₹4.8 - ₹12 LPA', growth_outlook: 'Steady Demand' },
 ];
 
+// Catalog relationships are seeded separately from the role rows so the same
+// canonical role and skill records can be reused by recommendations, gaps,
+// courses, and roadmaps.
+export const SEED_CAREER_ROLE_SKILLS = [
+  ['Software Developer', 'Python', 'high'],
+  ['Software Developer', 'JavaScript', 'high'],
+  ['Software Developer', 'HTML/CSS', 'medium'],
+  ['Software Developer', 'Data Structures & Algorithms', 'high'],
+  ['Software Developer', 'Git & Version Control', 'medium'],
+  ['Software Developer', 'SQL', 'medium'],
+  ['Software Developer', 'REST API Development', 'medium'],
+  ['Data Analyst', 'SQL', 'high'],
+  ['Data Analyst', 'Excel & Advanced Formulas', 'high'],
+  ['Data Analyst', 'Python', 'medium'],
+  ['Data Analyst', 'Pandas & NumPy', 'high'],
+  ['Data Analyst', 'Statistics & Probability', 'high'],
+  ['Data Analyst', 'PowerBI', 'medium'],
+  ['Data Analyst', 'Tableau', 'medium'],
+  ['Data Scientist', 'Python', 'high'],
+  ['Data Scientist', 'SQL', 'medium'],
+  ['Data Scientist', 'Pandas & NumPy', 'high'],
+  ['Data Scientist', 'Statistics & Probability', 'high'],
+  ['Data Scientist', 'Machine Learning Basics', 'high'],
+  ['Data Scientist', 'Deep Learning & PyTorch', 'medium'],
+  ['Data Scientist', 'Data Structures & Algorithms', 'medium'],
+  ['Cybersecurity Analyst', 'Cybersecurity Fundamentals', 'high'],
+  ['Cybersecurity Analyst', 'Network Security', 'high'],
+  ['Cybersecurity Analyst', 'Penetration Testing', 'medium'],
+  ['Cybersecurity Analyst', 'Security Audit & Compliance', 'medium'],
+  ['Cybersecurity Analyst', 'Linux Administration', 'medium'],
+  ['Cloud Engineer', 'AWS Cloud Fundamentals', 'high'],
+  ['Cloud Engineer', 'Linux Administration', 'medium'],
+  ['Cloud Engineer', 'Docker & Containers', 'high'],
+  ['Cloud Engineer', 'Kubernetes', 'medium'],
+  ['Cloud Engineer', 'System Design', 'high'],
+  ['UI/UX Designer', 'Figma & UI Design', 'high'],
+  ['UI/UX Designer', 'User Research & Wireframing', 'high'],
+  ['UI/UX Designer', 'Communication Skills', 'medium'],
+  ['Product Manager', 'Product Management', 'high'],
+  ['Product Manager', 'Agile & Scrum Methodologies', 'high'],
+  ['Product Manager', 'Communication Skills', 'high'],
+  ['Product Manager', 'Business Analysis', 'medium'],
+  ['Electronics Engineer', 'Embedded C/C++', 'high'],
+  ['Electronics Engineer', 'PCB Design & VLSI', 'medium'],
+  ['Electronics Engineer', 'Internet of Things (IoT)', 'medium'],
+  ['Business Analyst', 'Business Analysis', 'high'],
+  ['Business Analyst', 'Excel & Advanced Formulas', 'high'],
+  ['Business Analyst', 'SQL', 'medium'],
+  ['Business Analyst', 'Communication Skills', 'medium'],
+  ['Digital Marketing Specialist', 'Digital Marketing & SEO', 'high'],
+  ['Digital Marketing Specialist', 'Content Strategy', 'high'],
+  ['Digital Marketing Specialist', 'Communication Skills', 'medium'],
+  ['DevOps Engineer', 'Docker & Containers', 'high'],
+  ['DevOps Engineer', 'Kubernetes', 'high'],
+  ['DevOps Engineer', 'CI/CD Pipelines', 'high'],
+  ['DevOps Engineer', 'Linux Administration', 'medium'],
+  ['DevOps Engineer', 'AWS Cloud Fundamentals', 'medium'],
+  ['Full Stack Developer', 'HTML/CSS', 'high'],
+  ['Full Stack Developer', 'JavaScript', 'high'],
+  ['Full Stack Developer', 'React', 'high'],
+  ['Full Stack Developer', 'Node.js', 'high'],
+  ['Full Stack Developer', 'REST API Development', 'medium'],
+  ['Full Stack Developer', 'SQL', 'medium'],
+  ['Full Stack Developer', 'Git & Version Control', 'medium'],
+  ['Systems Engineer', 'Linux Administration', 'high'],
+  ['Systems Engineer', 'Network Security', 'medium'],
+  ['Systems Engineer', 'System Design', 'high'],
+  ['Systems Engineer', 'Docker & Containers', 'medium'],
+  ['Embedded Systems Engineer', 'Embedded C/C++', 'high'],
+  ['Embedded Systems Engineer', 'PCB Design & VLSI', 'medium'],
+  ['Embedded Systems Engineer', 'Internet of Things (IoT)', 'high'],
+  ['Network Engineer', 'Network Security', 'high'],
+  ['Network Engineer', 'Linux Administration', 'medium'],
+  ['Network Engineer', 'System Design', 'medium'],
+  ['QA Automation Engineer', 'JavaScript', 'high'],
+  ['QA Automation Engineer', 'Python', 'medium'],
+  ['QA Automation Engineer', 'Git & Version Control', 'medium'],
+  ['QA Automation Engineer', 'REST API Development', 'medium'],
+  ['QA Automation Engineer', 'Communication Skills', 'low'],
+  ['Database Administrator', 'PostgreSQL Database', 'high'],
+  ['Database Administrator', 'Database Administration', 'high'],
+  ['Database Administrator', 'SQL', 'high'],
+] as const;
+
 export const SEED_COURSES = [
   { title: 'Data Structures and Algorithms', provider: 'NPTEL (IIT Kharagpur)', level: 'Intermediate', duration_hours: 48, url: 'https://nptel.ac.in/courses/106105085', is_free: true, price: 'Free' },
   { title: 'Full Stack Web Development', provider: 'SWAYAM (MHRD)', level: 'Intermediate', duration_hours: 60, url: 'https://swayam.gov.in/explorer', is_free: true, price: 'Free' },
@@ -433,6 +517,27 @@ async function main() {
     console.log(`✓ Career roles catalog already populated (${existingRoleTitles.size} roles present)`);
   }
 
+  // 2b. Seed normalized role-to-skill requirements after both catalogs exist.
+  console.log('Seeding career role skill mappings...');
+  const [{ data: roleRows }, { data: skillRows }] = await Promise.all([
+    supabase.from('career_roles').select('id, title'),
+    supabase.from('skills').select('id, name'),
+  ]);
+  const roleIds = new Map((roleRows || []).map((role: any) => [role.title, role.id]));
+  const skillIds = new Map((skillRows || []).map((skill: any) => [skill.name, skill.id]));
+  const roleSkillRows = SEED_CAREER_ROLE_SKILLS.flatMap(([roleTitle, skillName, importance]) => {
+    const roleId = roleIds.get(roleTitle);
+    const skillId = skillIds.get(skillName);
+    return roleId && skillId ? [{ role_id: roleId, skill_id: skillId, required: true, importance }] : [];
+  });
+  if (roleSkillRows.length > 0) {
+    const { error: roleSkillError } = await supabase
+      .from('career_role_skills')
+      .upsert(roleSkillRows, { onConflict: 'role_id,skill_id' });
+    if (roleSkillError) console.error('Error seeding career role skill mappings:', roleSkillError);
+    else console.log(`✓ Ensured ${roleSkillRows.length} career role skill mappings`);
+  }
+
   // 3. Seed Courses
   console.log('Seeding courses...');
   const { data: existingCourses } = await supabase.from('courses').select('title');
@@ -471,4 +576,3 @@ async function main() {
 }
 
 main().catch(console.error);
-

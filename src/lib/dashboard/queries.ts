@@ -8,6 +8,7 @@ import { StudentProfile, StudentSkill, ReadinessAssessment, CareerRecommendation
 
 export interface DashboardData {
   studentProfile: StudentProfile | null;
+  targetCareer: { id: string; title: string } | null;
   studentSkills: StudentSkill[];
   completionScore: number;
   readinessAssessment: ReadinessAssessment | null;
@@ -33,6 +34,7 @@ export async function getDashboardData(): Promise<{ success: boolean; data?: Das
       success: true,
       data: {
         studentProfile: null,
+        targetCareer: null,
         studentSkills: [],
         completionScore: 0,
         readinessAssessment: null,
@@ -47,6 +49,12 @@ export async function getDashboardData(): Promise<{ success: boolean; data?: Das
 
   const sp = profileRes.studentProfile;
   const skills = profileRes.studentSkills || [];
+
+  // Resolve the first persisted canonical target to catalog metadata for
+  // downstream consumers. The ID remains the source of truth for actions.
+  const { data: targetCareer } = sp.target_careers?.length
+    ? await supabase.from('career_roles').select('id, title').eq('id', sp.target_careers[0]).maybeSingle()
+    : { data: null };
 
   const completionScore = calculateProfileCompletion({
     name: sp.name,
@@ -116,6 +124,7 @@ export async function getDashboardData(): Promise<{ success: boolean; data?: Das
     success: true,
     data: {
       studentProfile: sp,
+      targetCareer: targetCareer || null,
       studentSkills: skills as unknown as StudentSkill[],
       completionScore,
       readinessAssessment: readinessAssessment || null,

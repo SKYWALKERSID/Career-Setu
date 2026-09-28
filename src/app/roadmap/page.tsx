@@ -55,7 +55,7 @@ export default function RoadmapPage() {
   const developing = gaps.filter((gap) => gap.status === 'developing');
   const acquired = gaps.filter((gap) => gap.status === 'acquired');
   const roadmap = data?.roadmap as (DashboardData['roadmap'] & { career_roles?: { title?: string } }) | null;
-  const roleName = roadmap?.career_roles?.title || (data?.studentProfile?.target_careers?.length ? 'Selected target career' : 'Target career not selected');
+  const roleName = roadmap?.career_roles?.title || data?.targetCareer?.title || (data?.studentProfile?.target_careers?.length ? 'Selected target career' : 'Target career not selected');
 
   return <Shell><main className="mx-auto w-full max-w-[1440px] flex-1 space-y-4 p-4 sm:p-6">
     <Hero />
