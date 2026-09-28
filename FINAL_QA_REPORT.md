@@ -40,7 +40,7 @@ The repository builds cleanly and the local Groq provider abstraction passes a r
 
 The existing recommendation architecture was preserved. A server-side `ensureCareerRecommendations` path invokes the existing catalog-constrained generator for an authenticated student with no cached recommendation rows. Profile save also invokes that generator after readiness persistence. The recommendation schema now explicitly requests the canonical `recommendations` wrapper and `score` output, while safely normalizing equivalent provider aliases before validation. No mock data, catalog duplication, service-role access, or client-side AI credentials were added.
 
-The recommendation contract now also requires decimal confidence and safely normalizes the observed bounded percentage representation before validation. No mock data, catalog duplication, service-role access, or client-side AI credentials were added.
+The recommendation contract now also requires decimal confidence and safely normalizes numeric provider percentages above `1` before validation; values that remain invalid are still rejected. No mock data, catalog duplication, service-role access, or client-side AI credentials were added.
 
 ## Provider Evidence
 
@@ -51,7 +51,7 @@ The recommendation contract now also requires decimal confidence and safely norm
 
 ## Unverified Features
 
-Personalized career recommendations, target-career persistence in the live environment, skill gaps, roadmap generation, resume AI analysis, interview question/evaluation/report generation, and progress aggregation remain unverified until the third contract repair is deployed and exercised live.
+Personalized career recommendations, target-career persistence in the live environment, skill gaps, roadmap generation, resume AI analysis, interview question/evaluation/report generation, and progress aggregation remain unverified until the fourth contract repair is deployed and exercised live.
 
 ## Security Notes
 

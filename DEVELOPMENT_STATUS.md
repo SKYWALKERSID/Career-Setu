@@ -443,3 +443,9 @@ Quality, Security & Reliability is complete. Deployment/Demo and Final UI recons
 - Added bounded normalization from a provider percentage (`1..100`) to the domain decimal range, while the prompt explicitly requires decimal confidence. No unbounded coercion or recommendation fallback was added.
 - Focused schema/catalog test, TypeScript, ESLint, and production build all exit 0.
 - Production re-verification remains required before the career pipeline can be marked working.
+
+### Production Career Runtime Contract Repair 4 (IN PROGRESS)
+
+- The third live attempt still reported a confidence value above the decimal range. The normalization now handles numeric provider percentages above `1`; values that remain outside `0..1` continue to fail Zod.
+- Focused schema/catalog test, TypeScript, ESLint, and production build all exit 0.
+- This repair is pushed for deployment; live career acceptance remains pending.

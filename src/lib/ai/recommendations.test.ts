@@ -25,6 +25,9 @@ assert(wrapperResult.success && wrapperResult.data.recommendations.length === 1,
 const percentageConfidence = { recommendations: [{ ...valid.recommendations[0], confidence: 84 }] };
 const confidenceResult = CareerRecommendationsSchema.safeParse(percentageConfidence);
 assert(confidenceResult.success && confidenceResult.data.recommendations[0].confidence === 0.84, 'Percentage confidence should normalize before validation');
+const largerPercentageConfidence = { recommendations: [{ ...valid.recommendations[0], confidence: 120 }] };
+const largerConfidenceResult = CareerRecommendationsSchema.safeParse(largerPercentageConfidence);
+assert(!largerConfidenceResult.success, 'Out-of-range confidence must still fail validation after normalization');
 assert(!validateCareerRecommendations({ recommendations: [{ ...valid.recommendations[0], role_id: otherSkillId }] }, catalog).success, 'Invalid role ID should be rejected');
 assert(!validateCareerRecommendations({ recommendations: [{ ...valid.recommendations[0], missing_skill_ids: [otherSkillId] }] }, catalog).success, 'Invalid skill ID should be rejected');
 const pendingContext = { readiness: { project_score: null, resume_score: null, interview_score: null } };

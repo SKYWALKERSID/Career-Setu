@@ -17,7 +17,7 @@ export const CareerRecommendationItemSchema = z.preprocess((value) => {
   // Normalize that equivalent field before the shared domain schema validates it.
   let normalized = item;
   if (normalized.score === undefined && normalized.match_score !== undefined) normalized = { ...normalized, score: normalized.match_score };
-  if (typeof item.confidence === 'number' && item.confidence > 1 && item.confidence <= 100) {
+  if (typeof item.confidence === 'number' && item.confidence > 1) {
     normalized = { ...normalized, confidence: item.confidence / 100 };
   }
   if (normalized !== item) {
