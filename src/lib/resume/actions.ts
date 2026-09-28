@@ -8,6 +8,7 @@ import { RESUME_PROMPT, RESUME_PROMPT_VERSION } from '@/lib/ai/prompts/resume';
 import { calculateResumeScore } from './scoring';
 import type { ResumeParsedData } from './types';
 import { resolveTargetCareerIds } from '@/lib/career/target-roles';
+import { calculateAndSaveReadinessAssessment } from '@/lib/readiness/actions';
 
 const MAX_BYTES = 5 * 1024 * 1024;
 const ALLOWED = new Map([['application/pdf', '.pdf'], ['text/plain', '.txt']]);
@@ -94,6 +95,9 @@ export async function uploadAndAnalyzeResume(formData: FormData): Promise<{ succ
   if (parsed.evidenced_skill_ids.some((id) => !catalogSkillIds.has(id)) || parsed.role_required_skill_ids.some((id) => !validRoleSkills.has(id)) || parsed.not_evidenced_skill_ids.some((id) => !validRoleSkills.has(id))) { if (run?.id) await supabase.from('ai_runs').update({ success: false, error_message: 'Resume parser returned unsupported catalog entities.' }).eq('id', run.id); return { success: false, resumeId: resume.id, error: 'Resume analysis returned unsupported catalog data.' }; }
   const score = calculateResumeScore(parsed);
   await supabase.from('resumes').update({ parsed_json: parsed, score }).eq('id', resume.id).eq('student_id', student.id);
+  // Resume evidence changes the readiness inputs; refresh the persisted
+  // assessment only after the parsed result has been saved.
+  await calculateAndSaveReadinessAssessment();
   revalidatePath('/resume'); revalidatePath('/progress'); revalidatePath('/dashboard');
   return { success: true, resumeId: resume.id };
 }
