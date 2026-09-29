@@ -227,7 +227,7 @@ function DashboardContent() {
             <Link href="/onboarding"><Button variant="outline" size="sm" className="text-xs font-semibold">Update <ArrowRight className="h-3 w-3" /></Button></Link>
           </Card>
           <Card className="p-3 flex items-center justify-between">
-            <div className="min-w-0"><p className="text-xs text-slate-500">Target Career Goals</p><p className="text-xs font-bold truncate max-w-[170px]">{sp?.target_careers?.length ? sp.target_careers.join(', ') : 'Not selected'}</p></div>
+            <div className="min-w-0"><p className="text-xs text-slate-500">Target Career Goals</p><p className="text-xs font-bold truncate max-w-[170px]">{dashboardData?.targetCareers?.length ? dashboardData.targetCareers.map((career) => career.title).join(', ') : 'Not selected'}</p></div>
             <Link href="/career"><Button variant="outline" size="sm" className="text-xs font-semibold">Explore <ArrowRight className="h-3 w-3" /></Button></Link>
           </Card>
           <Card className="p-3 flex items-center justify-between">
