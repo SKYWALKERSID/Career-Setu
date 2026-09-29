@@ -151,7 +151,8 @@ export async function submitInterviewAnswer(interviewId: string, answer: string)
   if (next.result.data.focus_skill_id && !allowed.has(next.result.data.focus_skill_id)) return { success: false, error: 'Next question referenced an unsupported role skill.' };
   const { error: nextError } = await supabase.from('interview_turns').insert({ interview_id: interviewId, turn_number: nextNumber, question: next.result.data.question });
   if (nextError) return { success: false, error: 'Next interview question could not be saved.' };
-  return { success: true, completed: false, question: next.result.data.question, turnNumber: nextNumber };
+  const { data: refreshedTurns } = await supabase.from('interview_turns').select('*').eq('interview_id', interviewId).order('turn_number', { ascending: true });
+  return { success: true, completed: false, question: next.result.data.question, turnNumber: nextNumber, turns: refreshedTurns || [] };
 }
 
 export async function getInterviewSession(interviewId: string) {

@@ -323,10 +323,10 @@ function ProgressContent() {
                   <div className="flex items-center justify-between border-b border-[#edf3f8] pb-4">
                     <div className="flex items-center gap-2">
                       <History className="h-5 w-5 text-[#1769d4]" />
-                      <h2 className="text-lg font-bold text-[#10285a]">Readiness Assessment History</h2>
+                      <h2 className="text-lg font-bold text-[#10285a]">Previous Readiness Assessments</h2>
                     </div>
                     <span className="text-xs text-slate-400">
-                      {snapshot.readiness.history.length} Saved Evaluations
+                      {snapshot.readiness.history.length} Previous Assessments
                     </span>
                   </div>
 
@@ -336,6 +336,8 @@ function ProgressContent() {
                         No readiness assessments have been saved yet. Click &quot;Recalculate Readiness&quot; above to generate your first assessment record.
                       </p>
                     ) : (
+                      <>
+                      <p className="mb-4 text-xs text-slate-500">These are completed assessments saved previously. They are historical context, not an active assessment.</p>
                       <div className="divide-y divide-[#edf3f8]">
                         {snapshot.readiness.history.map((record, idx) => (
                           <div key={record.id} className="flex items-center justify-between py-3.5 first:pt-0 last:pb-0 text-xs">
@@ -362,6 +364,7 @@ function ProgressContent() {
                           </div>
                         ))}
                       </div>
+                      </>
                     )}
                   </div>
                 </Card>

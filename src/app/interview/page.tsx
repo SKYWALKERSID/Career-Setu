@@ -90,10 +90,7 @@ export default function InterviewPage() {
       } else {
         setQuestion(result.question || '');
         setAnswer('');
-        setTurns((current) => [
-          ...current,
-          { turn_number: result.turnNumber || current.length + 1, question: result.question || '' },
-        ]);
+        setTurns((result.turns || []) as Turn[]);
       }
     } else {
       setError(result.error || 'Answer evaluation failed. Your session remains preserved.');
@@ -101,7 +98,7 @@ export default function InterviewPage() {
     setBusy(false);
   }
 
-  const currentNumber = turns.find((turn) => !turn.answer)?.turn_number || turns.length || 1;
+  const currentNumber = turns.find((turn) => !turn.answer)?.turn_number || Math.min(turns.length + 1, 5);
   const completedTurnsCount = turns.filter((t) => t.answer).length;
 
   return (
@@ -164,7 +161,7 @@ export default function InterviewPage() {
                   <div className="h-2 flex-1 overflow-hidden rounded-full bg-[#e5edf6]">
                     <div
                       className="h-full rounded-full bg-[#1769d4] transition-all duration-300"
-                      style={{ width: `${Math.min(100, (currentNumber / 5) * 100)}%` }}
+                      style={{ width: `${Math.min(100, (completedTurnsCount / 5) * 100)}%` }}
                     />
                   </div>
                   <span className="whitespace-nowrap text-xs font-bold text-[#425d7c]">
@@ -238,27 +235,32 @@ export default function InterviewPage() {
                       {completedTurnsCount} of 5 turns completed
                     </p>
                     <div className="mt-4 space-y-2">
-                      {turns.map((turn) => (
+                      {Array.from({ length: 5 }, (_, index) => index + 1).map((turnNumber) => {
+                        const turn = turns.find((item) => item.turn_number === turnNumber);
+                        const completed = Boolean(turn?.answer);
+                        const current = turnNumber === currentNumber;
+                        return (
                         <div
-                          key={turn.turn_number}
+                          key={turnNumber}
                           className={`rounded border p-2.5 text-xs ${
-                            turn.answer
+                            completed
                               ? 'border-emerald-200 bg-emerald-50/50 text-emerald-900'
-                              : turn.turn_number === currentNumber
+                              : current
                               ? 'border-[#1769d4] bg-[#f0f6ff] font-semibold text-[#10285a]'
                               : 'border-slate-200 bg-slate-50 text-slate-500'
                           }`}
                         >
                           <div className="flex items-center justify-between">
-                            <span>Turn {turn.turn_number}</span>
-                            {turn.answer ? (
+                            <span>Turn {turnNumber}</span>
+                            {completed ? (
                               <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" />
-                            ) : turn.turn_number === currentNumber ? (
+                            ) : current ? (
                               <span className="text-xs uppercase tracking-wide text-[#1769d4]">Current</span>
                             ) : null}
                           </div>
                         </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   </div>
 

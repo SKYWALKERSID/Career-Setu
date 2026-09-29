@@ -520,42 +520,42 @@ export default function SettingsPage() {
               {/* Sidebar Info Card */}
               <aside className="space-y-5">
                 <Card className="rounded-[3px] border border-[#dfe8f1] bg-white p-5 shadow-[0_2px_9px_rgba(27,63,105,0.04)]">
-                  <h2 className="text-2xl sm:text-3xl font-bold text-[#10285a]">Profile Strength Breakdown</h2>
+                  <h2 className="text-2xl sm:text-3xl font-bold text-[#10285a]">Profile Completeness Breakdown</h2>
                   <p className="mt-1 text-xs text-slate-500">
-                    Calculated deterministically from your current form selections.
+                    Measures information coverage in your profile, not technical strength or career readiness.
                   </p>
 
                   <div className="mt-4 space-y-3 text-xs">
                     <div className="flex justify-between border-b border-[#edf3f8] pb-2">
-                      <span className="text-slate-600">Personal Info</span>
+                      <span className="text-slate-600">Personal Information</span>
                       <span className="font-bold text-emerald-700">
                         {formData.name && formData.location ? '15 / 15 pts' : 'Incomplete'}
                       </span>
                     </div>
 
                     <div className="flex justify-between border-b border-[#edf3f8] pb-2">
-                      <span className="text-slate-600">Academic Info</span>
+                      <span className="text-slate-600">Academic Foundation</span>
                       <span className="font-bold text-emerald-700">
                         {formData.college && formData.course && formData.branch ? '30 / 30 pts' : 'Incomplete'}
                       </span>
                     </div>
 
                     <div className="flex justify-between border-b border-[#edf3f8] pb-2">
-                      <span className="text-slate-600">Technical Skills ({formData.skill_ids.length})</span>
+                      <span className="text-slate-600">Skills Recorded ({formData.skill_ids.length})</span>
                       <span className="font-bold text-emerald-700">
                         {formData.skill_ids.length >= 5 ? '25 / 25 pts' : formData.skill_ids.length >= 3 ? '15 / 25 pts' : '10 / 25 pts'}
                       </span>
                     </div>
 
                     <div className="flex justify-between border-b border-[#edf3f8] pb-2">
-                      <span className="text-slate-600">Target Roles ({formData.target_careers.length})</span>
+                      <span className="text-slate-600">Target Careers ({formData.target_careers.length})</span>
                       <span className="font-bold text-emerald-700">
                         {formData.target_careers.length >= 1 ? '20 / 20 pts' : '0 / 20 pts'}
                       </span>
                     </div>
 
                     <div className="flex justify-between pb-1">
-                      <span className="text-slate-600">Interests ({formData.interests.length})</span>
+                      <span className="text-slate-600">Domain Interests ({formData.interests.length})</span>
                       <span className="font-bold text-emerald-700">
                         {formData.interests.length >= 1 ? '10 / 10 pts' : '0 / 10 pts'}
                       </span>
