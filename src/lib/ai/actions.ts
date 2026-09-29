@@ -56,7 +56,14 @@ export async function runAIInfrastructureTest() {
   try {
     await supabase.from('ai_runs').insert({
       feature: 'infrastructure_test',
-      model: provider.modelName,
+      model: aiResult.model,
+      provider: aiResult.provider,
+      primary_provider: aiResult.attempts?.[0]?.provider || aiResult.provider,
+      primary_model: aiResult.attempts?.[0]?.model || aiResult.model,
+      fallback_provider: aiResult.attempts?.[1]?.provider || null,
+      fallback_model: aiResult.attempts?.[1]?.model || null,
+      fallback_reason: aiResult.fallbackReason || null,
+      error_category: aiResult.errorCategory || null,
       prompt_version: 'v1.0-test',
       latency_ms: latencyMs,
       success: aiResult.success,

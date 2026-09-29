@@ -149,11 +149,11 @@ export async function uploadAndAnalyzeResume(formData: FormData, requestedRoleId
   const provider = aiClient.getProvider(); const started = Date.now();
   const resumePrompt = RESUME_PROMPT.replace('{{context}}', context).replace('{{resume}}', text);
   let result = await provider.generateStructuredOutput(resumePrompt, ResumeParseSchema, 'Fact-preserving structured resume parser.');
-  if (!result.success && result.errorCategory === 'AI_PROVIDER_ERROR' && result.error?.includes('HTTP 400')) {
+  if (!result.success && !result.fallbackFrom && result.errorCategory === 'AI_PROVIDER_ERROR' && result.error?.includes('HTTP 400')) {
     const retryPrompt = `Return one valid JSON object only. Extract only facts explicitly present in this resume. Use empty arrays for absent sections. Every list item must be a plain string. Use only supplied UUIDs for evidence arrays. Exact keys: contact, education, skills, projects, experience, certifications, achievements, evidenced_skill_ids, role_required_skill_ids, not_evidenced_skill_ids, strengths, improvement_areas, suggestions.\nCATALOG: ${context}\nRESUME: ${text}`;
     result = await provider.generateStructuredOutput(retryPrompt, ResumeParseSchema, 'Return valid JSON only for a fact-preserving resume parser.');
   }
-  const { data: run } = await supabase.from('ai_runs').insert({ feature: 'resume_parse', model: provider.modelName, prompt_version: RESUME_PROMPT_VERSION, student_id: student.id, latency_ms: Date.now() - started, tokens_used: result.tokensUsed ?? null, success: result.success, error_message: result.success ? null : `${result.errorCategory || 'AI_UNKNOWN_ERROR'}: ${result.error || 'Resume analysis failed.'}` }).select('id').single();
+  const { data: run } = await supabase.from('ai_runs').insert({ feature: 'resume_parse', model: result.model, provider: result.provider, primary_provider: result.attempts?.[0]?.provider || result.provider, primary_model: result.attempts?.[0]?.model || result.model, fallback_provider: result.attempts?.[1]?.provider || null, fallback_model: result.attempts?.[1]?.model || null, fallback_reason: result.fallbackReason || null, error_category: result.errorCategory || null, prompt_version: RESUME_PROMPT_VERSION, student_id: student.id, latency_ms: Date.now() - started, tokens_used: result.tokensUsed ?? null, success: result.success, error_message: result.success ? null : `${result.errorCategory || 'AI_UNKNOWN_ERROR'}: ${result.error || 'Resume analysis failed.'}` }).select('id').single();
   let usedFallback = false;
   let parsed: ResumeParsedData;
   if (!result.success || !result.data) {

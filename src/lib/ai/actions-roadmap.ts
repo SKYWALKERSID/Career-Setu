@@ -43,7 +43,7 @@ export async function generateCareerRoadmap(roleId: string): Promise<{ success: 
   // Groq can reject a large JSON-mode generation before schema validation. A
   // single compact retry keeps the operation provider-backed while reducing
   // ambiguity and explicitly bounding every array to the domain contract.
-  if (!aiResult.success) {
+  if (!aiResult.success && !aiResult.fallbackFrom) {
     const compactContext = JSON.stringify({
       target_role: { id: role.id, title: role.title, description: role.description },
       gaps: skillGaps.map((gap) => ({ skill_id: gap.skill_id, skill_name: gap.skill_name, status: gap.status, importance: gap.importance })),
@@ -55,7 +55,7 @@ export async function generateCareerRoadmap(roleId: string): Promise<{ success: 
     try { aiResult = await provider.generateStructuredOutput(compactPrompt, RoadmapSchema, systemInstruction); }
     catch { aiResult = { success: false, error: 'AI roadmap generation failed.', provider: provider.name, model: provider.modelName, latencyMs: Date.now() - started }; }
   }
-  const { data: run } = await supabase.from('ai_runs').insert({ feature: 'career_roadmap', model: provider.modelName, prompt_version: ROADMAP_PROMPT_VERSION, student_id: student.id, latency_ms: Date.now() - started, tokens_used: aiResult.tokensUsed ?? null, success: aiResult.success, error_message: aiResult.success ? null : `${aiResult.errorCategory || 'AI_UNKNOWN_ERROR'}: ${aiResult.error || 'Career roadmap generation failed.'}` }).select('id').single();
+  const { data: run } = await supabase.from('ai_runs').insert({ feature: 'career_roadmap', model: aiResult.model, provider: aiResult.provider, primary_provider: aiResult.attempts?.[0]?.provider || aiResult.provider, primary_model: aiResult.attempts?.[0]?.model || aiResult.model, fallback_provider: aiResult.attempts?.[1]?.provider || null, fallback_model: aiResult.attempts?.[1]?.model || null, fallback_reason: aiResult.fallbackReason || null, error_category: aiResult.errorCategory || null, prompt_version: ROADMAP_PROMPT_VERSION, student_id: student.id, latency_ms: Date.now() - started, tokens_used: aiResult.tokensUsed ?? null, success: aiResult.success, error_message: aiResult.success ? null : `${aiResult.errorCategory || 'AI_UNKNOWN_ERROR'}: ${aiResult.error || 'Career roadmap generation failed.'}` }).select('id').single();
   if (!aiResult.success || !aiResult.data || !run?.id) return { success: false, error: 'Career roadmap is temporarily unavailable.' };
   const validated = validateRoadmap(aiResult.data, catalog);
   if (!validated.success) { await supabase.from('ai_runs').update({ success: false, error_message: validated.error }).eq('id', run.id); return { success: false, error: validated.error }; }

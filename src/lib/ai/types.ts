@@ -22,6 +22,10 @@ export interface AIResponse<T> {
   model: string;
   latencyMs: number;
   tokensUsed?: number;
+  statusCode?: number;
+  attempts?: Array<{ provider: string; model: string; success: boolean; errorCategory?: AIErrorCategory; statusCode?: number }>;
+  fallbackFrom?: string;
+  fallbackReason?: string;
 }
 
 export interface AIProvider {

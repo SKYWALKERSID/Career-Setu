@@ -64,7 +64,7 @@ export async function generateCareerRecommendations(): Promise<{ success: boolea
   }
   const latencyMs = Date.now() - startedAt;
 
-  const { data: aiRun } = await supabase.from('ai_runs').insert({ feature: 'career_recommendations', model: provider.modelName, prompt_version: CAREER_RECOMMENDATIONS_PROMPT_VERSION, student_id: student.id, latency_ms: latencyMs, tokens_used: aiResult.tokensUsed ?? null, success: aiResult.success, error_message: aiResult.success ? null : `${aiResult.errorCategory || 'AI_UNKNOWN_ERROR'}: ${aiResult.error || 'AI recommendation generation failed.'}` }).select('id').single();
+  const { data: aiRun } = await supabase.from('ai_runs').insert({ feature: 'career_recommendations', model: aiResult.model, provider: aiResult.provider, primary_provider: aiResult.attempts?.[0]?.provider || aiResult.provider, primary_model: aiResult.attempts?.[0]?.model || aiResult.model, fallback_provider: aiResult.attempts?.[1]?.provider || null, fallback_model: aiResult.attempts?.[1]?.model || null, fallback_reason: aiResult.fallbackReason || null, error_category: aiResult.errorCategory || null, prompt_version: CAREER_RECOMMENDATIONS_PROMPT_VERSION, student_id: student.id, latency_ms: latencyMs, tokens_used: aiResult.tokensUsed ?? null, success: aiResult.success, error_message: aiResult.success ? null : `${aiResult.errorCategory || 'AI_UNKNOWN_ERROR'}: ${aiResult.error || 'AI recommendation generation failed.'}` }).select('id').single();
   const aiRunId = aiRun?.id;
 
   if (!aiResult.success || !aiResult.data) return { success: false, error: publicError(aiResult.error) };

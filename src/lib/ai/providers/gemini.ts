@@ -5,7 +5,9 @@ import { AIErrorCategory, AIProvider, AIResponse } from '../types';
 const rateLimitMap = new Map<string, number>();
 const RATE_LIMIT_COOLDOWN_MS = 3000; // 3 seconds between calls per feature
 const MAX_TRANSIENT_RETRIES = 2;
-const MAX_RETRY_DELAY_MS = 1500;
+const BASE_RETRY_DELAY_MS = 500;
+const MAX_RETRY_DELAY_MS = 2000;
+const RETRYABLE_STATUS_CODES = new Set([429, 500, 502, 503, 504]);
 
 function checkRateLimit(featureKey: string): string | null {
   const now = Date.now();
@@ -90,11 +92,14 @@ export class GeminiProvider implements AIProvider {
         body: JSON.stringify(body),
       });
 
-      if (![429, 503].includes(response.status) || attempt >= MAX_TRANSIENT_RETRIES) {
+      if (!RETRYABLE_STATUS_CODES.has(response.status) || attempt >= MAX_TRANSIENT_RETRIES) {
         return response;
       }
 
-      const delayMs = Math.min(250 * 2 ** attempt, MAX_RETRY_DELAY_MS);
+      const retryAfterSeconds = Number(response.headers.get('retry-after'));
+      const retryAfterMs = Number.isFinite(retryAfterSeconds) && retryAfterSeconds > 0 ? retryAfterSeconds * 1000 : 0;
+      const exponentialDelayMs = BASE_RETRY_DELAY_MS * 2 ** attempt;
+      const delayMs = Math.min(Math.max(exponentialDelayMs, retryAfterMs), MAX_RETRY_DELAY_MS);
       await new Promise((resolve) => setTimeout(resolve, delayMs));
     }
   }
@@ -129,8 +134,8 @@ export class GeminiProvider implements AIProvider {
         } catch {
           // ignore parsing error
         }
-        const category = response.status === 429 || response.status === 503 ? 'AI_CAPACITY_ERROR' : 'AI_PROVIDER_ERROR';
-        return this.failure(`Gemini Provider Error (HTTP ${response.status}): ${parsedErr}`, category, startTime);
+        const category = response.status === 429 ? 'AI_RATE_LIMIT_ERROR' : response.status >= 500 ? 'AI_CAPACITY_ERROR' : 'AI_PROVIDER_ERROR';
+        return { ...this.failure(`Gemini Provider Error (HTTP ${response.status}): ${parsedErr}`, category, startTime), statusCode: response.status };
       }
 
       const resJson = await response.json();
@@ -200,8 +205,8 @@ export class GeminiProvider implements AIProvider {
         } catch {
           // ignore parsing error
         }
-        const category = response.status === 429 || response.status === 503 ? 'AI_CAPACITY_ERROR' : 'AI_PROVIDER_ERROR';
-        return this.failure(`Gemini Provider Error (HTTP ${response.status}): ${parsedErr}`, category, startTime);
+        const category = response.status === 429 ? 'AI_RATE_LIMIT_ERROR' : response.status >= 500 ? 'AI_CAPACITY_ERROR' : 'AI_PROVIDER_ERROR';
+        return { ...this.failure(`Gemini Provider Error (HTTP ${response.status}): ${parsedErr}`, category, startTime), statusCode: response.status };
       }
 
       const resJson = await response.json();

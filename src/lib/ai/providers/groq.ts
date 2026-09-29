@@ -2,7 +2,7 @@ import { z } from 'zod';
 import { AIErrorCategory, AIProvider, AIResponse } from '../types';
 
 const RATE_LIMIT_COOLDOWN_MS = 3000;
-const MAX_TRANSIENT_RETRIES = 2;
+const MAX_TRANSIENT_RETRIES = 1;
 const MAX_RETRY_DELAY_MS = 1500;
 const REQUEST_TIMEOUT_MS = 30000;
 
@@ -73,7 +73,7 @@ export class GroqProvider implements AIProvider {
           signal: controller.signal,
         });
 
-        if (![429, 500, 502, 503, 504].includes(response.status) || attempt >= MAX_TRANSIENT_RETRIES) {
+        if (![500, 502, 503, 504].includes(response.status) || attempt >= MAX_TRANSIENT_RETRIES) {
           return response;
         }
 
@@ -108,7 +108,7 @@ export class GroqProvider implements AIProvider {
       try {
         parsedResponse = JSON.parse(responseBody);
       } catch {
-        return this.failure(`Groq Provider Error (HTTP ${response.status}): Invalid provider response.`, 'AI_PROVIDER_ERROR', startTime);
+        return { ...this.failure(`Groq Provider Error (HTTP ${response.status}): Invalid provider response.`, 'AI_PARSE_ERROR', startTime), statusCode: response.status };
       }
 
       const tokensUsed = parsedResponse.usage?.total_tokens;
@@ -121,7 +121,7 @@ export class GroqProvider implements AIProvider {
             : status >= 500
               ? 'AI_CAPACITY_ERROR'
               : 'AI_PROVIDER_ERROR';
-        return this.failure(`Groq Provider Error (HTTP ${status}): ${parsedResponse.error?.message || 'Request failed.'}`, category, startTime, tokensUsed);
+        return { ...this.failure(`Groq Provider Error (HTTP ${status}): ${parsedResponse.error?.message || 'Request failed.'}`, category, startTime, tokensUsed), statusCode: status };
       }
 
       const rawText = parsedResponse.choices?.[0]?.message?.content;
@@ -168,7 +168,7 @@ export class GroqProvider implements AIProvider {
       try {
         parsedResponse = JSON.parse(responseBody);
       } catch {
-        return this.failure(`Groq Provider Error (HTTP ${response.status}): Invalid provider response.`, 'AI_PROVIDER_ERROR', startTime);
+        return { ...this.failure(`Groq Provider Error (HTTP ${response.status}): Invalid provider response.`, 'AI_PARSE_ERROR', startTime), statusCode: response.status };
       }
 
       const tokensUsed = parsedResponse.usage?.total_tokens;
@@ -181,7 +181,7 @@ export class GroqProvider implements AIProvider {
             : status >= 500
               ? 'AI_CAPACITY_ERROR'
               : 'AI_PROVIDER_ERROR';
-        return this.failure(`Groq Provider Error (HTTP ${status}): ${parsedResponse.error?.message || 'Request failed.'}`, category, startTime, tokensUsed);
+        return { ...this.failure(`Groq Provider Error (HTTP ${status}): ${parsedResponse.error?.message || 'Request failed.'}`, category, startTime, tokensUsed), statusCode: status };
       }
 
       const rawText = parsedResponse.choices?.[0]?.message?.content;
