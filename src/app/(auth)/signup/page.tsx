@@ -133,8 +133,23 @@ function SignUpForm() {
     setGoogleLoading(true);
     setErrorMsg('');
 
-    try {
+  try {
       const supabase = createClient();
+      // Google registration is a logged-out boundary too. Prevent a stale
+      // CareerSetu session from surviving into the provider callback.
+      const { data: existingSession } = await supabase.auth.getSession();
+      if (existingSession.session) {
+        const { error: signOutError } = await supabase.auth.signOut({ scope: 'local' });
+        if (signOutError) {
+          setErrorMsg('The previous session could not be cleared. Please sign out and try again.');
+          return;
+        }
+        const { data: clearedSession } = await supabase.auth.getSession();
+        if (clearedSession.session) {
+          setErrorMsg('The previous session is still active. Please refresh and try again.');
+          return;
+        }
+      }
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {

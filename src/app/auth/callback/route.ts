@@ -17,11 +17,6 @@ export async function GET(request: NextRequest) {
   // Preserve any downstream redirect the middleware may have added
   const next = searchParams.get('next') ?? '/dashboard';
 
-  if (!code) {
-    // No code – redirect to signup with an error hint
-    return NextResponse.redirect(`${origin}/signup?error=missing_code`);
-  }
-
   // We will build the response after determining destination,
   // but collect cookies during code exchange.
   const cookieCollector: { name: string; value: string; options: CookieOptions }[] = [];
@@ -44,15 +39,25 @@ export async function GET(request: NextRequest) {
     }
   );
 
+  const clearSessionAndRedirect = async (errorCode: string) => {
+    // Never let a failed OAuth attempt fall back to the previous account.
+    await supabase.auth.signOut({ scope: 'local' });
+    const response = NextResponse.redirect(`${origin}/signup?error=${errorCode}`);
+    cookieCollector.forEach(({ name, value, options }) => {
+      response.cookies.set({ name, value, ...options });
+    });
+    return response;
+  };
+
+  if (!code) {
+    return clearSessionAndRedirect('missing_code');
+  }
+
   const { data, error } = await supabase.auth.exchangeCodeForSession(code);
 
   if (error || !data.session) {
     console.error('[auth/callback] exchangeCodeForSession error:', error?.message);
-    const errResponse = NextResponse.redirect(`${origin}/signup?error=auth_callback_failed`);
-    cookieCollector.forEach(({ name, value, options }) => {
-      errResponse.cookies.set({ name, value, ...options });
-    });
-    return errResponse;
+    return clearSessionAndRedirect('auth_callback_failed');
   }
 
   const userId = data.session.user.id;
