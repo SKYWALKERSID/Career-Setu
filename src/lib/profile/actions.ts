@@ -36,7 +36,7 @@ export async function getStudentProfile() {
   // Fetch student skills junction
   const { data: studentSkills } = await supabase
     .from('student_skills')
-    .select('skill_id, proficiency, evidence_type, skills(id, name, category)')
+    .select('skill_id, proficiency, evidence_type, evidence, skills(id, name, category)')
     .eq('student_id', studentProfile.id);
 
   return {

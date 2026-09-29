@@ -169,7 +169,7 @@ export async function getCareerRoleById(roleId: string) {
 
   // Deterministic skills comparison: required skills minus student's current skills
   const requiredSkills = role.career_role_skills || [];
-  const skillGaps = calculateSkillGaps(requiredSkills.map((crs: { skill_id: string; required: boolean; importance: 'high' | 'medium' | 'low'; skills?: { name?: string } }) => ({ skill_id: crs.skill_id, skill_name: crs.skills?.name || crs.skill_id, required: crs.required, importance: crs.importance, student_proficiency: profileRes.studentSkills?.find((skill: { skill_id: string }) => skill.skill_id === crs.skill_id)?.proficiency })));
+  const skillGaps = calculateSkillGaps(requiredSkills.map((crs: { skill_id: string; required: boolean; importance: 'high' | 'medium' | 'low'; skills?: { name?: string } }) => { const student = profileRes.studentSkills?.find((skill: { skill_id: string }) => skill.skill_id === crs.skill_id); return { skill_id: crs.skill_id, skill_name: crs.skills?.name || crs.skill_id, required: crs.required, importance: crs.importance, student_proficiency: student?.proficiency, student_evidence_type: student?.evidence_type, student_evidence: student?.evidence }; }));
   const skillsToDevelop = skillGaps.filter((gap) => gap.status !== 'acquired');
 
   return {

@@ -15,12 +15,12 @@ async function loadContext(roleId?: string) {
   const selectedRoleIds = roleId && (student.target_careers || []).includes(roleId) ? [roleId] : (student.target_careers || []);
   const [{ data: requirements }, { data: studentSkills }, { data: courseSkills }] = await Promise.all([
     supabase.from('career_role_skills').select('skill_id, required, importance, skills(id, name)').in('role_id', selectedRoleIds),
-    supabase.from('student_skills').select('skill_id, proficiency').eq('student_id', student.id),
+    supabase.from('student_skills').select('skill_id, proficiency, evidence_type, evidence').eq('student_id', student.id),
     supabase.from('course_skills').select('course_id, skill_id'),
   ]);
-  const proficiency = new Map((studentSkills || []).map((item) => [item.skill_id, item.proficiency as 'beginner' | 'intermediate' | 'advanced']));
+  const studentSkillById = new Map((studentSkills || []).map((item) => [item.skill_id, item]));
   const requirementRows = (requirements || []) as unknown as Array<{ skill_id: string; required: boolean; importance: string; skills: { name: string } | Array<{ name: string }> | null }>;
-  const gaps = calculateSkillGaps(requirementRows.map((item) => ({ skill_id: item.skill_id, skill_name: Array.isArray(item.skills) ? item.skills[0]?.name || item.skill_id : item.skills?.name || item.skill_id, importance: (item.importance || 'high') as SkillGapImportance, required: item.required, student_proficiency: proficiency.get(item.skill_id) })));
+  const gaps = calculateSkillGaps(requirementRows.map((item) => { const student = studentSkillById.get(item.skill_id); return { skill_id: item.skill_id, skill_name: Array.isArray(item.skills) ? item.skills[0]?.name || item.skill_id : item.skills?.name || item.skill_id, importance: (item.importance || 'high') as SkillGapImportance, required: item.required, student_proficiency: student?.proficiency as 'beginner' | 'intermediate' | 'advanced' | undefined, student_evidence_type: student?.evidence_type, student_evidence: student?.evidence }; }));
   const courseSkillMap = new Map<string, string[]>();
   for (const row of courseSkills || []) courseSkillMap.set(row.course_id, [...(courseSkillMap.get(row.course_id) || []), row.skill_id]);
   return { supabase, student, context: { skills: studentSkills || [], gaps, targetRoleSkillIds: new Set((requirements || []).map((item) => item.skill_id)), interests: student.interests || [], courseSkillMap } };

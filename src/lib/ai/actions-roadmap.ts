@@ -20,7 +20,7 @@ export async function generateCareerRoadmap(roleId: string): Promise<{ success: 
   if (!student) return { success: false, error: 'Student profile not found.' };
   const [{ data: roles }, { data: skills }, { data: recommendations }, { data: readiness }, { data: courses }] = await Promise.all([
     supabase.from('career_roles').select('id, title, description, career_role_skills(skill_id, required, importance, skills(id, name))'),
-    supabase.from('student_skills').select('skill_id, proficiency, skills(id, name)').eq('student_id', student.id),
+    supabase.from('student_skills').select('skill_id, proficiency, evidence_type, evidence, skills(id, name)').eq('student_id', student.id),
     supabase.from('career_recommendations').select('role_id, score').eq('student_id', student.id).order('score', { ascending: false }).limit(5),
     supabase.from('readiness_assessments').select('*').eq('student_id', student.id).order('created_at', { ascending: false }).limit(1).maybeSingle(),
     supabase.from('courses').select('id, title, provider, url, course_skills(skill_id)'),
@@ -31,8 +31,8 @@ export async function generateCareerRoadmap(roleId: string): Promise<{ success: 
   if (!role) return { success: false, error: 'Select a target career or generate career recommendations first.' };
   const courseRows = (courses || []) as unknown as Array<{ id: string; title: string; provider: string; url: string; course_skills: Array<{ skill_id: string }> }>;
   const catalog = { roleIds: new Set(roleRows.map((item) => item.id)), skillIds: new Set(role.career_role_skills.map((item) => item.skill_id)), courseIds: new Set(courseRows.map((item) => item.id)) };
-  const studentSkillRows = (skills || []) as unknown as Array<{ skill_id: string; proficiency: 'beginner' | 'intermediate' | 'advanced' }>;
-  const skillGaps = calculateSkillGaps(role.career_role_skills.map((item) => ({ skill_id: item.skill_id, skill_name: item.skills?.name || item.skill_id, importance: (item.importance || 'high') as 'high' | 'medium' | 'low', required: item.required, student_proficiency: studentSkillRows.find((skill) => skill.skill_id === item.skill_id)?.proficiency })));
+  const studentSkillRows = (skills || []) as unknown as Array<{ skill_id: string; proficiency: 'beginner' | 'intermediate' | 'advanced'; evidence_type?: 'self_declared' | 'project' | 'certification' | 'assessment' | 'resume'; evidence?: string | null }>;
+  const skillGaps = calculateSkillGaps(role.career_role_skills.map((item) => { const student = studentSkillRows.find((skill) => skill.skill_id === item.skill_id); return { skill_id: item.skill_id, skill_name: item.skills?.name || item.skill_id, importance: (item.importance || 'high') as 'high' | 'medium' | 'low', required: item.required, student_proficiency: student?.proficiency, student_evidence_type: student?.evidence_type, student_evidence: student?.evidence }; }));
   const context = JSON.stringify({ student, selected_role: role, student_skills: skills || [], skill_gaps: skillGaps, recommendations: recommendations || [], readiness: readiness || null, courses: courseRows });
   const provider = aiClient.getProvider();
   const started = Date.now();

@@ -6,10 +6,11 @@ function assert(value: boolean, message: string) { if (!value) throw new Error(m
 console.log('--- RUNNING SKILL GAP TESTS ---');
 assert(calculateSkillGaps(base).length === 2, 'Irrelevant student/catalog skills are excluded');
 assert(calculateSkillGaps(base).every((gap) => gap.status === 'missing'), 'No student skills produces all missing gaps');
-assert(calculateSkillGaps(base.map((item) => item.skill_id === a ? { ...item, student_proficiency: 'advanced' as const } : item))[0].status === 'acquired', 'Advanced skill is acquired');
-assert(calculateSkillGaps(base.map((item) => item.skill_id === a ? { ...item, student_proficiency: 'beginner' as const } : item))[0].status === 'developing', 'Beginner skill is developing');
+assert(calculateSkillGaps(base.map((item) => item.skill_id === a ? { ...item, student_proficiency: 'advanced' as const, student_evidence_type: 'assessment' as const } : item))[0].status === 'acquired', 'Advanced evidenced skill is acquired');
+assert(calculateSkillGaps(base.map((item) => item.skill_id === a ? { ...item, student_proficiency: 'beginner' as const, student_evidence_type: 'project' as const } : item))[0].status === 'developing', 'Beginner evidenced skill is developing');
+assert(calculateSkillGaps(base.map((item) => item.skill_id === a ? { ...item, student_proficiency: 'intermediate' as const, student_evidence_type: 'self_declared' as const } : item))[0].status === 'missing', 'Self-declared selection alone remains missing');
 assert(calculateSkillGaps(base)[0].skill_id === a, 'High importance missing gap ranks first');
-const developing = calculateSkillGaps(base.map((item) => ({ ...item, student_proficiency: 'intermediate' as const }))); assert(developing[0].priority > 0, 'Priority is deterministic and importance-based');
+const developing = calculateSkillGaps(base.map((item) => ({ ...item, student_proficiency: 'intermediate' as const, student_evidence_type: 'project' as const }))); assert(developing[0].priority > 0, 'Priority is deterministic and importance-based');
 assert(JSON.stringify(calculateSkillGaps(base)) === JSON.stringify(calculateSkillGaps(base)), 'Calculation is deterministic');
 assert(base[0].course_ids === undefined, 'No mapped course is represented without fabrication');
 console.log('PASS: classification, prioritization, irrelevant-skill exclusion, and deterministic behavior');

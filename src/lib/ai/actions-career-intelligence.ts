@@ -9,7 +9,7 @@ import { CAREER_INTELLIGENCE_PROMPT, CAREER_INTELLIGENCE_PROMPT_VERSION } from '
 import { calculateSkillGaps } from '@/lib/skill-gap/scoring';
 
 type RoleSkill = { skill_id: string; required: boolean; importance: 'high' | 'medium' | 'low'; skills?: { id: string; name: string } | Array<{ id: string; name: string }> | null };
-type StudentSkill = { skill_id: string; proficiency: 'beginner' | 'intermediate' | 'advanced'; skills?: { name?: string } | null };
+type StudentSkill = { skill_id: string; proficiency: 'beginner' | 'intermediate' | 'advanced'; evidence_type?: 'self_declared' | 'project' | 'certification' | 'assessment' | 'resume'; evidence?: string | null; skills?: { name?: string } | null };
 
 export async function getCareerIntelligence(roleId: string): Promise<{ success: boolean; data?: CareerIntelligenceResult; cached?: boolean; error?: string }> {
   const supabase = await createClient();
@@ -22,10 +22,10 @@ export async function getCareerIntelligence(roleId: string): Promise<{ success: 
   ]);
   if (!student || !role) return { success: false, error: 'Career context is unavailable.' };
 
-  const { data: studentSkills } = await supabase.from('student_skills').select('skill_id, proficiency, skills(name)').eq('student_id', student.id);
+  const { data: studentSkills } = await supabase.from('student_skills').select('skill_id, proficiency, evidence_type, evidence, skills(name)').eq('student_id', student.id);
   const requirements = (role.career_role_skills || []) as unknown as RoleSkill[];
   const currentSkills = (studentSkills || []) as StudentSkill[];
-  const skillGaps = calculateSkillGaps(requirements.map((item) => { const skill = Array.isArray(item.skills) ? item.skills[0] : item.skills; return { skill_id: item.skill_id, skill_name: skill?.name || item.skill_id, required: item.required, importance: item.importance, student_proficiency: currentSkills.find((studentSkill) => studentSkill.skill_id === item.skill_id)?.proficiency }; }));
+  const skillGaps = calculateSkillGaps(requirements.map((item) => { const skill = Array.isArray(item.skills) ? item.skills[0] : item.skills; const student = currentSkills.find((studentSkill) => studentSkill.skill_id === item.skill_id); return { skill_id: item.skill_id, skill_name: skill?.name || item.skill_id, required: item.required, importance: item.importance, student_proficiency: student?.proficiency, student_evidence_type: student?.evidence_type, student_evidence: student?.evidence }; }));
   const missing = skillGaps.filter((gap) => gap.status !== 'acquired');
   const context = {
     student: { college: student.college, course: student.course, branch: student.branch, degree_id: student.degree_id, branch_id: student.branch_id, specialization_id: student.specialization_id, degree_other: student.degree_other, branch_other: student.branch_other, specialization_other: student.specialization_other, semester: student.semester, cgpa: student.cgpa, interests: student.interests || [], target_careers: student.target_careers || [] },
