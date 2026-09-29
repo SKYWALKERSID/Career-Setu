@@ -1,4 +1,5 @@
 export interface ResumeParsedData {
+  analysis_source?: 'ai' | 'deterministic_fallback';
   contact: { email?: string; phone?: string; links: string[] };
   education: string[];
   skills: string[];
