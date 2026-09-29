@@ -55,6 +55,21 @@ function SignUpForm() {
 
     try {
       const supabase = createClient();
+      // Registration is a logged-out boundary. Without this, a confirmed-less
+      // signup can leave the previous account's session active in this browser.
+      const { data: existingSession } = await supabase.auth.getSession();
+      if (existingSession.session) {
+        const { error: signOutError } = await supabase.auth.signOut({ scope: 'local' });
+        if (signOutError) {
+          setErrorMsg('The previous session could not be cleared. Please sign out and try again.');
+          return;
+        }
+        const { data: clearedSession } = await supabase.auth.getSession();
+        if (clearedSession.session) {
+          setErrorMsg('The previous session is still active. Please refresh and try again.');
+          return;
+        }
+      }
       // Email confirmation link lands on /auth/callback which resolves
       // onboarding state before final redirect
       const callbackUrl = `${getURL()}/auth/callback`;

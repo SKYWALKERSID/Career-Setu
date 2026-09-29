@@ -29,11 +29,16 @@ export function TopNav() {
   const handleLogout = async () => {
     try {
       const supabase = createClient();
-      await supabase.auth.signOut();
-      router.push('/login');
+      const { error } = await supabase.auth.signOut({ scope: 'local' });
+      const { data: sessionData } = await supabase.auth.getSession();
+      if (error || sessionData.session) {
+        console.error('Logout did not clear the current local session:', error?.message || 'session still active');
+        return;
+      }
+      router.replace('/login');
+      router.refresh();
     } catch (err) {
       console.error('Logout error:', err);
-      router.push('/login');
     }
   };
 

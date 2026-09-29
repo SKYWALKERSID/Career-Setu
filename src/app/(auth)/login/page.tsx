@@ -106,7 +106,7 @@ function LoginForm() {
 
       // Confirm the browser client has a session before leaving the login route.
       const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
-      if (sessionError || !sessionData.session) {
+      if (sessionError || !sessionData.session || sessionData.session.user.id !== result.data.user.id) {
         setErrorDetails({ message: 'Sign-in succeeded, but the session could not be established. Please try again.' });
         return;
       }
