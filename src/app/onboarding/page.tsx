@@ -126,6 +126,10 @@ export default function OnboardingPage() {
         setErrorMsg('Please enter your college name');
         return;
       }
+      if (!formData.location.trim()) {
+        setErrorMsg('Please select a preferred district or location');
+        return;
+      }
       if (!formData.degreeId || (formData.degreeId === 'other' && !formData.degreeOther.trim())) {
         setErrorMsg('Please select a valid degree.');
         return;
@@ -406,12 +410,13 @@ export default function OnboardingPage() {
                   value={formData.location}
                   onChange={(e) => setFormData({ ...formData, location: e.target.value })}
                 >
-                  <option>Bhopal, MP</option>
-                  <option>Indore, MP</option>
-                  <option>Jabalpur, MP</option>
-                  <option>Gwalior, MP</option>
-                  <option>Ujjain, MP</option>
-                  <option>Open to Remote</option>
+                  <option value="">Select a district or location</option>
+                  <option value="Bhopal, MP">Bhopal, MP</option>
+                  <option value="Indore, MP">Indore, MP</option>
+                  <option value="Jabalpur, MP">Jabalpur, MP</option>
+                  <option value="Gwalior, MP">Gwalior, MP</option>
+                  <option value="Ujjain, MP">Ujjain, MP</option>
+                  <option value="Open to Remote">Open to Remote</option>
                 </Select>
               </FormField>
             </CardContent>
@@ -645,6 +650,7 @@ export default function OnboardingPage() {
             <div className="my-6 bg-slate-50 border border-slate-200 rounded-xl p-4 text-left space-y-2 text-xs">
               <p><span className="font-semibold text-slate-700">Full Name:</span> {formData.name}</p>
               <p><span className="font-semibold text-slate-700">College:</span> {formData.college}</p>
+              <p><span className="font-semibold text-slate-700">Preferred Location:</span> {formData.location || 'Not selected'}</p>
               <p><span className="font-semibold text-slate-700">Academic:</span> {formData.course} ({formData.branch}) • {formatSemester(formData.semester)} Sem • CGPA {formData.cgpa || 'Not provided'}</p>
               <p><span className="font-semibold text-slate-700">Domain Interests:</span> {formData.interests.join(', ')}</p>
               <p><span className="font-semibold text-slate-700">Selected Skills ({formData.selectedSkillIds.length}):</span> {formData.selectedSkillIds.length} skills mapped</p>
