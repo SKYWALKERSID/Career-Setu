@@ -5,6 +5,7 @@ import { getStudentProfile } from '@/lib/profile/actions';
 import { calculateProfileCompletion } from '@/lib/profile/validation';
 
 import { StudentProfile, StudentSkill, ReadinessAssessment, CareerRecommendation, Roadmap, RoadmapTask, Course, Opportunity } from '@/types';
+import { resolveRoadmapTaskCourseTitles } from '@/lib/roadmap/course-display';
 
 export interface DashboardData {
   studentProfile: StudentProfile | null;
@@ -117,6 +118,11 @@ export async function getDashboardData(requestedRoleId?: string, requestedRoadma
       .order('week', { ascending: true })
       .limit(100);
     roadmapTasks = (tasks || []) as RoadmapTask[];
+    const courseIds = Array.from(new Set(roadmapTasks.flatMap((task) => task.description.match(/[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}/gi) || [])));
+    if (courseIds.length) {
+      const { data: roadmapCourses } = await supabase.from('courses').select('id, title').in('id', courseIds);
+      roadmapTasks = resolveRoadmapTaskCourseTitles(roadmapTasks, roadmapCourses || []);
+    }
   }
 
   // 5. Query Catalog Courses Preview
