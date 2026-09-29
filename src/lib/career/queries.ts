@@ -6,8 +6,6 @@ import { revalidatePath } from 'next/cache';
 import { calculateSkillGaps } from '@/lib/skill-gap/scoring';
 import { ensureCareerRecommendations } from '@/lib/ai/actions-recommendations';
 
-const MIN_RECOMMENDATIONS = 3;
-
 export type CareerExplorerMode = 'recommended' | 'explore' | 'targets';
 
 export async function getCareerRolesList(search = '', categoryFilter = '', showAll = false, mode: CareerExplorerMode = 'recommended') {
@@ -54,12 +52,12 @@ export async function getCareerRolesList(search = '', categoryFilter = '', showA
       return { success: false, error: 'Career recommendations could not be loaded.', roles: [], categories: [] };
     }
 
-    if ((recommendations?.length || 0) < MIN_RECOMMENDATIONS && profileRes.success && profileRes.studentProfile) {
+    if ((recommendations?.length || 0) === 0 && profileRes.success && profileRes.studentProfile) {
       const ensured = await ensureCareerRecommendations();
-      if (!ensured.success && !recommendations?.length) {
-        return { success: false, error: ensured.error || 'Career recommendations are temporarily unavailable.', roles: [], categories: [] };
+      if (!ensured.success) {
+        return { success: false, error: ensured.error || 'Career recommendations could not be loaded.', roles: [], categories: [] };
       }
-      if (ensured.success) {
+      if (ensured.count) {
         const refreshed = await supabase
           .from('career_recommendations')
           .select('role_id')

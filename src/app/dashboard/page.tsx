@@ -69,6 +69,7 @@ function DashboardContent() {
     : 'Student career platform';
 
   async function handleGenerateRecommendations() {
+    if (recommendationsLoading) return;
     setRecommendationsLoading(true);
     setRecommendationsError('');
     const result = await generateCareerRecommendations();

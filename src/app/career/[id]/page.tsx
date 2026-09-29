@@ -10,7 +10,7 @@ import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/ui/empty-state';
 import { LoadingState } from '@/components/ui/loading-state';
 import { getCareerRoleById, toggleTargetCareerRole } from '@/lib/career/queries';
-import { getCareerIntelligence } from '@/lib/ai/actions-career-intelligence';
+import { getStoredCareerIntelligence } from '@/lib/ai/actions-career-intelligence';
 import type { CareerIntelligenceResult } from '@/lib/ai/schemas';
 import { calculateSkillGaps } from '@/lib/skill-gap/scoring';
 
@@ -24,7 +24,7 @@ type StudentSkill = { skill_id: string; proficiency?: 'beginner' | 'intermediate
 export default function CareerDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params); const [loading, setLoading] = useState(true); const [error, setError] = useState(''); const [role, setRole] = useState<Role | null>(null); const [courses, setCourses] = useState<Course[]>([]); const [opportunities, setOpportunities] = useState<Opportunity[]>([]); const [studentSkills, setStudentSkills] = useState<StudentSkill[]>([]); const [isTarget, setIsTarget] = useState(false); const [activeTab, setActiveTab] = useState<'overview' | 'skills' | 'courses' | 'opportunities'>('overview'); const [saving, setSaving] = useState(false); const [intelligence, setIntelligence] = useState<CareerIntelligenceResult | null>(null); const [intelligenceLoading, setIntelligenceLoading] = useState(true);
   useEffect(() => { void (async () => { setLoading(true); try { const result = await getCareerRoleById(id); if (!result.success || !result.role) throw new Error(result.error || 'Career role not found.'); setRole(result.role as Role); setCourses((result.relatedCourses || []) as Course[]); setOpportunities((result.relatedOpportunities || []) as Opportunity[]); setStudentSkills((result.studentSkills || []) as StudentSkill[]); setIsTarget(result.isTargetCareer); } catch (err: unknown) { setError(err instanceof Error ? err.message : 'Career role is unavailable.'); } finally { setLoading(false); } })(); }, [id]);
-  useEffect(() => { setIntelligenceLoading(true); void getCareerIntelligence(id).then((result) => { if (result.success && result.data) setIntelligence(result.data); }).finally(() => setIntelligenceLoading(false)); }, [id]);
+  useEffect(() => { setIntelligenceLoading(true); void getStoredCareerIntelligence(id).then((result) => { if (result.success && result.data) setIntelligence(result.data); }).finally(() => setIntelligenceLoading(false)); }, [id]);
   async function toggle() { if (!role) return; setSaving(true); try { const result = await toggleTargetCareerRole(role.id); if (result.success && result.isTarget !== undefined) setIsTarget(result.isTarget); } finally { setSaving(false); } }
   const shell = (content: React.ReactNode) => <div className="min-h-screen bg-[#f4f8fc] flex"><Sidebar /><div className="flex min-w-0 flex-1 flex-col"><TopNav />{content}</div></div>;
   if (loading) return shell(<main className="flex min-h-[500px] flex-1 items-center justify-center"><LoadingState label="Loading career role details..." /></main>);

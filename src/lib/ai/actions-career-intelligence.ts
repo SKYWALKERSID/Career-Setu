@@ -55,3 +55,27 @@ export async function getCareerIntelligence(roleId: string): Promise<{ success: 
   revalidatePath(`/career/${roleId}`);
   return { success: true, data: validated.data, cached: false };
 }
+
+export async function getStoredCareerIntelligence(roleId: string): Promise<{ success: boolean; data?: CareerIntelligenceResult; cached?: boolean; error?: string }> {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { success: false, error: 'Unauthorized: Authentication required.' };
+
+  const { data: student } = await supabase.from('student_profiles').select('id').eq('user_id', user.id).single();
+  if (!student) return { success: false, error: 'Student profile not found.' };
+
+  const { data: stored } = await supabase
+    .from('career_intelligence')
+    .select('insight')
+    .eq('student_id', student.id)
+    .eq('role_id', roleId)
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (!stored?.insight) return { success: true, cached: false };
+
+  const parsed = CareerIntelligenceSchema.safeParse(stored.insight);
+  return parsed.success
+    ? { success: true, data: parsed.data, cached: true }
+    : { success: true, cached: false };
+}

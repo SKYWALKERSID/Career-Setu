@@ -8,8 +8,6 @@ import { CAREER_RECOMMENDATIONS_PROMPT, CAREER_RECOMMENDATIONS_PROMPT_VERSION } 
 import { validateCareerRecommendations } from '@/lib/ai/recommendations';
 
 type RoleRow = { id: string; title: string; category: string; description: string; career_role_skills: Array<{ skill_id: string; required: boolean; importance: string; skills: { id: string; name: string } | null }> };
-const MIN_RECOMMENDATIONS = 3;
-
 function publicError(error: unknown): string {
   return error instanceof Error && error.message.includes('configured')
     ? error.message
@@ -103,7 +101,8 @@ export async function ensureCareerRecommendations(): Promise<{ success: boolean;
     .select('id')
     .eq('student_id', student.id);
   if (existingError) return { success: false, error: 'Career recommendations could not be loaded.' };
-  if (existing && existing.length >= MIN_RECOMMENDATIONS) return { success: true, count: existing.length };
-
-  return generateCareerRecommendations();
+  // Any persisted catalog-backed result is preferable to spending provider
+  // quota regenerating on a passive career-page load. Explicit profile saves
+  // and the dashboard action remain the deliberate refresh paths.
+  return { success: true, count: existing?.length || 0 };
 }

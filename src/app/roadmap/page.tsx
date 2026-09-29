@@ -54,6 +54,7 @@ function RoadmapContent() {
   useEffect(() => { void load(); }, [load]);
 
   async function handleGenerate() {
+    if (generating) return;
     setGenerating(true); setError('');
     const roleId = data?.targetCareer?.id;
     if (!roleId) { setError('Choose a target career before generating a roadmap.'); return; }

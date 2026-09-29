@@ -131,6 +131,19 @@ export async function uploadAndAnalyzeResume(formData: FormData, requestedRoleId
   let text: string;
   try { text = extractText(buffer, file.type).slice(0, 50000); if (!text) throw new Error('No readable text was found in the uploaded resume.'); }
   catch (error) { return { success: false, error: error instanceof Error ? error.message : 'Resume text extraction failed.' }; }
+  const { data: reusable } = await supabase
+    .from('resumes')
+    .select('id, extracted_text, parsed_json, score')
+    .eq('student_id', student.id)
+    .eq('target_role_id', roleId)
+    .not('parsed_json', 'is', null)
+    .not('score', 'is', null)
+    .order('version', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (reusable?.extracted_text === text && reusable.parsed_json && reusable.score !== null) {
+    return { success: true, resumeId: reusable.id };
+  }
   const { data: latest } = await supabase.from('resumes').select('version').eq('student_id', student.id).order('version', { ascending: false }).limit(1).maybeSingle();
   const version = (latest?.version || 0) + 1; const storagePath = `${student.id}/${version}-${crypto.randomUUID()}${extension}`;
   const { error: uploadError } = await supabase.storage.from('private-resumes').upload(storagePath, buffer, { contentType: file.type, upsert: false });
