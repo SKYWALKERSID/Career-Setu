@@ -133,24 +133,30 @@ export async function submitInterviewAnswer(interviewId: string, answer: string)
   const { data: previous } = await supabase.from('interview_turns').select('turn_number, question, answer, rubric_score, feedback').eq('interview_id', interviewId).order('turn_number', { ascending: true });
   const evaluation = await aiCall(supabase, student.id, 'interview_answer_evaluation', INTERVIEW_EVALUATION_PROMPT_VERSION, INTERVIEW_EVALUATION_PROMPT.replace('{{context}}', JSON.stringify({ role, difficulty: interview.difficulty, question: turn.question, answer, previous_turns: previous || [] })), InterviewEvaluationSchema);
   if (!evaluation.result.success || !evaluation.result.data) return { success: false, error: 'Answer evaluation is temporarily unavailable.' };
-  const { data: updated } = await supabase.from('interview_turns').update({ answer, rubric_score: evaluation.result.data.rubric_score, feedback: evaluation.result.data.feedback }).eq('id', turn.id).eq('interview_id', interviewId).is('answer', null).select('id').maybeSingle();
-  if (!updated) return { success: false, error: 'This answer was already submitted.' };
+  const evaluationData = evaluation.result.data;
   const turnCount = (previous || []).length;
   if (turnCount >= MAX_QUESTIONS) {
-    const { data: completedTurns } = await supabase.from('interview_turns').select('turn_number, question, answer, rubric_score, feedback').eq('interview_id', interviewId).order('turn_number', { ascending: true });
-    const report = await aiCall(supabase, student.id, 'interview_final_report', INTERVIEW_REPORT_PROMPT_VERSION, INTERVIEW_REPORT_PROMPT.replace('{{context}}', JSON.stringify({ role, difficulty: interview.difficulty, turns: completedTurns || [] })), InterviewReportSchema);
-    if (!report.result.success || !report.result.data) return { success: false, error: 'Final interview report is temporarily unavailable. Your answer was preserved.' };
+    const completedTurns = (previous || []).map((item) => item.turn_number === turn.turn_number ? { ...item, answer, rubric_score: evaluationData.rubric_score, feedback: evaluationData.feedback } : item);
+    const report = await aiCall(supabase, student.id, 'interview_final_report', INTERVIEW_REPORT_PROMPT_VERSION, INTERVIEW_REPORT_PROMPT.replace('{{context}}', JSON.stringify({ role, difficulty: interview.difficulty, turns: completedTurns })), InterviewReportSchema);
+    if (!report.result.success || !report.result.data) return { success: false, error: 'Final interview report is temporarily unavailable. Your answer was not marked complete.' };
+    const { data: updated } = await supabase.from('interview_turns').update({ answer, rubric_score: evaluationData.rubric_score, feedback: evaluationData.feedback }).eq('id', turn.id).eq('interview_id', interviewId).is('answer', null).select('id').maybeSingle();
+    if (!updated) return { success: false, error: 'This answer was already submitted.' };
     const { error: completeError } = await supabase.from('interviews').update({ session_status: 'completed', overall_score: report.result.data.overall_score, feedback_summary: report.result.data.feedback_summary, report_json: report.result.data }).eq('id', interviewId).eq('student_id', student.id).eq('session_status', 'active');
     if (completeError) return { success: false, error: 'Interview could not be completed safely.' };
     await calculateAndSaveReadinessAssessment();
     revalidatePath('/interview/report'); return { success: true, completed: true, report: report.result.data };
   }
-  const next = await aiCall(supabase, student.id, 'interview_question', INTERVIEW_QUESTION_PROMPT_VERSION, INTERVIEW_QUESTION_PROMPT.replace('{{context}}', JSON.stringify({ role, difficulty: interview.difficulty, previous_turns: [...(previous || []), { ...turn, answer, rubric_score: evaluation.result.data.rubric_score }] })), InterviewQuestionSchema);
-  if (!next.result.success || !next.result.data) return { success: false, error: 'Next question generation failed. Your answer was preserved.' };
+  const next = await aiCall(supabase, student.id, 'interview_question', INTERVIEW_QUESTION_PROMPT_VERSION, INTERVIEW_QUESTION_PROMPT.replace('{{context}}', JSON.stringify({ role, difficulty: interview.difficulty, previous_turns: [...(previous || []), { ...turn, answer, rubric_score: evaluationData.rubric_score }] })), InterviewQuestionSchema);
+  if (!next.result.success || !next.result.data) return { success: false, error: 'Next question generation failed. Your answer was not marked complete.' };
   const nextNumber = turnCount + 1; const allowed = new Set((role?.career_role_skills || []).map((item) => item.skill_id));
   if (next.result.data.focus_skill_id && !allowed.has(next.result.data.focus_skill_id)) return { success: false, error: 'Next question referenced an unsupported role skill.' };
-  const { error: nextError } = await supabase.from('interview_turns').insert({ interview_id: interviewId, turn_number: nextNumber, question: next.result.data.question });
+  const { data: nextTurn, error: nextError } = await supabase.from('interview_turns').insert({ interview_id: interviewId, turn_number: nextNumber, question: next.result.data.question }).select('id').single();
   if (nextError) return { success: false, error: 'Next interview question could not be saved.' };
+  const { data: updated } = await supabase.from('interview_turns').update({ answer, rubric_score: evaluationData.rubric_score, feedback: evaluationData.feedback }).eq('id', turn.id).eq('interview_id', interviewId).is('answer', null).select('id').maybeSingle();
+  if (!updated) {
+    if (nextTurn) await supabase.from('interview_turns').delete().eq('id', nextTurn.id).eq('interview_id', interviewId);
+    return { success: false, error: 'This answer was already submitted.' };
+  }
   const { data: refreshedTurns } = await supabase.from('interview_turns').select('*').eq('interview_id', interviewId).order('turn_number', { ascending: true });
   return { success: true, completed: false, question: next.result.data.question, turnNumber: nextNumber, turns: refreshedTurns || [] };
 }
