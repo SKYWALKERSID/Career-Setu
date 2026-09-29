@@ -5,6 +5,8 @@ import { createClient } from '@/lib/supabase/server';
 import { CookieConsent } from '@/components/ui/cookie-consent';
 import { redirect } from 'next/navigation';
 
+export const dynamic = 'force-dynamic';
+
 async function getCatalogCounts() {
   const supabase = await createClient();
   const [roles, courses, opportunities] = await Promise.all([
