@@ -13,6 +13,8 @@ import { CheckCircle, ArrowRight, ArrowLeft, Search, Plus, X } from 'lucide-reac
 import { getStudentProfile, getCatalogItems, saveStudentProfile } from '@/lib/profile/actions';
 import { calculateProfileCompletion } from '@/lib/profile/validation';
 import { OnboardingCompletionVisual } from '@/components/onboarding/onboarding-completion-visual';
+import { AcademicCombobox } from '@/components/academic/academic-combobox';
+import { ACADEMIC_DEGREES, branchesForDegree, findBranch, findDegree, findSpecialization, labelForBranch, labelForDegree, labelForSpecialization, specializationsForBranch } from '@/lib/academic/taxonomy';
 
 const AVAILABLE_DOMAIN_INTERESTS = [
   'Software Development',
@@ -55,6 +57,13 @@ export default function OnboardingPage() {
     college: '',
     course: '',
     branch: '',
+    specialization: '',
+    degreeId: '',
+    branchId: '',
+    specializationId: '',
+    degreeOther: '',
+    branchOther: '',
+    specializationOther: '',
     semester: 0,
     cgpa: '',
     interests: [] as string[],
@@ -83,6 +92,13 @@ export default function OnboardingPage() {
             college: sp.college || '',
             course: sp.course || '',
             branch: sp.branch || '',
+            specialization: sp.specialization_id ? labelForSpecialization(sp.specialization_id, sp.specialization_other) : '',
+            degreeId: sp.degree_id || findDegree(sp.course)?.id || '',
+            branchId: sp.branch_id || findBranch(sp.branch, sp.degree_id || findDegree(sp.course)?.id)?.id || '',
+            specializationId: sp.specialization_id || findSpecialization(sp.specialization_other, sp.branch_id || findBranch(sp.branch, sp.degree_id || findDegree(sp.course)?.id)?.id)?.id || '',
+            degreeOther: sp.degree_other || '',
+            branchOther: sp.branch_other || '',
+            specializationOther: sp.specialization_other || '',
             semester: sp.semester || 0,
             cgpa: sp.cgpa ? String(sp.cgpa) : '',
             interests: sp.interests || [],
@@ -108,6 +124,14 @@ export default function OnboardingPage() {
       }
       if (!formData.college.trim()) {
         setErrorMsg('Please enter your college name');
+        return;
+      }
+      if (!formData.degreeId || (formData.degreeId === 'other' && !formData.degreeOther.trim())) {
+        setErrorMsg('Please select a valid degree.');
+        return;
+      }
+      if (!formData.branchId || (formData.branchId === 'other' && !formData.branchOther.trim())) {
+        setErrorMsg('Please select a branch for this degree.');
         return;
       }
     } else if (step === 3) {
@@ -140,6 +164,12 @@ export default function OnboardingPage() {
         college: formData.college,
         course: formData.course,
         branch: formData.branch,
+        degree_id: formData.degreeId,
+        branch_id: formData.branchId,
+        specialization_id: formData.specializationId || null,
+        degree_other: formData.degreeOther || null,
+        branch_other: formData.branchOther || null,
+        specialization_other: formData.specializationOther || null,
         semester: Number(formData.semester),
         cgpa: formData.cgpa ? parseFloat(formData.cgpa) : null,
         interests: formData.interests,
@@ -230,6 +260,11 @@ export default function OnboardingPage() {
     cr.title.toLowerCase().includes(careerSearch.toLowerCase()) || cr.category.toLowerCase().includes(careerSearch.toLowerCase())
   );
 
+  const selectedDegree = findDegree(formData.degreeId);
+  const selectedBranch = findBranch(formData.branchId, formData.degreeId);
+  const branchOptions = branchesForDegree(formData.degreeId);
+  const specializationOptions = specializationsForBranch(formData.branchId);
+
   const completionScore = calculateProfileCompletion({
     name: formData.name,
     location: formData.location,
@@ -307,29 +342,40 @@ export default function OnboardingPage() {
                   />
                 </FormField>
 
-                <FormField label="Degree Course" required>
-                  <Select
-                    value={formData.course}
-                    onChange={(e) => setFormData({ ...formData, course: e.target.value })}
-                  >
-                    <option value="B.Tech">B.Tech (Bachelor of Technology)</option>
-                    <option value="B.E.">B.E. (Bachelor of Engineering)</option>
-                    <option value="BCA">BCA (Bachelor of Computer Applications)</option>
-                    <option value="MCA">MCA (Master of Computer Applications)</option>
-                    <option value="B.Sc">B.Sc (Computer Science / IT)</option>
-                    <option value="Diploma">Diploma (Polytechnic)</option>
-                  </Select>
-                </FormField>
+                <AcademicCombobox
+                  label="Degree Course"
+                  placeholder="Search degrees..."
+                  value={formData.degreeId}
+                  options={ACADEMIC_DEGREES}
+                  onChange={(degreeId) => setFormData((prev) => ({ ...prev, degreeId, course: labelForDegree(degreeId), branchId: '', branch: '', specializationId: '', specialization: '', branchOther: '', specializationOther: '' }))}
+                />
+                {formData.degreeId === 'other' && <Input className="mt-2" value={formData.degreeOther} onChange={(e) => setFormData({ ...formData, degreeOther: e.target.value, course: e.target.value })} placeholder="Please specify your degree" />}
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <FormField label="Branch / Discipline" required>
-                  <Input
-                    value={formData.branch}
-                    onChange={(e) => setFormData({ ...formData, branch: e.target.value })}
-                    placeholder="e.g. Computer Science"
+                <div>
+                  <AcademicCombobox
+                    label="Branch / Discipline"
+                    placeholder="Search branches..."
+                    value={formData.branchId}
+                    options={branchOptions}
+                    disabled={!selectedDegree}
+                    onChange={(branchId) => setFormData((prev) => ({ ...prev, branchId, branch: labelForBranch(branchId), specializationId: '', specialization: '', branchOther: '', specializationOther: '' }))}
                   />
-                </FormField>
+                  {formData.branchId === 'other' && <Input className="mt-2" value={formData.branchOther} onChange={(e) => setFormData({ ...formData, branchOther: e.target.value, branch: e.target.value })} placeholder="Please specify your branch" />}
+                </div>
+
+                <div>
+                  <AcademicCombobox
+                    label="Specialization"
+                    placeholder="Search specializations..."
+                    value={formData.specializationId}
+                    options={specializationOptions}
+                    disabled={!selectedBranch}
+                    onChange={(specializationId) => setFormData((prev) => ({ ...prev, specializationId, specialization: labelForSpecialization(specializationId), specializationOther: '' }))}
+                  />
+                  {formData.specializationId === 'other' && <Input className="mt-2" value={formData.specializationOther} onChange={(e) => setFormData({ ...formData, specializationOther: e.target.value, specialization: e.target.value })} placeholder="Please specify your specialization" />}
+                </div>
 
                 <FormField label="Current Semester" required>
                   <Select

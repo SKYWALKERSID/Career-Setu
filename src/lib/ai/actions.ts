@@ -17,7 +17,7 @@ export async function runAIInfrastructureTest() {
   // 2. Fetch authenticated student profile to construct test input
   const { data: sp } = await supabase
     .from('student_profiles')
-    .select('id, college, course, branch, target_careers, interests')
+    .select('id, college, course, branch, degree_id, branch_id, specialization_id, degree_other, branch_other, specialization_other, target_careers, interests')
     .eq('user_id', user.id)
     .single();
   if (!sp) return { success: false, error: 'Student profile not found.' };
@@ -34,7 +34,7 @@ export async function runAIInfrastructureTest() {
 
   // 3. Format test prompt
   const formattedPrompt = AI_TEST_PROMPT
-    .replace('{{degree_branch}}', `${sp.course || 'Not provided'} in ${sp.branch || 'Not provided'}`)
+    .replace('{{degree_branch}}', `${sp.course || 'Not provided'} in ${sp.branch || 'Not provided'}${sp.specialization_other || sp.specialization_id ? ` (${sp.specialization_other || sp.specialization_id})` : ''}`)
     .replace('{{college}}', sp.college || 'Not provided')
     .replace('{{skills}}', skillNames)
     .replace('{{target_careers}}', (sp.target_careers || []).join(', ') || 'None recorded')

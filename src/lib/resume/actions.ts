@@ -62,7 +62,7 @@ export async function uploadAndAnalyzeResume(formData: FormData, requestedRoleId
   const extension = ALLOWED.get(file.type);
   if (!extension) return { success: false, error: 'Unsupported file type. Upload PDF or plain text.' };
   if (file.size > MAX_BYTES) return { success: false, error: 'Resume file must be 5 MB or smaller.' };
-  const { data: student } = await supabase.from('student_profiles').select('id, target_careers').eq('user_id', user.id).single();
+  const { data: student } = await supabase.from('student_profiles').select('id, course, branch, degree_id, branch_id, specialization_id, degree_other, branch_other, specialization_other, target_careers').eq('user_id', user.id).single();
   if (!student) return { success: false, error: 'Student profile not found.' };
   const { data: targetRole } = requestedRoleId && (student.target_careers || []).includes(requestedRoleId)
     ? await supabase.from('career_roles').select('id, title, career_role_skills(skill_id, skills(id, name))').eq('id', requestedRoleId).maybeSingle()
@@ -88,7 +88,7 @@ export async function uploadAndAnalyzeResume(formData: FormData, requestedRoleId
   const targetRoleIds = resolveTargetCareerIds([roleId], allRoles || []);
   const roles = (allRoles || []).filter((role) => targetRoleIds.includes(role.id));
   const roleSkills = (roles || []).flatMap((role) => role.career_role_skills || []).map((item) => item.skill_id);
-  const context = JSON.stringify({ skills: skills || [], target_roles: roles || [], role_required_skill_ids: roleSkills });
+  const context = JSON.stringify({ academic: { course: student.course, branch: student.branch, degree_id: student.degree_id, branch_id: student.branch_id, specialization_id: student.specialization_id, degree_other: student.degree_other, branch_other: student.branch_other, specialization_other: student.specialization_other }, skills: skills || [], target_roles: roles || [], role_required_skill_ids: roleSkills });
   const provider = aiClient.getProvider(); const started = Date.now();
   const resumePrompt = RESUME_PROMPT.replace('{{context}}', context).replace('{{resume}}', text);
   let result = await provider.generateStructuredOutput(resumePrompt, ResumeParseSchema, 'Fact-preserving structured resume parser.');

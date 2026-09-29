@@ -22,7 +22,7 @@ export async function generateCareerRecommendations(): Promise<{ success: boolea
 
   const { data: student, error: studentError } = await supabase
     .from('student_profiles')
-    .select('id, name, college, course, branch, semester, cgpa, interests, target_careers')
+    .select('id, name, college, course, branch, degree_id, branch_id, specialization_id, degree_other, branch_other, specialization_other, semester, cgpa, interests, target_careers')
     .eq('user_id', user.id)
     .single();
   if (studentError || !student) return { success: false, error: 'Student profile not found.' };
@@ -43,7 +43,7 @@ export async function generateCareerRecommendations(): Promise<{ success: boolea
   }));
   const studentSkillRows = (skills || []) as unknown as Array<{ skill_id: string; proficiency: string; skills: { name: string } | Array<{ name: string }> | null }>;
   const context = JSON.stringify({
-    student: { name: student.name, college: student.college, course: student.course, branch: student.branch, semester: student.semester, cgpa: student.cgpa, interests: student.interests || [], target_careers: student.target_careers || [] },
+    student: { name: student.name, college: student.college, course: student.course, branch: student.branch, degree_id: student.degree_id, branch_id: student.branch_id, specialization_id: student.specialization_id, degree_other: student.degree_other, branch_other: student.branch_other, specialization_other: student.specialization_other, semester: student.semester, cgpa: student.cgpa, interests: student.interests || [], target_careers: student.target_careers || [] },
     skills: studentSkillRows.map((skill) => ({ skill_id: skill.skill_id, proficiency: skill.proficiency, name: Array.isArray(skill.skills) ? skill.skills[0]?.name : skill.skills?.name })),
     readiness: readiness ? { overall_score: readiness.overall_score, technical_score: readiness.technical_score, academic_score: readiness.academic_score, project_score: readiness.project_score, resume_score: readiness.resume_score, interview_score: readiness.interview_score, alignment_score: readiness.alignment_score, pending_dimensions: ['project_score', 'resume_score', 'interview_score'].filter((key) => readiness[key] === null) } : null,
     career_roles: roleRows.map((role) => ({ id: role.id, title: role.title, category: role.category, description: role.description, requirements: role.career_role_skills.map((skill) => ({ skill_id: skill.skill_id, skill_name: skill.skills?.name, required: skill.required, importance: skill.importance })) })),

@@ -17,7 +17,7 @@ export async function getCareerIntelligence(roleId: string): Promise<{ success: 
   if (!user) return { success: false, error: 'Unauthorized: Authentication required.' };
 
   const [{ data: student }, { data: role }] = await Promise.all([
-    supabase.from('student_profiles').select('id, college, course, branch, semester, cgpa, interests, target_careers').eq('user_id', user.id).single(),
+    supabase.from('student_profiles').select('id, college, course, branch, degree_id, branch_id, specialization_id, degree_other, branch_other, specialization_other, semester, cgpa, interests, target_careers').eq('user_id', user.id).single(),
     supabase.from('career_roles').select('id, title, category, description, growth_outlook, salary_range, career_role_skills(skill_id, required, importance, skills(id, name))').eq('id', roleId).single(),
   ]);
   if (!student || !role) return { success: false, error: 'Career context is unavailable.' };
@@ -28,7 +28,7 @@ export async function getCareerIntelligence(roleId: string): Promise<{ success: 
   const skillGaps = calculateSkillGaps(requirements.map((item) => { const skill = Array.isArray(item.skills) ? item.skills[0] : item.skills; return { skill_id: item.skill_id, skill_name: skill?.name || item.skill_id, required: item.required, importance: item.importance, student_proficiency: currentSkills.find((studentSkill) => studentSkill.skill_id === item.skill_id)?.proficiency }; }));
   const missing = skillGaps.filter((gap) => gap.status !== 'acquired');
   const context = {
-    student: { college: student.college, course: student.course, branch: student.branch, semester: student.semester, cgpa: student.cgpa, interests: student.interests || [], target_careers: student.target_careers || [] },
+    student: { college: student.college, course: student.course, branch: student.branch, degree_id: student.degree_id, branch_id: student.branch_id, specialization_id: student.specialization_id, degree_other: student.degree_other, branch_other: student.branch_other, specialization_other: student.specialization_other, semester: student.semester, cgpa: student.cgpa, interests: student.interests || [], target_careers: student.target_careers || [] },
     current_skills: currentSkills.map((skill) => ({ skill_id: skill.skill_id, name: skill.skills?.name, proficiency: skill.proficiency })),
     career: { id: role.id, title: role.title, category: role.category, description: role.description, growth_outlook: role.growth_outlook, salary_range: role.salary_range, required_skills: requirements.map((item) => ({ skill_id: item.skill_id, name: (Array.isArray(item.skills) ? item.skills[0] : item.skills)?.name, importance: item.importance, required: item.required })) },
     deterministic_skill_gaps: skillGaps.map((gap) => ({ skill_id: gap.skill_id, skill_name: gap.skill_name, status: gap.status, priority: gap.priority })),

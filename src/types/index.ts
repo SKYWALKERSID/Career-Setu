@@ -16,6 +16,13 @@ export interface StudentProfile {
   college?: string;
   course?: string;
   branch?: string;
+  specialization?: string | null;
+  degree_id?: string | null;
+  branch_id?: string | null;
+  specialization_id?: string | null;
+  degree_other?: string | null;
+  branch_other?: string | null;
+  specialization_other?: string | null;
   semester?: number;
   cgpa?: number;
   location?: string;

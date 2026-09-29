@@ -6,6 +6,7 @@ import { revalidatePath } from 'next/cache';
 import { resolveTargetCareerIds } from '@/lib/career/target-roles';
 import { calculateAndSaveReadinessAssessment } from '@/lib/readiness/actions';
 import { generateCareerRecommendations } from '@/lib/ai/actions-recommendations';
+import { findBranch, findDegree, findSpecialization, labelForBranch, labelForDegree } from '@/lib/academic/taxonomy';
 
 export async function getStudentProfile() {
   const supabase = await createClient();
@@ -62,6 +63,21 @@ export async function saveStudentProfile(input: StudentProfileInput) {
   }
 
   const data = validationResult.data;
+
+  const degree = findDegree(data.degree_id) || findDegree(data.course);
+  const branch = findBranch(data.branch_id, degree?.id) || findBranch(data.branch, degree?.id);
+  const specialization = findSpecialization(data.specialization_id, branch?.id) || findSpecialization(data.specialization_other, branch?.id);
+
+  if (!degree) return { success: false, error: 'Please select a valid degree.' };
+  if (!branch) return { success: false, error: 'Please select a branch for this degree.' };
+  if (data.degree_id === 'other' && !data.degree_other?.trim()) return { success: false, error: 'Please specify your degree.' };
+  if (data.branch_id === 'other' && !data.branch_other?.trim()) return { success: false, error: 'Please specify your branch or discipline.' };
+  if (data.specialization_id === 'other' && !data.specialization_other?.trim()) return { success: false, error: 'Please specify your specialization.' };
+  data.degree_id = degree.id;
+  data.branch_id = branch.id;
+  data.specialization_id = specialization?.id || data.specialization_id || null;
+  data.course = data.degree_id === 'other' ? data.degree_other!.trim() : labelForDegree(data.degree_id, data.course);
+  data.branch = data.branch_id === 'other' ? data.branch_other!.trim() : labelForBranch(data.branch_id, data.branch);
 
   const { data: careerRoles, error: careerRolesError } = await supabase
     .from('career_roles')
@@ -141,6 +157,12 @@ export async function saveStudentProfile(input: StudentProfileInput) {
         college: data.college,
         course: data.course,
         branch: data.branch,
+        degree_id: data.degree_id,
+        branch_id: data.branch_id,
+        specialization_id: data.specialization_id,
+        degree_other: data.degree_other || null,
+        branch_other: data.branch_other || null,
+        specialization_other: data.specialization_other || null,
         semester: data.semester,
         cgpa: data.cgpa ?? null,
         interests: data.interests,

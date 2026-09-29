@@ -16,7 +16,7 @@ export async function generateCareerRoadmap(roleId: string): Promise<{ success: 
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { success: false, error: 'Unauthorized: Authentication required.' };
 
-  const { data: student } = await supabase.from('student_profiles').select('id, name, course, branch, interests, target_careers').eq('user_id', user.id).single();
+  const { data: student } = await supabase.from('student_profiles').select('id, name, course, branch, degree_id, branch_id, specialization_id, degree_other, branch_other, specialization_other, interests, target_careers').eq('user_id', user.id).single();
   if (!student) return { success: false, error: 'Student profile not found.' };
   const [{ data: roles }, { data: skills }, { data: recommendations }, { data: readiness }, { data: courses }] = await Promise.all([
     supabase.from('career_roles').select('id, title, description, career_role_skills(skill_id, required, importance, skills(id, name))'),
