@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { Suspense } from 'react';
 
 import { useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
@@ -16,7 +16,9 @@ import { getCourseRecommendations } from '@/lib/courses/actions';
 
 type Match = { course: { id: string; title: string; provider: string; level: string; duration_hours?: number; url: string; is_free: boolean; price?: string; skills?: Array<{ id: string; name: string; category: string }> }; score: number; reasons: string[]; missingSkillIds: string[]; developingSkillIds: string[]; roleAlignedSkillIds: string[] };
 
-export default function CoursesPage() {
+export default function CoursesPage() { return <Suspense fallback={<div className="flex min-h-screen items-center justify-center bg-[#f4f8fc]"><LoadingState label="Loading catalog courses..." /></div>}><CoursesContent /></Suspense>; }
+
+function CoursesContent() {
   const searchParams = useSearchParams(); const requestedSkill = searchParams.get('skill') || '';
   const [matches, setMatches] = useState<Match[]>([]); const [loading, setLoading] = useState(true); const [error, setError] = useState(''); const [search, setSearch] = useState(''); const [activeTab, setActiveTab] = useState('By Skill'); const [activeCategory, setActiveCategory] = useState('All');
   const requestedCareer = searchParams.get('career') || '';

@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { Suspense, useCallback, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { Sidebar } from '@/components/layout/sidebar';
@@ -25,7 +25,9 @@ import { getProgressSnapshot } from '@/lib/progress/actions';
 import { calculateAndSaveReadinessAssessment } from '@/lib/readiness/actions';
 import type { ProgressSnapshot } from '@/lib/progress/types';
 
-export default function ProgressPage() {
+export default function ProgressPage() { return <Suspense fallback={<div className="flex min-h-screen items-center justify-center bg-[#f4f8fc]"><LoadingState label="Loading progress..." /></div>}><ProgressContent /></Suspense>; }
+
+function ProgressContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const requestedCareer = searchParams.get('career') || '';

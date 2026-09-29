@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { Suspense, useCallback, useEffect, useRef, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Sidebar } from '@/components/layout/sidebar';
 import { TopNav } from '@/components/layout/top-nav';
@@ -21,7 +21,9 @@ function ListBlock({ title, items, empty }: { title: string; items: string[]; em
   return <div><h3 className="text-lg sm:text-xl font-semibold text-[#10285a]">{title}</h3>{items.length ? <ul className="mt-2 space-y-1.5">{items.map((item) => <li key={item} className="text-sm leading-5 text-slate-700">{item}</li>)}</ul> : <p className="mt-2 text-xs text-slate-400">{empty}</p>}</div>;
 }
 
-export default function ResumePage() {
+export default function ResumePage() { return <Suspense fallback={<div className="flex min-h-screen items-center justify-center bg-[#f4f8fc]"><LoadingState label="Loading resume..." /></div>}><ResumeContent /></Suspense>; }
+
+function ResumeContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const requestedCareer = searchParams.get('career') || '';

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { Suspense, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Sidebar } from '@/components/layout/sidebar';
@@ -25,7 +25,9 @@ function PanelHeading({ icon: Icon, title, href, action = 'View All' }: { icon: 
   return <CardHeader className="px-4 py-3 flex-row items-center justify-between space-y-0 border-b border-slate-100"><CardTitle className="text-[13px] font-bold flex items-center gap-2"><Icon className="h-4 w-4 text-brand-700" />{title}</CardTitle>{href && <Link href={href} className="text-[10px] font-semibold text-brand-700 hover:text-brand-900 flex items-center gap-1">{action}<ArrowRight className="h-3 w-3" /></Link>}</CardHeader>;
 }
 
-export default function DashboardPage() {
+export default function DashboardPage() { return <Suspense fallback={<div className="flex min-h-screen items-center justify-center bg-[#f4f8fc]"><LoadingState label="Loading dashboard..." /></div>}><DashboardContent /></Suspense>; }
+
+function DashboardContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const requestedCareer = searchParams.get('role') || '';

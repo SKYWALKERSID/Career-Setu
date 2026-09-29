@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { Suspense, useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowRight, BriefcaseBusiness, CalendarDays, Filter, MapPin, Search, Target } from 'lucide-react';
@@ -16,7 +16,9 @@ import { getOpportunityMatches } from '@/lib/matching/actions';
 
 type Match = { opportunity: { id: string; title: string; organization: string; location: string; application_deadline?: string; source: string; source_url?: string; is_verified: boolean; type?: string; status?: string }; score: number; reasons: string[]; eligibility?: 'satisfied' | 'unknown' | 'not_established' };
 
-export default function OpportunitiesPage() {
+export default function OpportunitiesPage() { return <Suspense fallback={<div className="flex min-h-screen items-center justify-center bg-[#f4f8fc]"><LoadingState label="Loading opportunities..." /></div>}><OpportunitiesContent /></Suspense>; }
+
+function OpportunitiesContent() {
   const searchParams = useSearchParams(); const requestedCareer = searchParams.get('career') || '';
   const [matches, setMatches] = useState<Match[]>([]); const [loading, setLoading] = useState(true); const [error, setError] = useState(''); const [search, setSearch] = useState(''); const [tab, setTab] = useState('All Opportunities'); const [type, setType] = useState('all'); const [location, setLocation] = useState('all'); const [selected, setSelected] = useState<Match | null>(null);
   useEffect(() => { setLoading(true); void getOpportunityMatches(requestedCareer || undefined).then((result) => { if (result.success) { const next = (result.matches || []) as Match[]; setMatches(next); setSelected(next[0] || null); } else setError(result.error || 'Opportunities are unavailable.'); setLoading(false); }).catch(() => { setError('Opportunities are unavailable.'); setLoading(false); }); }, [requestedCareer]);

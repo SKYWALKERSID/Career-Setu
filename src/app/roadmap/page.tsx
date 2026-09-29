@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { Suspense, useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { ArrowRight, BookOpen, CalendarDays, CheckCircle2, Compass, RefreshCw, Target, TrendingUp } from 'lucide-react';
@@ -17,7 +17,9 @@ import { saveRoadmap, submitRoadmapTaskEvidence, updateRoadmapTaskStatus } from 
 
 type Gap = { skill_id: string; skill_name: string; status: 'acquired' | 'developing' | 'missing'; priority: number; importance?: string };
 
-export default function RoadmapPage() {
+export default function RoadmapPage() { return <Suspense fallback={<div className="flex min-h-screen items-center justify-center bg-[#f4f8fc]"><LoadingState label="Loading roadmap..." /></div>}><RoadmapContent /></Suspense>; }
+
+function RoadmapContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const requestedRoleId = searchParams.get('role') || '';
