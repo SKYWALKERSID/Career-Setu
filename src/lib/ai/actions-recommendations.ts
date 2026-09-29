@@ -8,6 +8,7 @@ import { CAREER_RECOMMENDATIONS_PROMPT, CAREER_RECOMMENDATIONS_PROMPT_VERSION } 
 import { validateCareerRecommendations } from '@/lib/ai/recommendations';
 
 type RoleRow = { id: string; title: string; category: string; description: string; career_role_skills: Array<{ skill_id: string; required: boolean; importance: string; skills: { id: string; name: string } | null }> };
+const MIN_RECOMMENDATIONS = 3;
 
 function publicError(error: unknown): string {
   return error instanceof Error && error.message.includes('configured')
@@ -100,10 +101,9 @@ export async function ensureCareerRecommendations(): Promise<{ success: boolean;
   const { data: existing, error: existingError } = await supabase
     .from('career_recommendations')
     .select('id')
-    .eq('student_id', student.id)
-    .limit(1);
+    .eq('student_id', student.id);
   if (existingError) return { success: false, error: 'Career recommendations could not be loaded.' };
-  if (existing?.length) return { success: true, count: existing.length };
+  if (existing && existing.length >= MIN_RECOMMENDATIONS) return { success: true, count: existing.length };
 
   return generateCareerRecommendations();
 }
