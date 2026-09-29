@@ -462,7 +462,7 @@ export default function OnboardingPage() {
                         <Badge
                           key={id}
                           variant="default"
-                          className="text-xs py-1 px-2.5 flex items-center gap-1.5 cursor-pointer bg-brand-700 hover:bg-brand-800"
+                          className="text-xs py-1 px-2.5 flex items-center gap-1.5 cursor-pointer bg-brand-700 text-white hover:bg-brand-800"
                           onClick={() => setFormData({
                             ...formData,
                             selectedSkillIds: formData.selectedSkillIds.filter((sId) => sId !== id)
