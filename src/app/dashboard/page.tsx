@@ -38,6 +38,8 @@ function DashboardContent() {
 
   useEffect(() => {
     async function load() {
+      setLoading(true);
+      setDashboardData(null);
       try {
         const result = await getDashboardData(requestedCareer || undefined);
         if (result.success && result.data) { setDashboardData(result.data); if (!requestedCareer && result.data.targetCareer) router.replace(`/dashboard?role=${encodeURIComponent(result.data.targetCareer.id)}`); }

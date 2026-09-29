@@ -101,6 +101,7 @@ export async function getDashboardData(requestedRoleId?: string, requestedRoadma
     .eq('student_id', sp.id);
   if (requestedRoadmapId) roadmapQuery = roadmapQuery.eq('id', requestedRoadmapId);
   else if (activeRoleId) roadmapQuery = roadmapQuery.eq('target_role_id', activeRoleId);
+  else if (requestedRoleId) roadmapQuery = roadmapQuery.eq('target_role_id', requestedRoleId);
   const { data: roadmap } = await roadmapQuery.order('generated_at', { ascending: false }).limit(1).maybeSingle();
 
   const { data: savedRoadmapRows } = await supabase.from('roadmaps').select('id, target_role_id, duration_days, generated_at, career_roles(title), roadmap_tasks(status)').eq('student_id', sp.id).order('generated_at', { ascending: false });
