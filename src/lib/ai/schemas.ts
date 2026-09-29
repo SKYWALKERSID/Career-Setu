@@ -157,7 +157,12 @@ export type RoadmapAIResult = z.infer<typeof RoadmapSchema>;
 
 const ResumeParseSchemaBase = z.object({
   analysis_source: z.enum(['ai', 'deterministic_fallback']).optional(),
+  analysis_version: z.string().max(80).optional(),
+  analysis_context_hash: z.string().length(64).optional(),
+  name: z.string().max(200).optional(),
   contact: z.object({ email: z.string().email().optional(), phone: z.string().max(40).optional(), links: z.array(z.string().url()).max(10) }),
+  location: z.string().max(200).optional(),
+  summary: z.string().max(1200).optional(),
   education: z.array(z.string().max(300)).max(10), skills: z.array(z.string().max(100)).max(50), projects: z.array(z.string().max(500)).max(20), experience: z.array(z.string().max(500)).max(20), certifications: z.array(z.string().max(300)).max(20), achievements: z.array(z.string().max(300)).max(20), evidenced_skill_ids: z.array(z.string().uuid()).max(50), role_required_skill_ids: z.array(z.string().uuid()).max(50), not_evidenced_skill_ids: z.array(z.string().uuid()).max(50), strengths: z.array(z.string().max(300)).max(10), improvement_areas: z.array(z.string().max(300)).max(10), suggestions: z.array(z.string().max(400)).max(15),
 });
 export const ResumeParseSchema = z.preprocess((value) => {
@@ -168,11 +173,16 @@ export const ResumeParseSchema = z.preprocess((value) => {
   const contact = output.contact && typeof output.contact === 'object' ? output.contact as Record<string, unknown> : {};
   return {
     analysis_source: output.analysis_source === 'deterministic_fallback' ? 'deterministic_fallback' : output.analysis_source === 'ai' ? 'ai' : undefined,
+    analysis_version: typeof output.analysis_version === 'string' ? output.analysis_version : undefined,
+    analysis_context_hash: typeof output.analysis_context_hash === 'string' ? output.analysis_context_hash : undefined,
+    name: typeof output.name === 'string' ? output.name : undefined,
     contact: {
       email: typeof contact.email === 'string' ? contact.email : undefined,
       phone: typeof contact.phone === 'string' ? contact.phone : undefined,
       links: Array.isArray(contact.links) ? contact.links.filter((item): item is string => typeof item === 'string' && /^https?:\/\//.test(item)) : [],
     },
+    location: typeof output.location === 'string' ? output.location : undefined,
+    summary: typeof output.summary === 'string' ? output.summary : undefined,
     education: textArray(output.education), skills: textArray(output.skills), projects: textArray(output.projects),
     experience: textArray(output.experience ?? output.work_experience), certifications: textArray(output.certifications), achievements: textArray(output.achievements),
     evidenced_skill_ids: idArray(output.evidenced_skill_ids ?? output.evidencedSkillIds), role_required_skill_ids: idArray(output.role_required_skill_ids ?? output.roleRequiredSkillIds), not_evidenced_skill_ids: idArray(output.not_evidenced_skill_ids ?? output.notEvidencedSkillIds),
