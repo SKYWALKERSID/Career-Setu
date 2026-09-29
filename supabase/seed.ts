@@ -566,7 +566,8 @@ async function main() {
   console.log('Seeding opportunities...');
   const { data: existingOpps } = await supabase.from('opportunities').select('title');
   const existingOppTitles = new Set((existingOpps || []).map((o: any) => o.title));
-  const newOpps = SEED_OPPORTUNITIES.filter(o => !existingOppTitles.has(o.title));
+  // Keep demo fixtures available to local tests, but never seed unverified rows into a student catalog.
+  const newOpps = SEED_OPPORTUNITIES.filter(o => o.is_verified && !existingOppTitles.has(o.title));
 
   if (newOpps.length > 0) {
     const { data: oppsData, error: oppsError } = await supabase

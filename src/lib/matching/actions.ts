@@ -18,7 +18,7 @@ async function buildMatches(opportunityId?: string, roleId?: string) {
   const [{ data: studentSkills }, { data: roleSkills }, { data: opportunities }] = await Promise.all([
     supabase.from('student_skills').select('skill_id, proficiency').eq('student_id', student.id),
     supabase.from('career_role_skills').select('skill_id').in('role_id', roleId && (student.target_careers || []).includes(roleId) ? [roleId] : (student.target_careers || [])),
-    supabase.from('opportunities').select('*, opportunity_skills(skill_id, skills(id, name, category))').eq('status', 'active').eq(opportunityId ? 'id' : 'status', opportunityId ? opportunityId : 'active'),
+    supabase.from('opportunities').select('*, opportunity_skills(skill_id, skills(id, name, category))').eq('status', 'active').eq('is_verified', true).eq(opportunityId ? 'id' : 'status', opportunityId ? opportunityId : 'active'),
   ]);
   if (opportunityId && !(opportunities || []).some((item) => item.id === opportunityId)) return { success: false, error: 'Opportunity not found.', matches: [] };
   const catalog = (opportunities || []).map((item) => ({ ...item, skills: (item.opportunity_skills || []).map((link: { skills: unknown }) => Array.isArray(link.skills) ? link.skills[0] : link.skills).filter(Boolean) })) as unknown as OpportunityCatalogItem[];

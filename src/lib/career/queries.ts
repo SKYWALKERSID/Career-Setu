@@ -153,7 +153,7 @@ export async function getCareerRoleById(roleId: string) {
       const opportunityMap = new Map<string, unknown>();
       opportunitySkillMatches.forEach((match) => {
         const opportunity = Array.isArray(match.opportunities) ? match.opportunities[0] : match.opportunities;
-        if (opportunity && (opportunity as { status?: string }).status === 'active') opportunityMap.set((opportunity as { id: string }).id, opportunity);
+        if (opportunity && (opportunity as { status?: string; is_verified?: boolean }).status === 'active' && (opportunity as { is_verified?: boolean }).is_verified === true) opportunityMap.set((opportunity as { id: string }).id, opportunity);
       });
       relatedOpportunities = Array.from(opportunityMap.values());
     }

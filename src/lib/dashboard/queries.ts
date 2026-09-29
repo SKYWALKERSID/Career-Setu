@@ -136,6 +136,7 @@ export async function getDashboardData(requestedRoleId?: string, requestedRoadma
     .from('opportunities')
     .select('id, title, organization, type, location, application_deadline, is_verified')
     .eq('status', 'active')
+    .eq('is_verified', true)
     .order('created_at', { ascending: false })
     .limit(3);
 

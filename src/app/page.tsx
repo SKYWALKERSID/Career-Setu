@@ -12,7 +12,7 @@ async function getCatalogCounts() {
   const [roles, courses, opportunities] = await Promise.all([
     supabase.from('career_roles').select('id', { count: 'exact', head: true }),
     supabase.from('courses').select('id', { count: 'exact', head: true }),
-    supabase.from('opportunities').select('id', { count: 'exact', head: true }),
+    supabase.from('opportunities').select('id', { count: 'exact', head: true }).eq('status', 'active').eq('is_verified', true),
   ]);
   return { roles: roles.count ?? 0, courses: courses.count ?? 0, opportunities: opportunities.count ?? 0 };
 }
