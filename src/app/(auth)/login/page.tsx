@@ -104,6 +104,13 @@ function LoginForm() {
         return;
       }
 
+      // Confirm the browser client has a session before leaving the login route.
+      const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+      if (sessionError || !sessionData.session) {
+        setErrorDetails({ message: 'Sign-in succeeded, but the session could not be established. Please try again.' });
+        return;
+      }
+
       // Onboarding-aware redirect: check whether student profile exists
       const { data: studentProfile } = await supabase
         .from('student_profiles')
@@ -112,9 +119,9 @@ function LoginForm() {
         .single();
 
       if (!studentProfile) {
-        router.push('/onboarding');
+        router.replace('/onboarding');
       } else {
-        router.push(redirectTo);
+        router.replace(redirectTo || '/dashboard');
       }
     } catch (error: unknown) {
       setErrorDetails(

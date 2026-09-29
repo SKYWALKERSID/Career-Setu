@@ -61,6 +61,15 @@ export async function updateSession(request: NextRequest) {
     path === route || path.startsWith(`${route}/`)
   );
 
+  // Authenticated users should not be stranded on the public landing page.
+  if (user && path === '/') {
+    const url = request.nextUrl.clone();
+    url.pathname = '/dashboard';
+    const redirectRes = NextResponse.redirect(url);
+    response.cookies.getAll().forEach((c) => redirectRes.cookies.set(c));
+    return redirectRes;
+  }
+
   // 1. Unauthenticated users trying to access protected routes -> redirect to signup
   if (!user && isProtectedRoute) {
     const url = request.nextUrl.clone();

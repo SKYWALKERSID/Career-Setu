@@ -3,6 +3,7 @@ import { ArrowRight, BookOpen, BriefcaseBusiness, Compass, Mic, TrendingUp } fro
 import { Button } from '@/components/ui/button';
 import { createClient } from '@/lib/supabase/server';
 import { CookieConsent } from '@/components/ui/cookie-consent';
+import { redirect } from 'next/navigation';
 
 async function getCatalogCounts() {
   const supabase = await createClient();
@@ -15,6 +16,10 @@ async function getCatalogCounts() {
 }
 
 export default async function LandingPage() {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (user) redirect('/dashboard');
+
   const counts = await getCatalogCounts();
   const features = [
     ['Personalized guidance', 'Career recommendations grounded in your profile.', Compass],
