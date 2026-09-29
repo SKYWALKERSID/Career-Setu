@@ -43,16 +43,18 @@ function extractText(buffer: Buffer, type: string): string {
   throw new Error('Unsupported format. Please upload a PDF or text resume.');
 }
 
-export async function getLatestResume() {
+export async function getLatestResume(roleId?: string) {
   const supabase = await createClient(); const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { success: false, resume: null, error: 'Unauthorized: Authentication required.' };
   const { data: student } = await supabase.from('student_profiles').select('id').eq('user_id', user.id).single();
   if (!student) return { success: false, resume: null, error: 'Student profile not found.' };
-  const { data: resume } = await supabase.from('resumes').select('*').eq('student_id', student.id).order('version', { ascending: false }).limit(1).maybeSingle();
+  let query = supabase.from('resumes').select('*').eq('student_id', student.id);
+  if (roleId) query = query.eq('target_role_id', roleId);
+  const { data: resume } = await query.order('version', { ascending: false }).limit(1).maybeSingle();
   return { success: true, resume };
 }
 
-export async function uploadAndAnalyzeResume(formData: FormData): Promise<{ success: boolean; resumeId?: string; error?: string }> {
+export async function uploadAndAnalyzeResume(formData: FormData, requestedRoleId?: string): Promise<{ success: boolean; resumeId?: string; error?: string }> {
   const supabase = await createClient(); const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { success: false, error: 'Unauthorized: Authentication required.' };
   const file = formData.get('file');
@@ -62,6 +64,12 @@ export async function uploadAndAnalyzeResume(formData: FormData): Promise<{ succ
   if (file.size > MAX_BYTES) return { success: false, error: 'Resume file must be 5 MB or smaller.' };
   const { data: student } = await supabase.from('student_profiles').select('id, target_careers').eq('user_id', user.id).single();
   if (!student) return { success: false, error: 'Student profile not found.' };
+  const { data: targetRole } = requestedRoleId && (student.target_careers || []).includes(requestedRoleId)
+    ? await supabase.from('career_roles').select('id, title, career_role_skills(skill_id, skills(id, name))').eq('id', requestedRoleId).maybeSingle()
+    : { data: null };
+  if (requestedRoleId && !targetRole) return { success: false, error: 'That target career is not selected for this student.' };
+  const roleId = targetRole?.id || student.target_careers?.[0];
+  if (!roleId) return { success: false, error: 'No target career selected. Choose a career before analyzing your resume.' };
   const buffer = Buffer.from(await file.arrayBuffer());
   if (file.type === 'application/pdf' && !buffer.subarray(0, 5).equals(Buffer.from('%PDF-'))) return { success: false, error: 'The uploaded PDF signature is invalid.' };
   let text: string;
@@ -71,13 +79,13 @@ export async function uploadAndAnalyzeResume(formData: FormData): Promise<{ succ
   const version = (latest?.version || 0) + 1; const storagePath = `${student.id}/${version}-${crypto.randomUUID()}${extension}`;
   const { error: uploadError } = await supabase.storage.from('private-resumes').upload(storagePath, buffer, { contentType: file.type, upsert: false });
   if (uploadError) return { success: false, error: 'Resume upload failed.' };
-  const { data: resume, error: resumeError } = await supabase.from('resumes').insert({ student_id: student.id, storage_path: storagePath, extracted_text: text, score: null, version }).select('id').single();
+  const { data: resume, error: resumeError } = await supabase.from('resumes').insert({ student_id: student.id, target_role_id: roleId, storage_path: storagePath, extracted_text: text, score: null, version }).select('id').single();
   if (resumeError || !resume) { await supabase.storage.from('private-resumes').remove([storagePath]); return { success: false, error: 'Resume record could not be created.' }; }
   const [{ data: skills }, { data: allRoles }] = await Promise.all([
     supabase.from('skills').select('id, name'),
     supabase.from('career_roles').select('id, title, career_role_skills(skill_id, skills(id, name))'),
   ]);
-  const targetRoleIds = resolveTargetCareerIds(student.target_careers || [], allRoles || []);
+  const targetRoleIds = resolveTargetCareerIds([roleId], allRoles || []);
   const roles = (allRoles || []).filter((role) => targetRoleIds.includes(role.id));
   const roleSkills = (roles || []).flatMap((role) => role.career_role_skills || []).map((item) => item.skill_id);
   const context = JSON.stringify({ skills: skills || [], target_roles: roles || [], role_required_skill_ids: roleSkills });

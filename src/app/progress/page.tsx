@@ -1,6 +1,7 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { Sidebar } from '@/components/layout/sidebar';
 import { TopNav } from '@/components/layout/top-nav';
@@ -25,24 +26,25 @@ import { calculateAndSaveReadinessAssessment } from '@/lib/readiness/actions';
 import type { ProgressSnapshot } from '@/lib/progress/types';
 
 export default function ProgressPage() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const requestedCareer = searchParams.get('career') || '';
   const [snapshot, setSnapshot] = useState<ProgressSnapshot | null>(null);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
 
-  async function load() {
-    const result = await getProgressSnapshot();
+  const load = useCallback(async () => {
+    const result = await getProgressSnapshot(requestedCareer || undefined);
     if (result.success && result.snapshot) {
       setSnapshot(result.snapshot);
     } else {
       setError(result.error || 'Progress tracking metrics are currently unavailable.');
     }
     setLoading(false);
-  }
+  }, [requestedCareer]);
 
-  useEffect(() => {
-    void load();
-  }, []);
+  useEffect(() => { void load(); }, [load]);
 
   async function recalculate() {
     setBusy(true);
@@ -57,6 +59,7 @@ export default function ProgressPage() {
 
   const currentReadiness = snapshot?.readiness.current;
   const overallScore = currentReadiness?.overall_score ?? null;
+  const roleQuery = snapshot?.activeRole?.id ? `?role=${encodeURIComponent(snapshot.activeRole.id)}` : '';
 
   const scoreComponents = [
     { label: 'Technical Skills', score: currentReadiness?.technical_score ?? null },
@@ -103,6 +106,13 @@ export default function ProgressPage() {
                 <RefreshCw className={`mr-2 h-4 w-4 ${busy ? 'animate-spin' : ''}`} />
                 {busy ? 'Calculating...' : 'Recalculate Readiness'}
               </Button>
+            </div>
+          </section>
+
+          <section className="border border-[#dce7f2] bg-white p-4">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div><p className="text-xs font-bold uppercase tracking-wider text-[#1769d4]">Current career</p>{snapshot?.targetCareers?.length ? <select aria-label="Current career for progress" value={snapshot.activeRole?.id || ''} onChange={(event) => router.push(`/progress?career=${encodeURIComponent(event.target.value)}`)} className="mt-1 h-10 min-w-[220px] border border-[#cbdbea] bg-white px-3 text-sm font-extrabold text-[#10285a]">{snapshot.targetCareers.map((career) => <option key={career.id} value={career.id}>{career.title}</option>)}</select> : <p className="mt-1 text-lg font-extrabold text-[#10285a]">No target career selected</p>}<p className="mt-1 text-xs text-slate-500">Progress is calculated for this career&apos;s roadmap and interview evidence.</p></div>
+              <Link href={roleQuery ? `/roadmap${roleQuery}` : '/career'} className="text-xs font-bold text-[#1769d4]">{snapshot?.activeRole ? 'Change career' : 'Choose career'} <ChevronRight className="inline h-3.5 w-3.5" /></Link>
             </div>
           </section>
 
@@ -210,7 +220,7 @@ export default function ProgressPage() {
                       <h2 className="text-lg font-bold text-[#10285a]">Roadmap Tasks Progress</h2>
                     </div>
                     <Link
-                      href="/roadmap"
+                      href={snapshot?.activeRole ? `/roadmap?role=${encodeURIComponent(snapshot.activeRole.id)}` : '/career'}
                       className="flex items-center text-xs font-bold text-[#1769d4] hover:underline"
                     >
                       Open Roadmap <ChevronRight className="ml-1 h-3.5 w-3.5" />
@@ -296,7 +306,7 @@ export default function ProgressPage() {
                 <Card className="rounded-[3px] border border-[#dfe8f1] bg-white p-6 shadow-[0_2px_9px_rgba(27,63,105,0.04)]">
                   <div className="flex items-center justify-between border-b border-[#edf3f8] pb-4">
                     <div><h2 className="text-lg font-bold text-[#10285a]">Skill Progress</h2><p className="mt-1 text-xs text-slate-500">Current states come from the canonical target-career skill engine.</p></div>
-                    <Link href="/roadmap" className="text-xs font-bold text-[#1769d4]">Open roadmap <ChevronRight className="inline h-3.5 w-3.5" /></Link>
+                    <Link href={snapshot.activeRole ? `/roadmap?role=${encodeURIComponent(snapshot.activeRole.id)}` : '/career'} className="text-xs font-bold text-[#1769d4]">Open roadmap <ChevronRight className="inline h-3.5 w-3.5" /></Link>
                   </div>
                   <div className="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
                     {snapshot.skillGaps.map((gap) => <div key={gap.skill_id} className="border border-[#e5edf5] bg-[#fbfdff] p-3"><div className="flex items-start justify-between gap-2"><p className="text-sm font-bold text-[#10285a]">{gap.skill_name}</p><Badge variant={gap.status === 'acquired' ? 'success' : gap.status === 'developing' ? 'warning' : 'info'} className="text-xs">{gap.status}</Badge></div><p className="mt-2 text-xs text-slate-500">{gap.status === 'acquired' ? 'Evidence meets the current role requirement.' : 'Open the roadmap or learn from mapped courses.'}</p></div>)}
@@ -364,7 +374,7 @@ export default function ProgressPage() {
 
                     <div className="mt-4 space-y-2.5">
                       <Link
-                        href="/roadmap"
+                        href={snapshot.activeRole ? `/roadmap?role=${encodeURIComponent(snapshot.activeRole.id)}` : '/career'}
                         className="flex items-center justify-between rounded border border-[#cbdbea] bg-[#f8fbfe] p-3 text-xs font-bold text-[#1769d4] hover:bg-[#edf6ff]"
                       >
                         <div className="flex items-center gap-2">
@@ -375,7 +385,7 @@ export default function ProgressPage() {
                       </Link>
 
                       <Link
-                        href="/resume"
+                        href={snapshot.activeRole ? `/resume?career=${encodeURIComponent(snapshot.activeRole.id)}` : '/career'}
                         className="flex items-center justify-between rounded border border-[#cbdbea] bg-[#f8fbfe] p-3 text-xs font-bold text-[#1769d4] hover:bg-[#edf6ff]"
                       >
                         <div className="flex items-center gap-2">

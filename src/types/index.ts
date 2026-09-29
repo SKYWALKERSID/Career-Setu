@@ -81,6 +81,7 @@ export interface Resume {
   parsed_json?: Record<string, unknown> | null;
   score: number;
   version: number;
+  target_role_id?: string | null;
   created_at: string;
 }
 

@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { Sidebar } from '@/components/layout/sidebar';
 import { TopNav } from '@/components/layout/top-nav';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -25,6 +26,9 @@ function PanelHeading({ icon: Icon, title, href, action = 'View All' }: { icon: 
 }
 
 export default function DashboardPage() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const requestedCareer = searchParams.get('role') || '';
   const [loading, setLoading] = useState(true);
   const [dashboardData, setDashboardData] = useState<DashboardData | null>(null);
   const [recommendationsLoading, setRecommendationsLoading] = useState(false);
@@ -33,8 +37,8 @@ export default function DashboardPage() {
   useEffect(() => {
     async function load() {
       try {
-        const result = await getDashboardData();
-        if (result.success && result.data) setDashboardData(result.data);
+        const result = await getDashboardData(requestedCareer || undefined);
+        if (result.success && result.data) { setDashboardData(result.data); if (!requestedCareer && result.data.targetCareer) router.replace(`/dashboard?role=${encodeURIComponent(result.data.targetCareer.id)}`); }
       } catch (error) {
         console.error('Dashboard load error:', error);
       } finally {
@@ -42,7 +46,7 @@ export default function DashboardPage() {
       }
     }
     load();
-  }, []);
+  }, [requestedCareer, router]);
 
   if (loading) return <PortalFrame><main className="flex-1 flex items-center justify-center p-6"><LoadingState label="Loading your personalized dashboard metrics..." /></main></PortalFrame>;
 
@@ -53,6 +57,7 @@ export default function DashboardPage() {
   const courses = dashboardData?.previewCourses || [];
   const opportunities = dashboardData?.previewOpportunities || [];
   const studentSkills = dashboardData?.studentSkills || [];
+  const activeCareer = dashboardData?.targetCareer;
 
   const semesterFormatted = formatSemesterOrdinal(sp?.semester);
   const collegeSubtitle = sp?.college
@@ -64,7 +69,7 @@ export default function DashboardPage() {
     setRecommendationsError('');
     const result = await generateCareerRecommendations();
     if (result.success) {
-      const refreshed = await getDashboardData();
+      const refreshed = await getDashboardData(requestedCareer || undefined);
       if (refreshed.success && refreshed.data) setDashboardData(refreshed.data);
     } else setRecommendationsError(result.error || 'Career recommendations are temporarily unavailable.');
     setRecommendationsLoading(false);
@@ -93,9 +98,11 @@ export default function DashboardPage() {
           </div>
         </section>
 
+        <section className="border border-[#dce7f2] bg-white p-4"><div className="flex flex-wrap items-center justify-between gap-3"><div><p className="text-xs font-bold uppercase tracking-wider text-brand-700">Current career</p>{dashboardData?.targetCareers?.length ? <select aria-label="Current career on dashboard" value={activeCareer?.id || ''} onChange={(event) => router.push(`/dashboard?role=${encodeURIComponent(event.target.value)}`)} className="mt-1 h-10 min-w-[240px] border border-slate-300 bg-white px-3 text-sm font-bold text-[#102b63]">{dashboardData.targetCareers.map((career) => <option key={career.id} value={career.id}>{career.title}</option>)}</select> : <p className="mt-1 text-lg font-bold text-[#102b63]">No target career selected</p>}<p className="mt-1 text-xs text-slate-500">Your downstream roadmap, courses, opportunities, resume, and progress use this career context.</p></div><Link href={activeCareer ? `/roadmap?role=${encodeURIComponent(activeCareer.id)}` : '/career'} className="text-xs font-semibold text-brand-700">{activeCareer ? 'Open skill gaps' : 'Choose career'} <ArrowRight className="inline h-3.5 w-3.5" /></Link></div></section>
+
         <section className="grid grid-cols-1 gap-4 lg:grid-cols-3">
           <Card className="overflow-hidden">
-            <PanelHeading icon={TrendingUp} title="Career Readiness Score" href="/progress" action="View Report" />
+            <PanelHeading icon={TrendingUp} title="Career Readiness Score" href={activeCareer ? `/progress?career=${encodeURIComponent(activeCareer.id)}` : '/progress'} action="View Report" />
             <CardContent className="p-4">
               {assessment ? (
                 <div className="flex gap-4 items-center">
@@ -146,7 +153,7 @@ export default function DashboardPage() {
           </Card>
 
           <Card className="overflow-hidden">
-            <PanelHeading icon={CalendarDays} title="Your 90-Day Plan" href="/roadmap" action="View Plan" />
+            <PanelHeading icon={CalendarDays} title="Your 90-Day Plan" href={activeCareer ? `/roadmap?role=${encodeURIComponent(activeCareer.id)}` : '/roadmap'} action="View Plan" />
             <CardContent className="p-4">
               {roadmapTasks.length ? (
                 <div className="space-y-3">
@@ -171,7 +178,7 @@ export default function DashboardPage() {
 
         <section className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           <Card className="overflow-hidden">
-            <PanelHeading icon={BookOpen} title="Recommended Courses" href="/courses" />
+            <PanelHeading icon={BookOpen} title="Recommended Courses" href={activeCareer ? `/courses?career=${encodeURIComponent(activeCareer.id)}` : '/courses'} />
             <CardContent className="p-3 space-y-2">
               {courses.length ? (
                 courses.map((course) => (
@@ -191,7 +198,7 @@ export default function DashboardPage() {
           </Card>
 
           <Card className="overflow-hidden">
-            <PanelHeading icon={Building2} title="Matching Opportunities" href="/opportunities" />
+            <PanelHeading icon={Building2} title="Matching Opportunities" href={activeCareer ? `/opportunities?career=${encodeURIComponent(activeCareer.id)}` : '/opportunities'} />
             <CardContent className="p-3 space-y-2">
               {opportunities.length ? (
                 opportunities.map((opportunity) => (
@@ -233,7 +240,7 @@ export default function DashboardPage() {
               <div className="h-9 w-9 rounded bg-blue-50 text-brand-700 flex items-center justify-center"><FileText className="h-4 w-4" /></div>
               <div><p className="text-sm font-bold">Resume Copilot</p><p className="text-xs text-slate-500">Get fact-preserving feedback on your resume.</p></div>
             </div>
-            <Link href="/resume"><Button variant="outline" size="sm" className="text-xs font-semibold shrink-0">Open <ArrowRight className="h-3 w-3" /></Button></Link>
+            <Link href={activeCareer ? `/resume?career=${encodeURIComponent(activeCareer.id)}` : '/resume'}><Button variant="outline" size="sm" className="text-xs font-semibold shrink-0">Open <ArrowRight className="h-3 w-3" /></Button></Link>
           </Card>
           <Card className="p-4 flex items-center justify-between gap-4">
             <div className="flex items-center gap-3">
