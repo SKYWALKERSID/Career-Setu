@@ -167,7 +167,6 @@ export async function saveStudentProfile(input: StudentProfileInput) {
         cgpa: data.cgpa ?? null,
         interests: data.interests,
         target_careers: data.target_careers,
-        readiness_score: completionScore,
         updated_at: new Date().toISOString(),
       },
       { onConflict: 'user_id' }
