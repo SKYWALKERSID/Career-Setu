@@ -11,6 +11,7 @@ import type { ResumeParsedData } from './types';
 import { buildDeterministicResume, extractResumeText } from './parser';
 import { resolveTargetCareerIds } from '@/lib/career/target-roles';
 import { calculateAndSaveReadinessAssessment } from '@/lib/readiness/actions';
+import { isReusableResumeAnalysis } from '@/lib/ai/cache';
 
 const MAX_BYTES = 5 * 1024 * 1024;
 const ALLOWED = new Map([['application/pdf', '.pdf'], ['text/plain', '.txt']]);
@@ -48,17 +49,16 @@ export async function uploadAndAnalyzeResume(formData: FormData, requestedRoleId
   let text: string;
   try { text = extractResumeText(buffer, file.type).slice(0, 50000); if (!text) throw new Error('No readable text was found in the uploaded resume.'); }
   catch (error) { return { success: false, error: error instanceof Error ? error.message : 'Resume text extraction failed.' }; }
-  const { data: reusable } = await supabase
+  const { data: reusableRows } = await supabase
     .from('resumes')
     .select('id, extracted_text, parsed_json, score')
     .eq('student_id', student.id)
     .eq('target_role_id', roleId)
     .not('parsed_json', 'is', null)
     .not('score', 'is', null)
-    .order('version', { ascending: false })
-    .limit(1)
-    .maybeSingle();
-  if (!forceReanalysis && reusable?.extracted_text === text && reusable.parsed_json && reusable.parsed_json.analysis_version === RESUME_SCORING_VERSION && reusable.parsed_json.analysis_context_hash === analysisContextHash && reusable.score !== null) {
+    .order('version', { ascending: false });
+  const reusable = (reusableRows || []).find((record) => isReusableResumeAnalysis(record, text, RESUME_SCORING_VERSION, analysisContextHash));
+  if (!forceReanalysis && reusable && isReusableResumeAnalysis(reusable, text, RESUME_SCORING_VERSION, analysisContextHash)) {
     return { success: true, resumeId: reusable.id };
   }
   const { data: latest } = await supabase.from('resumes').select('version').eq('student_id', student.id).order('version', { ascending: false }).limit(1).maybeSingle();
