@@ -14,7 +14,7 @@ export type ResumeTextSections = {
   allText: string;
 };
 
-export type ResumeExtractionFailureCode = 'invalid_pdf' | 'scanned_pdf' | 'unreadable_pdf';
+export type ResumeExtractionFailureCode = 'invalid_pdf' | 'encrypted_pdf' | 'scanned_pdf' | 'unreadable_pdf' | 'pdfjs_open_failed';
 
 export class ResumeExtractionError extends Error {
   constructor(public readonly code: ResumeExtractionFailureCode, message: string) {
@@ -35,20 +35,29 @@ function normalizePageText(value: string): string {
 }
 
 export async function extractResumeText(buffer: Buffer, type: string): Promise<string> {
-  if (type === 'text/plain') return buffer.toString('utf8').trim();
-  if (type !== 'application/pdf') throw new ResumeExtractionError('invalid_pdf', 'Unsupported format. Please upload a PDF or text resume.');
+  const hasPdfSignature = buffer.subarray(0, 5).equals(Buffer.from('%PDF-'));
+  if (!hasPdfSignature && type === 'text/plain') return buffer.toString('utf8').trim();
+  if (!hasPdfSignature) throw new ResumeExtractionError('invalid_pdf', 'The uploaded file is not a valid PDF or plain-text resume.');
 
   let document: Awaited<ReturnType<typeof getDocument>>['promise'] extends Promise<infer T> ? T : never;
   try {
     document = await getDocument({ data: new Uint8Array(buffer), useSystemFonts: true, verbosity: 0 }).promise;
-  } catch {
-    throw new ResumeExtractionError('invalid_pdf', 'This PDF could not be opened. Please upload a valid, unencrypted PDF.');
+  } catch (error: unknown) {
+    const errorName = error && typeof error === 'object' && 'name' in error ? String(error.name) : '';
+    if (errorName === 'PasswordException') {
+      throw new ResumeExtractionError('encrypted_pdf', 'This PDF is password-protected. Please upload an unencrypted PDF.');
+    }
+    if (errorName === 'InvalidPDFException' || errorName === 'MissingPDFException') {
+      throw new ResumeExtractionError('invalid_pdf', 'This PDF could not be opened. Please upload a valid PDF.');
+    }
+    throw new ResumeExtractionError('pdfjs_open_failed', 'This PDF could not be processed by the document reader. Please try a text-readable PDF.');
   }
 
   const pages: string[] = [];
   let imageOnlyPages = 0;
-  try {
-    for (let pageNumber = 1; pageNumber <= document.numPages; pageNumber += 1) {
+  let unreadablePages = 0;
+  for (let pageNumber = 1; pageNumber <= document.numPages; pageNumber += 1) {
+    try {
       const page = await document.getPage(pageNumber);
       const content = await page.getTextContent();
       let currentLine = '';
@@ -69,14 +78,15 @@ export async function extractResumeText(buffer: Buffer, type: string): Promise<s
       const operators = await page.getOperatorList();
       const imageOperators = new Set([OPS.paintImageMaskXObject, OPS.paintImageXObject]);
       if (operators.fnArray.some((operator) => imageOperators.has(operator))) imageOnlyPages += 1;
+    } catch {
+      unreadablePages += 1;
     }
-  } catch {
-    throw new ResumeExtractionError('unreadable_pdf', 'This PDF is valid but its text could not be extracted.');
   }
 
   const extracted = pages.join('\n');
   if (!extracted) {
     if (imageOnlyPages > 0) throw new ResumeExtractionError('scanned_pdf', 'This PDF appears to contain scanned or image pages rather than selectable text. Please upload a text-readable PDF.');
+    if (unreadablePages > 0) throw new ResumeExtractionError('unreadable_pdf', 'This PDF is valid but its text could not be extracted.');
     throw new ResumeExtractionError('unreadable_pdf', 'This PDF contains no readable text. Please upload a text-readable PDF.');
   }
   return extracted;
@@ -91,13 +101,13 @@ function sectionBetween(lines: string[], start: RegExp, end: RegExp): string[] {
 
 export function parseResumeSections(text: string): ResumeTextSections {
   const lines = text.split(/\r?\n/).map((line) => line.replace(/^[-•▪]\s*/, '').trim()).filter(Boolean);
-  const summaryHeading = /^(PROFESSIONAL SUMMARY|CAREER OBJECTIVE|OBJECTIVE|SUMMARY)$/i;
-  const educationHeading = /^(EDUCATION|ACADEMIC BACKGROUND)$/i;
-  const experienceHeading = /^(WORK EXPERIENCE|EXPERIENCE|PROFESSIONAL EXPERIENCE|INTERNSHIPS?)$/i;
-  const projectsHeading = /^(PROJECTS?|ACADEMIC PROJECTS|PERSONAL PROJECTS)$/i;
-  const skillsHeading = /^(TECHNICAL SKILLS?|SKILLS|CORE SKILLS)$/i;
-  const achievementsHeading = /^(ACHIEVEMENTS?|ACHIEVEMENTS\s*&\s*EXTRACURRICULARS|EXTRACURRICULAR ACTIVITIES|EXTRACURRICULARS?|ACTIVITIES)$/i;
-  const nextSectionHeading = /^(EDUCATION|ACADEMIC BACKGROUND|WORK EXPERIENCE|EXPERIENCE|PROFESSIONAL EXPERIENCE|INTERNSHIPS?|PROJECTS?|ACADEMIC PROJECTS|PERSONAL PROJECTS|TECHNICAL SKILLS?|SKILLS|CORE SKILLS|ACHIEVEMENTS?|EXTRACURRICULAR ACTIVITIES|EXTRACURRICULARS?|ACTIVITIES|CERTIFICATIONS?|LANGUAGES?)$/i;
+  const summaryHeading = /^(PROFESSIONAL SUMMARY|CAREER OBJECTIVE|OBJECTIVE|SUMMARY|PROFILE|ABOUT ME)$/i;
+  const educationHeading = /^(EDUCATION|ACADEMIC BACKGROUND|ACADEMIC QUALIFICATIONS)$/i;
+  const experienceHeading = /^(WORK EXPERIENCE|WORK HISTORY|EXPERIENCE|PROFESSIONAL EXPERIENCE|EMPLOYMENT HISTORY|INTERNSHIPS?)$/i;
+  const projectsHeading = /^(PROJECTS?|SELECTED PROJECTS|ACADEMIC PROJECTS|PERSONAL PROJECTS)$/i;
+  const skillsHeading = /^(TECHNICAL SKILLS?|TECHNICAL COMPETENCIES|SKILLS|CORE SKILLS|CORE COMPETENCIES)$/i;
+  const achievementsHeading = /^(ACHIEVEMENTS?|ACCOMPLISHMENTS?|ACHIEVEMENTS\s*&\s*EXTRACURRICULARS|EXTRACURRICULAR ACTIVITIES|EXTRACURRICULARS?|ACTIVITIES)$/i;
+  const nextSectionHeading = /^(EDUCATION|ACADEMIC BACKGROUND|ACADEMIC QUALIFICATIONS|WORK EXPERIENCE|WORK HISTORY|EXPERIENCE|PROFESSIONAL EXPERIENCE|EMPLOYMENT HISTORY|INTERNSHIPS?|PROJECTS?|SELECTED PROJECTS|ACADEMIC PROJECTS|PERSONAL PROJECTS|TECHNICAL SKILLS?|TECHNICAL COMPETENCIES|SKILLS|CORE SKILLS|CORE COMPETENCIES|ACHIEVEMENTS?|ACCOMPLISHMENTS?|EXTRACURRICULAR ACTIVITIES|EXTRACURRICULARS?|ACTIVITIES|CERTIFICATIONS?|LANGUAGES?)$/i;
   const summaryLines = sectionBetween(lines, summaryHeading, nextSectionHeading);
   return {
     name: lines[0],

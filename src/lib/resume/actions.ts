@@ -14,8 +14,6 @@ import { calculateAndSaveReadinessAssessment } from '@/lib/readiness/actions';
 import { isReusableResumeAnalysis } from '@/lib/ai/cache';
 
 const MAX_BYTES = 5 * 1024 * 1024;
-const ALLOWED = new Map([['application/pdf', '.pdf'], ['text/plain', '.txt']]);
-
 function logResumeUploadStage(stage: string, metadata: Record<string, string | number | boolean | null>) {
   console.info('[resume-upload]', { stage, runtime: process.env.VERCEL_ENV || process.env.NODE_ENV || 'unknown', ...metadata });
 }
@@ -40,9 +38,12 @@ export async function uploadAndAnalyzeResume(formData: FormData, requestedRoleId
   if (!user) return { success: false, error: 'Unauthorized: Authentication required.' };
   const file = formData.get('file');
   if (!(file instanceof File)) return { success: false, error: 'Resume file is required.' };
-  const extension = ALLOWED.get(file.type);
-  if (!extension) return { success: false, error: 'Unsupported file type. Upload PDF or plain text.' };
   if (file.size > MAX_BYTES) return { success: false, error: 'Resume file must be 5 MB or smaller.' };
+  const buffer = Buffer.from(await file.arrayBuffer());
+  const hasPdfSignature = buffer.subarray(0, 5).equals(Buffer.from('%PDF-'));
+  const isPlainText = !hasPdfSignature && file.type === 'text/plain';
+  if (!hasPdfSignature && !isPlainText) return { success: false, error: 'Upload a valid PDF or plain-text resume.' };
+  const extension = hasPdfSignature ? '.pdf' : '.txt';
   const { data: student } = await supabase.from('student_profiles').select('id, course, branch, degree_id, branch_id, specialization_id, degree_other, branch_other, specialization_other, target_careers').eq('user_id', user.id).single();
   if (!student) return { success: false, error: 'Student profile not found.' };
   const { data: targetRole } = requestedRoleId && (student.target_careers || []).includes(requestedRoleId)
@@ -52,22 +53,18 @@ export async function uploadAndAnalyzeResume(formData: FormData, requestedRoleId
   const roleId = targetRole?.id || student.target_careers?.[0];
   if (!roleId) return { success: false, error: 'No target career selected. Choose a career before analyzing your resume.' };
   const analysisContextHash = createHash('sha256').update(JSON.stringify({ roleId, promptVersion: RESUME_PROMPT_VERSION, scoringVersion: RESUME_SCORING_VERSION })).digest('hex');
-  const buffer = Buffer.from(await file.arrayBuffer());
-  const hasPdfSignature = buffer.subarray(0, 5).equals(Buffer.from('%PDF-'));
   const byteHash = createHash('sha256').update(buffer).digest('hex').slice(0, 16);
   logResumeUploadStage('server_bytes_received', { filename: safeFilename(file.name), received_mime: file.type, byte_length: buffer.length, byte_hash: byteHash, pdf_signature: hasPdfSignature });
-  if (file.type === 'application/pdf' && !hasPdfSignature) {
-    logResumeUploadStage('signature_rejected', { error_category: 'invalid_pdf_signature', byte_length: buffer.length, pdf_signature: false });
-    return { success: false, error: 'The uploaded PDF signature is invalid.' };
-  }
   let text: string;
   try {
     logResumeUploadStage('pdfjs_open_start', { byte_length: buffer.length, byte_hash: byteHash, pdf_signature: hasPdfSignature });
-    text = (await extractResumeText(buffer, file.type)).slice(0, 50000);
+    text = (await extractResumeText(buffer, hasPdfSignature ? 'application/pdf' : 'text/plain')).slice(0, 50000);
     if (!text) throw new ResumeExtractionError('unreadable_pdf', 'This PDF contains no readable text. Please upload a text-readable PDF.');
     logResumeUploadStage('text_extraction_succeeded', { extracted_text_length: text.length });
   } catch (error) {
-    logResumeUploadStage('text_extraction_failed', { error_category: error instanceof ResumeExtractionError ? error.code : 'pdfjs_or_parser_error', pdf_signature: hasPdfSignature, byte_length: buffer.length, byte_hash: byteHash });
+    const errorName = error && typeof error === 'object' && 'name' in error ? String(error.name) : null;
+    const errorMessage = error instanceof Error ? error.message.replace(/[\r\n]+/g, ' ').slice(0, 180) : null;
+    logResumeUploadStage('text_extraction_failed', { error_category: error instanceof ResumeExtractionError ? error.code : 'pdfjs_or_parser_error', error_name: errorName, error_message: errorMessage, pdf_signature: hasPdfSignature, byte_length: buffer.length, byte_hash: byteHash });
     return { success: false, error: error instanceof Error ? error.message : 'Resume text extraction failed.' };
   }
   const { data: reusableRows } = await supabase
