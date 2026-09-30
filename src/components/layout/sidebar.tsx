@@ -4,7 +4,6 @@ import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
-import { createClient } from '@/lib/supabase/client';
 import {
   LayoutDashboard,
   UserCog,
@@ -15,7 +14,6 @@ import {
   FileText,
   Mic,
   TrendingUp,
-  ShieldCheck,
   Award
 } from 'lucide-react';
 
@@ -31,25 +29,8 @@ const mainNavItems = [
   { label: 'Profile / Settings', href: '/settings', icon: UserCog },
 ];
 
-const adminNavItems = [
-  { label: 'Admin Dashboard', href: '/admin', icon: ShieldCheck },
-];
-
 export function Sidebar() {
   const pathname = usePathname();
-  const [isAdmin, setIsAdmin] = React.useState(false);
-
-  React.useEffect(() => {
-    let mounted = true;
-    const supabase = createClient();
-    void (async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-      const { data: profile } = await supabase.from('profiles').select('role').eq('user_id', user.id).single();
-      if (mounted) setIsAdmin(profile?.role === 'admin');
-    })();
-    return () => { mounted = false; };
-  }, []);
 
   return (
     <aside className="w-[220px] shrink-0 border-r border-[#dce7f2] bg-white flex flex-col min-h-screen">
@@ -93,32 +74,6 @@ export function Sidebar() {
           </nav>
         </div>
 
-        <div>
-          <p className="px-3 text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">
-            For Institutions
-          </p>
-          <nav className="space-y-1">
-            {isAdmin && adminNavItems.map((item) => {
-              const Icon = item.icon;
-              const isActive = pathname === item.href;
-              return (
-                <Link
-                  key={item.label}
-                  href={item.href}
-                  className={cn(
-                    'flex items-center gap-2.5 px-3 py-2 text-sm font-medium rounded-md transition-colors',
-                    isActive
-                      ? 'bg-[#e7f0ff] text-[#1559c7] font-semibold'
-                      : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
-                  )}
-                >
-                  <Icon className={cn('h-4 w-4 shrink-0', isActive ? 'text-[#1559c7]' : 'text-slate-400')} />
-                  <span className="truncate">{item.label}</span>
-                </Link>
-              );
-            })}
-          </nav>
-        </div>
       </div>
 
       {/* Footer Banner */}
