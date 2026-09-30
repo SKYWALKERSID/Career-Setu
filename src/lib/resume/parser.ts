@@ -1,4 +1,5 @@
 import { getDocument, OPS } from 'pdfjs-dist/legacy/build/pdf.mjs';
+import 'pdfjs-dist/legacy/build/pdf.worker.mjs';
 import type { ResumeParsedData } from './types';
 
 export type ResumeTextSections = {

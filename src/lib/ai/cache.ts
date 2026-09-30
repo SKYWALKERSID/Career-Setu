@@ -9,10 +9,11 @@ export function isReusableResumeAnalysis(record: {
   parsed_json?: { analysis_source?: string; analysis_version?: string; analysis_context_hash?: string } | null;
   score?: number | null;
 }, extractedText: string, analysisVersion: string, contextHash: string): boolean {
+  const isAi = String(record.parsed_json?.analysis_source ?? 'ai') !== 'deterministic_fallback';
   return record.extracted_text === extractedText
-    && record.parsed_json?.analysis_source === 'ai'
+    && isAi
     && record.parsed_json?.analysis_version === analysisVersion
-    && record.parsed_json.analysis_context_hash === contextHash
+    && record.parsed_json?.analysis_context_hash === contextHash
     && record.score !== null
     && record.score !== undefined;
 }
