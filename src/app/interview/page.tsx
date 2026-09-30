@@ -1,7 +1,7 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { Suspense, useEffect, useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { Sidebar } from '@/components/layout/sidebar';
 import { TopNav } from '@/components/layout/top-nav';
 import { Button } from '@/components/ui/button';
@@ -22,6 +22,7 @@ import {
   ShieldCheck,
 } from 'lucide-react';
 import { getInterviewHistory, getInterviewSession, submitInterviewAnswer, type InterviewHistoryItem } from '@/lib/ai/actions-interview';
+import { getInterviewReportHref, getInterviewSessionHref } from '@/lib/ai/interview-navigation';
 
 type Session = {
   id: string;
@@ -36,7 +37,13 @@ type Turn = {
 };
 
 export default function InterviewPage() {
+  return <Suspense fallback={<div className="min-h-screen bg-[#f4f8fc]" />}><InterviewPageContent /></Suspense>;
+}
+
+function InterviewPageContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const sessionId = searchParams.get('session');
   const [session, setSession] = useState<Session | null>(null);
   const [turns, setTurns] = useState<Turn[]>([]);
   const [question, setQuestion] = useState('');
@@ -48,8 +55,13 @@ export default function InterviewPage() {
   const [history, setHistory] = useState<InterviewHistoryItem[]>([]);
 
   useEffect(() => {
-    const id = new URLSearchParams(window.location.search).get('session');
-    if (!id) {
+    setLoading(true);
+    setError('');
+    setSession(null);
+    setTurns([]);
+    setQuestion('');
+    setAnswer('');
+    if (!sessionId) {
       void getInterviewHistory().then((result) => {
         if (result.success) {
           setActiveHistory(result.active);
@@ -61,7 +73,7 @@ export default function InterviewPage() {
       });
       return;
     }
-    void getInterviewSession(id).then((result) => {
+    void getInterviewSession(sessionId).then((result) => {
       if (result.success && result.interview) {
         setSession(result.interview as Session);
         const nextTurns = (result.turns || []) as Turn[];
@@ -77,7 +89,7 @@ export default function InterviewPage() {
       }
       setLoading(false);
     });
-  }, []);
+  }, [sessionId]);
 
   async function submit() {
     if (!session || !answer.trim() || busy) return;
@@ -278,7 +290,7 @@ export default function InterviewPage() {
               </div>
             </>
           ) : (
-            <InterviewHistoryLanding active={activeHistory} history={history} onStart={() => router.push('/interview/setup')} onContinue={(id) => router.push(`/interview?session=${id}`)} onViewReport={(id) => router.push(`/interview/report?session=${id}`)} />
+            <InterviewHistoryLanding active={activeHistory} history={history} onStart={() => router.push('/interview/setup')} onContinue={(id) => router.push(getInterviewSessionHref(id))} onViewReport={(id) => router.push(getInterviewReportHref(id))} />
           )}
         </main>
       </div>
