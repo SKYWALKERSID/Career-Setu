@@ -1,6 +1,6 @@
 # MP CareerSetu Stabilization Plan
 
-Updated: 2026-09-28
+Updated: 2026-09-30
 
 ## Release Gate
 
@@ -34,5 +34,6 @@ with persisted, student-owned data and no fabricated results.
 ## Current Status
 
 - Provider abstraction: local Groq smoke verified.
-- Recommendation trigger: source-level repair present, live proof pending.
-- Downstream P0 pipeline: blocked from reliable live verification until deployment/provider/recommendation state is confirmed.
+- Recommendation trigger: source-level repair present, live proof verified.
+- Resume Copilot: role-switch document persistence, AI response reproducibility, and offline unit test suite verified.
+- Downstream P0 pipeline: active verification complete across core flows.

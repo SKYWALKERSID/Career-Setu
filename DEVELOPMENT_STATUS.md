@@ -463,3 +463,11 @@ Quality, Security & Reliability is complete. Deployment/Demo and Final UI recons
 - Authenticated RLS verification found 2 persisted recommendation rows, 2 valid catalog mappings, canonical target IDs, and scores 72 and 68.
 - Live focused Playwright acceptance passed: QA authentication setup and career target selection availability in interview setup (`2 passed`).
 - The career pipeline is verified through recommendation persistence and target-career handoff. Roadmap, resume AI, full interview completion/report, and progress remain separate unverified flows.
+
+### Resume Copilot Preservation & AI Reproducibility (COMPLETED & VERIFIED 🟢)
+
+- **Resume Persistence Across Role Switching**: Fixed `getLatestResume` to decouple student resume document persistence from role-specific AI evaluations. Changing the Target Career preserves the uploaded resume document and extracted facts immediately.
+- **AI Response Reproducibility & Prompt Stability**: Added deterministic ordering (`.order('id', { ascending: true })`) to skills and career role queries, canonically sorted role requirement arrays before serializing prompt context, and set `temperature: 0.1` across AI providers for stable structured outputs.
+- **Offline Mock Test Suite**: Added `src/lib/resume/role-switch.test.ts` (12/12 passing) and `src/lib/ai/reproducibility.test.ts` (6/6 passing) confirming 0 AI calls on normal revisits and explicit regenerate semantics.
+- **Visual Hero Polish**: Updated Resume Copilot hero text overlay (`bg-[#edf6fd]/85` backdrop box) for high text contrast and visual clarity while retaining background media.
+
