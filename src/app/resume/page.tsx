@@ -133,7 +133,15 @@ function ResumeContent() {
 
   return <div className="flex min-h-screen bg-[#f4f8fc]"><Sidebar /><div className="flex min-w-0 flex-1 flex-col"><TopNav /><main className="mx-auto w-full max-w-[1440px] px-4 pb-10 sm:px-6 lg:px-8">
     <Breadcrumb items={[{ label: 'Home', href: '/dashboard' }, { label: 'Resume Copilot' }]} />
-    <section className="relative mt-2 overflow-hidden rounded-[3px] border border-[#dbe7f3] bg-[#e9f3fb] bg-cover bg-center" style={{ backgroundImage: "url('/resume-hero.jpg')" }}><div className="absolute inset-0 bg-gradient-to-r from-[#edf6fd]/98 via-[#edf6fd]/88 to-transparent" /><div className="relative max-w-[700px] px-7 py-7 sm:px-10 sm:py-8"><p className="text-xs font-bold tracking-widest text-[#1d5bb5]">RESUME COPILOT</p><h1 className="mt-2 text-3xl font-extrabold leading-tight text-[#10285a] sm:text-4xl">Career-Aware Resume Intelligence</h1><p className="mt-3 max-w-[560px] text-base leading-6 text-[#46627f]">What does this resume prove for the career you are pursuing? CareerSetu extracts the facts, maps canonical skills, identifies missing evidence, and recommends next actions without inventing information.</p></div></section>
+    <section className="relative mt-2 overflow-hidden rounded-[3px] border border-[#dbe7f3] bg-[#e9f3fb] bg-cover bg-center" style={{ backgroundImage: "url('/resume-hero.jpg')" }}>
+      <div className="relative max-w-[620px] p-4 sm:p-6 lg:p-7">
+        <div className="rounded border border-[#cbe0f5]/60 bg-[#edf6fd]/85 p-6 sm:p-7 backdrop-blur-[2px]">
+          <p className="text-xs font-bold tracking-widest text-[#1559c7]">RESUME COPILOT</p>
+          <h1 className="mt-2 text-3xl font-extrabold leading-tight text-[#0c234b] sm:text-4xl">Career-Aware Resume Intelligence</h1>
+          <p className="mt-3 text-base leading-relaxed text-[#23426b]">What does this resume prove for the career you are pursuing? CareerSetu extracts the facts, maps canonical skills, identifies missing evidence, and recommends next actions without inventing information.</p>
+        </div>
+      </div>
+    </section>
     {error && <div className="mt-4 rounded border border-red-200 bg-red-50 p-3 text-sm text-red-700">{error}</div>}
     {warning && <div className="mt-4 rounded border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">{warning}</div>}
     {aiFallback && <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded border border-blue-200 bg-blue-50 p-3"><div className="text-sm text-blue-800">Deep AI analysis has not been generated yet for <strong>{activeCareer?.title || 'this target career'}</strong>. The deterministic review and score below are based on your previously uploaded resume (version {resume?.version}).</div><Button onClick={() => handleTriggerAiAnalysis(false)} disabled={busy} className="h-8 shrink-0 rounded bg-[#1769d4] px-4 text-xs font-semibold text-white">{busy ? <RefreshCw className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : null}Generate Deep AI Analysis</Button></div>}
