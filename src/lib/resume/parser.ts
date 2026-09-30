@@ -44,13 +44,15 @@ export async function extractResumeText(buffer: Buffer, type: string): Promise<s
     document = await getDocument({ data: new Uint8Array(buffer), useSystemFonts: true, verbosity: 0 }).promise;
   } catch (error: unknown) {
     const errorName = error && typeof error === 'object' && 'name' in error ? String(error.name) : '';
+    const errorMsg = error instanceof Error ? error.message.replace(/[\r\n]+/g, ' ').slice(0, 120) : '';
     if (errorName === 'PasswordException') {
       throw new ResumeExtractionError('encrypted_pdf', 'This PDF is password-protected. Please upload an unencrypted PDF.');
     }
     if (errorName === 'InvalidPDFException' || errorName === 'MissingPDFException') {
       throw new ResumeExtractionError('invalid_pdf', 'This PDF could not be opened. Please upload a valid PDF.');
     }
-    throw new ResumeExtractionError('pdfjs_open_failed', 'This PDF file could not be opened or read. Please try a valid, text-readable PDF.');
+    const detail = errorName ? ` [${errorName}${errorMsg ? ': ' + errorMsg : ''}]` : '';
+    throw new ResumeExtractionError('pdfjs_open_failed', `This PDF could not be processed${detail}. Please try a different text-readable PDF.`);
   }
 
   const pages: string[] = [];

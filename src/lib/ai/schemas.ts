@@ -223,38 +223,160 @@ const ResumeParseSchemaBase = z.object({
   ats_keywords: resumeAtsAnalysis, career_alignment_analysis: resumeCareerAlignmentAnalysis, resume_strategy: resumeStrategy, action_plan: resumeActionPlan,
   reanalysis_focus: z.string().min(1).max(500),
 });
+function normalizeSectionName(val: unknown): 'Summary' | 'Experience' | 'Projects' | 'Skills' | 'Education' | 'Achievements' | 'Certifications' | 'Other' {
+  if (typeof val !== 'string') return 'Other';
+  const s = val.trim().toLowerCase();
+  if (s.includes('summary') || s.includes('objective')) return 'Summary';
+  if (s.includes('exp') || s.includes('work') || s.includes('job') || s.includes('employment')) return 'Experience';
+  if (s.includes('project')) return 'Projects';
+  if (s.includes('skill') || s.includes('tech')) return 'Skills';
+  if (s.includes('edu') || s.includes('degree') || s.includes('academic')) return 'Education';
+  if (s.includes('achiev') || s.includes('award') || s.includes('honor')) return 'Achievements';
+  if (s.includes('certif') || s.includes('license') || s.includes('course')) return 'Certifications';
+  return 'Other';
+}
+
+function normalizePriority(val: unknown): 'critical' | 'high' | 'medium' | 'low' {
+  if (typeof val !== 'string') return 'medium';
+  const p = val.trim().toLowerCase();
+  if (p.includes('crit')) return 'critical';
+  if (p.includes('high') || p === 'p1' || p === '1') return 'high';
+  if (p.includes('med') || p === 'p2' || p === '2') return 'medium';
+  if (p.includes('low') || p === 'p3' || p === '3') return 'low';
+  return 'medium';
+}
+
+function normalizeSectionStatus(val: unknown): 'strong' | 'needs_work' | 'missing' | 'not_applicable' {
+  if (typeof val !== 'string') return 'needs_work';
+  const s = val.trim().toLowerCase();
+  if (s.includes('strong') || s.includes('good') || s.includes('pass')) return 'strong';
+  if (s.includes('miss') || s.includes('absent') || s.includes('none')) return 'missing';
+  if (s.includes('not') || s.includes('n/a') || s.includes('na')) return 'not_applicable';
+  return 'needs_work';
+}
+
+function uuidArray(val: unknown): string[] {
+  const ids = idArray(val);
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  return ids.filter((id) => uuidRegex.test(id));
+}
+
 export const ResumeParseSchema = z.preprocess((value) => {
   if (!value || typeof value !== 'object') return value;
   const source = value as Record<string, unknown>;
   const nested = [source.resume, source.parsed_resume, source.analysis].find((item) => item && typeof item === 'object');
   const output = (nested && typeof nested === 'object' ? nested : source) as Record<string, unknown>;
   const contact = output.contact && typeof output.contact === 'object' ? output.contact as Record<string, unknown> : {};
+  const rawEmail = typeof contact.email === 'string' ? contact.email.trim() : undefined;
+  const validEmail = rawEmail && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(rawEmail) ? rawEmail : undefined;
+
+  const priority_issues = Array.isArray(output.priority_issues)
+    ? output.priority_issues.map((item) => {
+        if (!item || typeof item !== 'object') return null;
+        const rec = item as Record<string, unknown>;
+        return {
+          title: (textValue(rec.title ?? rec.name ?? rec.issue) || 'Resume improvement area').slice(0, 160),
+          priority: normalizePriority(rec.priority),
+          section: normalizeSectionName(rec.section),
+          problem: (textValue(rec.problem ?? rec.issue ?? rec.description) || 'Needs improvement').slice(0, 600),
+          why_it_matters: (textValue(rec.why_it_matters ?? rec.rationale ?? rec.why) || 'Affects resume effectiveness').slice(0, 600),
+          recommended_change: (textValue(rec.recommended_change ?? rec.solution ?? rec.recommendation) || 'Update content').slice(0, 600),
+        };
+      }).filter(Boolean)
+    : [];
+
+  const section_analysis = Array.isArray(output.section_analysis)
+    ? output.section_analysis.map((item) => {
+        if (!item || typeof item !== 'object') return null;
+        const rec = item as Record<string, unknown>;
+        return {
+          section: normalizeSectionName(rec.section),
+          status: normalizeSectionStatus(rec.status),
+          what_works: textArray(rec.what_works ?? rec.strengths),
+          what_is_weak: textArray(rec.what_is_weak ?? rec.weaknesses),
+          recommended_improvement: textArray(rec.recommended_improvement ?? rec.improvements ?? rec.recommendations),
+        };
+      }).filter(Boolean)
+    : [];
+
+  const bullet_improvements = Array.isArray(output.bullet_improvements)
+    ? output.bullet_improvements.map((item) => {
+        if (!item || typeof item !== 'object') return null;
+        const rec = item as Record<string, unknown>;
+        const sec = normalizeSectionName(rec.section);
+        const validSec = (sec === 'Summary' || sec === 'Projects') ? sec : 'Experience';
+        return {
+          section: validSec,
+          original: (textValue(rec.original ?? rec.current ?? rec.bullet) || 'Bullet point').slice(0, 700),
+          issue: (textValue(rec.issue ?? rec.problem) || 'Could be stronger').slice(0, 400),
+          why_it_is_weak: (textValue(rec.why_it_is_weak ?? rec.why) || 'Lacks measurable impact').slice(0, 500),
+          suggested: (textValue(rec.suggested ?? rec.improved ?? rec.recommendation) || 'Rewritten bullet point').slice(0, 700),
+          missing_information: textArray(rec.missing_information ?? rec.missing),
+        };
+      }).filter(Boolean)
+    : [];
+
+  const ats = output.ats_keywords && typeof output.ats_keywords === 'object' ? output.ats_keywords as Record<string, unknown> : {};
+  const ats_keywords = {
+    present: textArray(ats.present ?? ats.found),
+    weak_or_missing: textArray(ats.weak_or_missing ?? ats.missing),
+    placement_suggestions: textArray(ats.placement_suggestions ?? ats.placement),
+    formatting_concerns: textArray(ats.formatting_concerns ?? ats.formatting),
+    ordering_suggestions: textArray(ats.ordering_suggestions ?? ats.ordering),
+  };
+
+  const align = output.career_alignment_analysis && typeof output.career_alignment_analysis === 'object' ? output.career_alignment_analysis as Record<string, unknown> : {};
+  const career_alignment_analysis = {
+    aligned_areas: textArray(align.aligned_areas ?? align.aligned),
+    underrepresented_areas: textArray(align.underrepresented_areas ?? align.underrepresented),
+    missing_role_evidence: textArray(align.missing_role_evidence ?? align.missing),
+    priority_changes: textArray(align.priority_changes ?? align.priority),
+  };
+
+  const strat = output.resume_strategy && typeof output.resume_strategy === 'object' ? output.resume_strategy as Record<string, unknown> : {};
+  const resume_strategy = {
+    emphasize: textArray(strat.emphasize),
+    reduce: textArray(strat.reduce),
+    reorder: textArray(strat.reorder),
+    remove: textArray(strat.remove),
+    add_if_true: textArray(strat.add_if_true ?? strat.add),
+  };
+
+  const plan = output.action_plan && typeof output.action_plan === 'object' ? output.action_plan as Record<string, unknown> : {};
+  const action_plan = {
+    fix_now: textArray(plan.fix_now),
+    improve_next: textArray(plan.improve_next),
+    optional_polish: textArray(plan.optional_polish),
+  };
+
   return {
     analysis_source: output.analysis_source === 'deterministic_fallback' ? 'deterministic_fallback' : output.analysis_source === 'ai' ? 'ai' : undefined,
     analysis_version: typeof output.analysis_version === 'string' ? output.analysis_version : undefined,
     analysis_context_hash: typeof output.analysis_context_hash === 'string' ? output.analysis_context_hash : undefined,
-    name: typeof output.name === 'string' ? output.name : undefined,
+    name: typeof output.name === 'string' ? output.name.slice(0, 200) : undefined,
     contact: {
-      email: typeof contact.email === 'string' ? contact.email : undefined,
-      phone: typeof contact.phone === 'string' ? contact.phone : undefined,
-      links: Array.isArray(contact.links) ? contact.links.filter((item): item is string => typeof item === 'string' && /^https?:\/\//.test(item)) : [],
+      email: validEmail,
+      phone: typeof contact.phone === 'string' ? contact.phone.slice(0, 40) : undefined,
+      links: Array.isArray(contact.links) ? contact.links.filter((item): item is string => typeof item === 'string' && /^https?:\/\//.test(item)).slice(0, 10) : [],
     },
-    location: typeof output.location === 'string' ? output.location : undefined,
-    summary: typeof output.summary === 'string' ? output.summary : undefined,
+    location: typeof output.location === 'string' ? output.location.slice(0, 200) : undefined,
+    summary: typeof output.summary === 'string' ? output.summary.slice(0, 1200) : undefined,
     education: textArray(output.education), skills: textArray(output.skills), projects: textArray(output.projects),
     experience: textArray(output.experience ?? output.work_experience), certifications: textArray(output.certifications), achievements: textArray(output.achievements),
-    evidenced_skill_ids: idArray(output.evidenced_skill_ids ?? output.evidencedSkillIds), role_required_skill_ids: idArray(output.role_required_skill_ids ?? output.roleRequiredSkillIds), not_evidenced_skill_ids: idArray(output.not_evidenced_skill_ids ?? output.notEvidencedSkillIds),
+    evidenced_skill_ids: uuidArray(output.evidenced_skill_ids ?? output.evidencedSkillIds),
+    role_required_skill_ids: uuidArray(output.role_required_skill_ids ?? output.roleRequiredSkillIds),
+    not_evidenced_skill_ids: uuidArray(output.not_evidenced_skill_ids ?? output.notEvidencedSkillIds),
     strengths: textArray(output.strengths), improvement_areas: textArray(output.improvement_areas ?? output.improvementAreas), suggestions: textArray(output.suggestions ?? output.recommendations),
-    overall_assessment: typeof output.overall_assessment === 'string' ? output.overall_assessment : output.overallAssessment,
-    biggest_opportunity: typeof output.biggest_opportunity === 'string' ? output.biggest_opportunity : output.biggestOpportunity,
-    priority_issues: Array.isArray(output.priority_issues) ? output.priority_issues : [],
-    section_analysis: Array.isArray(output.section_analysis) ? output.section_analysis : [],
-    bullet_improvements: Array.isArray(output.bullet_improvements) ? output.bullet_improvements : [],
-    ats_keywords: output.ats_keywords,
-    career_alignment_analysis: output.career_alignment_analysis,
-    resume_strategy: output.resume_strategy,
-    action_plan: output.action_plan,
-    reanalysis_focus: typeof output.reanalysis_focus === 'string' ? output.reanalysis_focus : output.reanalysisFocus,
+    overall_assessment: (textValue(output.overall_assessment ?? output.overallAssessment) || 'The uploaded resume has been analyzed for target career fit.').slice(0, 900),
+    biggest_opportunity: (textValue(output.biggest_opportunity ?? output.biggestOpportunity) || 'Focus on quantifying achievements and highlighting key role-relevant skills.').slice(0, 600),
+    priority_issues,
+    section_analysis,
+    bullet_improvements,
+    ats_keywords,
+    career_alignment_analysis,
+    resume_strategy,
+    action_plan,
+    reanalysis_focus: (textValue(output.reanalysis_focus ?? output.reanalysisFocus) || 'Review priority issues and bullet suggestions to align resume with target role requirements.').slice(0, 500),
   };
 }, ResumeParseSchemaBase);
 export type ResumeParseResult = z.infer<typeof ResumeParseSchema>;

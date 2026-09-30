@@ -146,10 +146,12 @@ export class GeminiProvider implements AIProvider {
         return this.failure('Gemini Provider returned empty response candidates.', 'AI_EMPTY_RESPONSE', startTime, tokensUsed);
       }
 
+      const cleanedText = rawText.trim().replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/i, '').trim();
+
       // Parse JSON
       let parsedJson: unknown;
       try {
-        parsedJson = JSON.parse(rawText);
+        parsedJson = JSON.parse(cleanedText);
       } catch (jsonErr: unknown) {
         const message = jsonErr instanceof Error ? jsonErr.message : 'Unknown JSON parsing error';
         return this.failure(`Malformed JSON response from Gemini model: ${message}`, 'AI_PARSE_ERROR', startTime);

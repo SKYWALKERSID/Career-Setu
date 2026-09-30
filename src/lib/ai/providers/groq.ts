@@ -127,9 +127,11 @@ export class GroqProvider implements AIProvider {
       const rawText = parsedResponse.choices?.[0]?.message?.content;
       if (!rawText) return this.failure('Groq Provider returned an empty response.', 'AI_EMPTY_RESPONSE', startTime, tokensUsed);
 
+      const cleanedText = rawText.trim().replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/i, '').trim();
+
       let parsedJson: unknown;
       try {
-        parsedJson = JSON.parse(rawText);
+        parsedJson = JSON.parse(cleanedText);
       } catch (error: unknown) {
         const message = error instanceof Error ? error.message : 'Unknown JSON parsing error';
         return this.failure(`Malformed JSON response from Groq model: ${message}`, 'AI_PARSE_ERROR', startTime, tokensUsed);

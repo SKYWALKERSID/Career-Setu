@@ -186,13 +186,9 @@ export async function triggerResumeAiAnalysis(
   const catalogSkillIds = new Set((skills || []).map((skill) => skill.id));
   const validRoleSkills = new Set(roleSkills);
 
-  if (
-    aiParsed.evidenced_skill_ids.some((id) => !catalogSkillIds.has(id)) ||
-    aiParsed.role_required_skill_ids.some((id) => !validRoleSkills.has(id)) ||
-    aiParsed.not_evidenced_skill_ids.some((id) => !validRoleSkills.has(id))
-  ) {
-    return { success: false, resumeId: targetResumeRecord.id, error: 'AI analysis returned unsupported catalog entities.' };
-  }
+  aiParsed.evidenced_skill_ids = (aiParsed.evidenced_skill_ids || []).filter((id) => catalogSkillIds.has(id));
+  aiParsed.role_required_skill_ids = (aiParsed.role_required_skill_ids || []).filter((id) => validRoleSkills.has(id));
+  aiParsed.not_evidenced_skill_ids = (aiParsed.not_evidenced_skill_ids || []).filter((id) => validRoleSkills.has(id));
 
   const parsed: ResumeParsedData = {
     ...deterministicParsed,
