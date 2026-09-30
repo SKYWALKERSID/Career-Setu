@@ -133,13 +133,13 @@ function ResumeContent() {
 
   return <div className="flex min-h-screen bg-[#f4f8fc]"><Sidebar /><div className="flex min-w-0 flex-1 flex-col"><TopNav /><main className="mx-auto w-full max-w-[1440px] px-4 pb-10 sm:px-6 lg:px-8">
     <Breadcrumb items={[{ label: 'Home', href: '/dashboard' }, { label: 'Resume Copilot' }]} />
-    <section className="relative mt-2 overflow-hidden rounded-[3px] border border-[#dbe7f3] bg-[#e9f3fb] bg-cover bg-center" style={{ backgroundImage: "url('/resume-hero.jpg')" }}>
-      <div className="relative max-w-[620px] p-4 sm:p-6 lg:p-7">
-        <div className="rounded border border-[#cbe0f5]/60 bg-[#edf6fd]/85 p-6 sm:p-7 backdrop-blur-[2px]">
-          <p className="text-xs font-bold tracking-widest text-[#1559c7]">RESUME COPILOT</p>
-          <h1 className="mt-2 text-3xl font-extrabold leading-tight text-[#0c234b] sm:text-4xl">Career-Aware Resume Intelligence</h1>
-          <p className="mt-3 text-base leading-relaxed text-[#23426b]">What does this resume prove for the career you are pursuing? CareerSetu extracts the facts, maps canonical skills, identifies missing evidence, and recommends next actions without inventing information.</p>
-        </div>
+    <section className="relative min-h-[175px] overflow-hidden border border-blue-100 bg-[#e8f2ff] px-5 py-7 sm:px-8" style={{ backgroundImage: "url('/resume-hero.jpg')", backgroundSize: 'cover', backgroundPosition: 'right center' }}>
+      <div className="absolute inset-y-0 right-0 w-1/2 bg-[#e8f2ff]/35" />
+      <div className="absolute inset-0 bg-gradient-to-r from-[#e8f2ff] via-[#e8f2ff]/90 to-transparent" />
+      <div className="relative max-w-[620px]">
+        <p className="text-xs font-bold uppercase tracking-[0.22em] text-[#1559c7]">RESUME COPILOT</p>
+        <h1 className="mt-2 text-3xl font-extrabold leading-tight text-[#10295d] sm:text-4xl">Career-Aware Resume Intelligence</h1>
+        <p className="mt-2 text-sm leading-5 text-[#536987]">What does this resume prove for the career you are pursuing? CareerSetu extracts the facts, maps canonical skills, identifies missing evidence, and recommends next actions without inventing information.</p>
       </div>
     </section>
     {error && <div className="mt-4 rounded border border-red-200 bg-red-50 p-3 text-sm text-red-700">{error}</div>}
