@@ -100,7 +100,7 @@ export default function OnboardingPage() {
             branchOther: sp.branch_other || '',
             specializationOther: sp.specialization_other || '',
             semester: sp.semester || 0,
-            cgpa: sp.cgpa ? String(sp.cgpa) : '',
+            cgpa: sp.cgpa !== null && sp.cgpa !== undefined ? String(sp.cgpa) : '',
             interests: sp.interests || [],
             selectedCareerTitles: (sp.target_careers || []).map((value: string) => catalogRes.careerRoles.find((role) => role.id === value)?.title || value),
             selectedSkillIds: userSkills,
@@ -137,6 +137,13 @@ export default function OnboardingPage() {
       if (!formData.branchId || (formData.branchId === 'other' && !formData.branchOther.trim())) {
         setErrorMsg('Please select a branch for this degree.');
         return;
+      }
+      if (formData.cgpa.trim()) {
+        const cgpa = Number(formData.cgpa);
+        if (!Number.isFinite(cgpa) || cgpa < 0 || cgpa > 10) {
+          setErrorMsg('CGPA must be between 0 and 10.');
+          return;
+        }
       }
     } else if (step === 3) {
       if (formData.selectedCareerTitles.length === 0) {
@@ -175,7 +182,7 @@ export default function OnboardingPage() {
         branch_other: formData.branchOther || null,
         specialization_other: formData.specializationOther || null,
         semester: Number(formData.semester),
-        cgpa: formData.cgpa ? parseFloat(formData.cgpa) : null,
+        cgpa: formData.cgpa.trim() ? Number(formData.cgpa) : null,
         interests: formData.interests,
         target_careers: formData.selectedCareerTitles,
         skill_ids: formData.selectedSkillIds,
@@ -392,10 +399,10 @@ export default function OnboardingPage() {
                   </Select>
                 </FormField>
 
-                <FormField label="CGPA / Aggregate %">
+                <FormField label="CGPA (0-10 scale)">
                   <Input
                     type="number"
-                    step="0.1"
+                    step="0.01"
                     min="0"
                     max="10"
                     value={formData.cgpa}

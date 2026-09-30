@@ -111,7 +111,7 @@ export default function SettingsPage() {
     course: formData.course,
     branch: formData.branch,
     semester: formData.semester,
-    cgpa: formData.cgpa ? parseFloat(formData.cgpa) : null,
+    cgpa: formData.cgpa.trim() ? Number(formData.cgpa) : null,
     skillsCount: formData.skill_ids.length,
     targetCareersCount: formData.target_careers.length,
     interestsCount: formData.interests.length,
@@ -135,7 +135,7 @@ export default function SettingsPage() {
         branch_other: formData.branch_other || null,
         specialization_other: formData.specialization_other || null,
         semester: Number(formData.semester),
-        cgpa: formData.cgpa ? parseFloat(formData.cgpa) : null,
+                            cgpa: formData.cgpa.trim() ? Number(formData.cgpa) : null,
         location: formData.location,
         interests: formData.interests,
         target_careers: formData.target_careers,
@@ -374,10 +374,10 @@ export default function SettingsPage() {
                           </Select>
                         </FormField>
 
-                        <FormField label="CGPA / Aggregate %">
+                        <FormField label="CGPA (0-10 scale)">
                           <Input
                             type="number"
-                            step="0.1"
+                            step="0.01"
                             min="0"
                             max="10"
                             value={formData.cgpa}

@@ -13,7 +13,7 @@ export const StudentProfileSchema = z.object({
   branch_other: z.string().optional().nullable(),
   specialization_other: z.string().optional().nullable(),
   semester: z.number().min(1).max(10),
-  cgpa: z.number().min(0.0).max(10.0).optional().nullable(),
+  cgpa: z.number().finite().min(0.0).max(10.0).optional().nullable(),
   interests: z.array(z.string()).default([]),
   target_careers: z.array(z.string()).min(1, 'Select at least 1 target career role'),
   skill_ids: z.array(z.string().uuid()).default([]),
