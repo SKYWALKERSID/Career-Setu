@@ -2,11 +2,14 @@ import { readFileSync } from 'node:fs';
 import { buildDeterministicResume, extractResumeText, parseResumeSections } from './parser';
 import { calculateResumeBreakdown, calculateResumeScore } from './scoring';
 
-const fixturePath = process.env.GOLDEN_RESUME_PATH;
-if (!fixturePath) {
-  console.log('SKIP: set GOLDEN_RESUME_PATH to run the golden resume fixture');
-} else {
-  const text = extractResumeText(readFileSync(fixturePath), 'application/pdf');
+void (async () => {
+  const fixturePath = process.env.GOLDEN_RESUME_PATH;
+  if (!fixturePath) {
+    console.log('SKIP: set GOLDEN_RESUME_PATH to run the golden resume fixture');
+    return;
+  }
+  {
+  const text = await extractResumeText(readFileSync(fixturePath), 'application/pdf');
   const sections = parseResumeSections(text);
   const skill = (id: string, name: string) => ({ id, name });
   const ai = skill('11111111-1111-4111-8111-111111111111', 'Machine Learning');
@@ -33,4 +36,22 @@ if (!fixturePath) {
   assert(calculateResumeScore(aiResume) >= 0 && calculateResumeScore(aiResume) <= 100, 'score is out of bounds');
   assert(calculateResumeBreakdown(aiResume).alignment !== calculateResumeBreakdown(dataResume).alignment, 'role switch did not change alignment');
   console.log('PASS: golden resume extraction, canonical evidence mapping, deterministic scoring, and role-switch checks');
-}
+  }
+
+  const failingPath = process.env.FAILING_RESUME_PATH;
+  if (!failingPath) {
+    console.log('SKIP: set FAILING_RESUME_PATH to run the alternate PDF fixture');
+    return;
+  }
+  const failingText = await extractResumeText(readFileSync(failingPath), 'application/pdf');
+  const failingSections = parseResumeSections(failingText);
+  if (failingText.length < 100 || failingSections.allText.length < 100) throw new Error('alternate PDF did not yield readable text');
+  if (!failingSections.name || (!failingSections.education.length && !failingSections.experience.length && !failingSections.projects.length)) {
+    throw new Error('alternate PDF did not yield recognizable resume sections');
+  }
+  if (failingText !== await extractResumeText(readFileSync(failingPath), 'application/pdf')) throw new Error('PDF extraction was not deterministic');
+  console.log('PASS: alternate text-based PDF extraction and deterministic repeatability');
+})().catch((error) => {
+  console.error(error);
+  process.exitCode = 1;
+});

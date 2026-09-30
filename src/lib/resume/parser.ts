@@ -1,4 +1,4 @@
-import { inflateSync } from 'node:zlib';
+import { getDocument, OPS } from 'pdfjs-dist/legacy/build/pdf.mjs';
 import type { ResumeParsedData } from './types';
 
 export type ResumeTextSections = {
@@ -14,91 +14,72 @@ export type ResumeTextSections = {
   allText: string;
 };
 
-function decodeLiteral(value: string): string {
-  return value.replace(/\\([()\\])/g, '$1').replace(/\\n/g, '\n').replace(/\\r/g, '\r');
-}
+export type ResumeExtractionFailureCode = 'invalid_pdf' | 'scanned_pdf' | 'unreadable_pdf';
 
-function literalStrings(value: string): string[] {
-  const result: string[] = [];
-  for (let index = 0; index < value.length; index += 1) {
-    if (value[index] !== '(') continue;
-    let depth = 1;
-    let escaped = false;
-    let text = '';
-    for (index += 1; index < value.length; index += 1) {
-      const char = value[index];
-      if (escaped) {
-        text += `\\${char}`;
-        escaped = false;
-      } else if (char === '\\') {
-        escaped = true;
-      } else if (char === '(') {
-        depth += 1;
-        text += char;
-      } else if (char === ')') {
-        depth -= 1;
-        if (depth === 0) break;
-        text += char;
-      } else {
-        text += char;
-      }
-    }
-    if (text) result.push(decodeLiteral(text));
+export class ResumeExtractionError extends Error {
+  constructor(public readonly code: ResumeExtractionFailureCode, message: string) {
+    super(message);
+    this.name = 'ResumeExtractionError';
   }
-  return result;
 }
 
-function pdfContentStreams(buffer: Buffer): string[] {
-  const raw = buffer.toString('latin1');
-  const streams: string[] = [];
-  for (const match of raw.matchAll(/stream\r?\n|stream\r/g)) {
-    const start = match.index + match[0].length;
-    const end = raw.indexOf('endstream', start);
-    if (end < 0) continue;
-    try {
-      streams.push(inflateSync(buffer.subarray(start, end)).toString('latin1'));
-    } catch {
-      // Uncompressed or unsupported streams are ignored; the text parser remains safe.
-    }
-  }
-  return streams;
+function normalizePageText(value: string): string {
+  return value
+    .normalize('NFKC')
+    .replace(/\u0000/g, '')
+    .replace(/([\p{L}\p{N}])-\s*\n(?=[\p{L}\p{N}])/gu, '$1')
+    .split(/\r?\n/)
+    .map((line) => line.replace(/[ \t]+/g, ' ').trim())
+    .filter(Boolean)
+    .join('\n');
 }
 
-function extractPdfLines(buffer: Buffer): string[] {
-  const lines: Array<{ page: number; x: number; y: number; text: string }> = [];
-  pdfContentStreams(buffer).forEach((content, page) => {
-    for (const block of content.matchAll(/BT([\s\S]*?)ET/g)) {
-      const body = block[1];
-      const tm = body.match(/1 0 0 1 ([\d.-]+) ([\d.-]+) Tm/);
-      if (!tm) continue;
-      let text = '';
-      const tj = body.match(/\[([\s\S]*?)\]\s*TJ/);
-      if (tj) text += literalStrings(tj[1]).join('');
-      const tjSingle = body.match(/\(([^)]*)\)\s*Tj/);
-      if (tjSingle) text += decodeLiteral(tjSingle[1]);
-      text = text.replace(/\s+/g, ' ').trim();
-      if (text) lines.push({ page, x: Number(tm[1]), y: Number(tm[2]), text });
-    }
-  });
-
-  const grouped: Array<{ page: number; y: number; items: Array<{ x: number; text: string }> }> = [];
-  for (const item of lines) {
-    const line = grouped.find((candidate) => candidate.page === item.page && Math.abs(candidate.y - item.y) < 1);
-    if (line) line.items.push({ x: item.x, text: item.text });
-    else grouped.push({ page: item.page, y: item.y, items: [{ x: item.x, text: item.text }] });
-  }
-  return grouped
-    .sort((a, b) => a.page - b.page || b.y - a.y)
-    .map((line) => line.items.sort((a, b) => a.x - b.x).map((item) => item.text).join(' ').replace(/\s+/g, ' ').trim())
-    .filter(Boolean);
-}
-
-export function extractResumeText(buffer: Buffer, type: string): string {
+export async function extractResumeText(buffer: Buffer, type: string): Promise<string> {
   if (type === 'text/plain') return buffer.toString('utf8').trim();
-  if (type !== 'application/pdf') throw new Error('Unsupported format. Please upload a PDF or text resume.');
-  const lines = extractPdfLines(buffer);
-  if (lines.length < 3) throw new Error('No readable text was found in the uploaded resume.');
-  return lines.join('\n');
+  if (type !== 'application/pdf') throw new ResumeExtractionError('invalid_pdf', 'Unsupported format. Please upload a PDF or text resume.');
+
+  let document: Awaited<ReturnType<typeof getDocument>>['promise'] extends Promise<infer T> ? T : never;
+  try {
+    document = await getDocument({ data: new Uint8Array(buffer), useSystemFonts: true, verbosity: 0 }).promise;
+  } catch {
+    throw new ResumeExtractionError('invalid_pdf', 'This PDF could not be opened. Please upload a valid, unencrypted PDF.');
+  }
+
+  const pages: string[] = [];
+  let imageOnlyPages = 0;
+  try {
+    for (let pageNumber = 1; pageNumber <= document.numPages; pageNumber += 1) {
+      const page = await document.getPage(pageNumber);
+      const content = await page.getTextContent();
+      let currentLine = '';
+      const extractedLines: string[] = [];
+      for (const item of content.items) {
+        if ('str' in item) currentLine += item.str;
+        if ('hasEOL' in item && item.hasEOL) {
+          if (currentLine) extractedLines.push(currentLine);
+          currentLine = '';
+        }
+      }
+      if (currentLine) extractedLines.push(currentLine);
+      const pageText = normalizePageText(extractedLines.join('\n'));
+      if (pageText) {
+        pages.push(pageText);
+        continue;
+      }
+      const operators = await page.getOperatorList();
+      const imageOperators = new Set([OPS.paintImageMaskXObject, OPS.paintImageXObject]);
+      if (operators.fnArray.some((operator) => imageOperators.has(operator))) imageOnlyPages += 1;
+    }
+  } catch {
+    throw new ResumeExtractionError('unreadable_pdf', 'This PDF is valid but its text could not be extracted.');
+  }
+
+  const extracted = pages.join('\n');
+  if (!extracted) {
+    if (imageOnlyPages > 0) throw new ResumeExtractionError('scanned_pdf', 'This PDF appears to contain scanned or image pages rather than selectable text. Please upload a text-readable PDF.');
+    throw new ResumeExtractionError('unreadable_pdf', 'This PDF contains no readable text. Please upload a text-readable PDF.');
+  }
+  return extracted;
 }
 
 function sectionBetween(lines: string[], start: RegExp, end: RegExp): string[] {
@@ -110,17 +91,24 @@ function sectionBetween(lines: string[], start: RegExp, end: RegExp): string[] {
 
 export function parseResumeSections(text: string): ResumeTextSections {
   const lines = text.split(/\r?\n/).map((line) => line.replace(/^[-•▪]\s*/, '').trim()).filter(Boolean);
-  const summaryLines = sectionBetween(lines, /^PROFESSIONAL SUMMARY$/i, /^EDUCATION$/i);
+  const summaryHeading = /^(PROFESSIONAL SUMMARY|CAREER OBJECTIVE|OBJECTIVE|SUMMARY)$/i;
+  const educationHeading = /^(EDUCATION|ACADEMIC BACKGROUND)$/i;
+  const experienceHeading = /^(WORK EXPERIENCE|EXPERIENCE|PROFESSIONAL EXPERIENCE|INTERNSHIPS?)$/i;
+  const projectsHeading = /^(PROJECTS?|ACADEMIC PROJECTS|PERSONAL PROJECTS)$/i;
+  const skillsHeading = /^(TECHNICAL SKILLS?|SKILLS|CORE SKILLS)$/i;
+  const achievementsHeading = /^(ACHIEVEMENTS?|ACHIEVEMENTS\s*&\s*EXTRACURRICULARS|EXTRACURRICULAR ACTIVITIES|EXTRACURRICULARS?|ACTIVITIES)$/i;
+  const nextSectionHeading = /^(EDUCATION|ACADEMIC BACKGROUND|WORK EXPERIENCE|EXPERIENCE|PROFESSIONAL EXPERIENCE|INTERNSHIPS?|PROJECTS?|ACADEMIC PROJECTS|PERSONAL PROJECTS|TECHNICAL SKILLS?|SKILLS|CORE SKILLS|ACHIEVEMENTS?|EXTRACURRICULAR ACTIVITIES|EXTRACURRICULARS?|ACTIVITIES|CERTIFICATIONS?|LANGUAGES?)$/i;
+  const summaryLines = sectionBetween(lines, summaryHeading, nextSectionHeading);
   return {
     name: lines[0],
     contactLine: lines[1],
     location: lines[1]?.split('|').map((item) => item.trim()).find((item) => /\b(?:india|bhopal|remote|on-site|onsite)\b/i.test(item)),
     summary: summaryLines.join(' '),
-    education: sectionBetween(lines, /^EDUCATION$/i, /^WORK EXPERIENCE$/i),
-    experience: sectionBetween(lines, /^WORK EXPERIENCE$/i, /^PROJECTS$/i),
-    projects: sectionBetween(lines, /^PROJECTS$/i, /^TECHNICAL SKILLS$/i),
-    skills: sectionBetween(lines, /^TECHNICAL SKILLS$/i, /^ACHIEVEMENTS\s*&\s*EXTRACURRICULARS$/i),
-    achievements: sectionBetween(lines, /^ACHIEVEMENTS\s*&\s*EXTRACURRICULARS$/i, /^$|$^/),
+    education: sectionBetween(lines, educationHeading, new RegExp(`(?:${experienceHeading.source}|${projectsHeading.source}|${skillsHeading.source}|${achievementsHeading.source})`, 'i')),
+    experience: sectionBetween(lines, experienceHeading, new RegExp(`(?:${projectsHeading.source}|${skillsHeading.source}|${achievementsHeading.source})`, 'i')),
+    projects: sectionBetween(lines, projectsHeading, new RegExp(`(?:${skillsHeading.source}|${achievementsHeading.source})`, 'i')),
+    skills: sectionBetween(lines, skillsHeading, new RegExp(`(?:${achievementsHeading.source}|CERTIFICATIONS?|LANGUAGES?)`, 'i')),
+    achievements: sectionBetween(lines, achievementsHeading, /^(CERTIFICATIONS?|LANGUAGES?)$/i),
     allText: lines.join('\n'),
   };
 }

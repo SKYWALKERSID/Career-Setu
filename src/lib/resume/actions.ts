@@ -8,7 +8,7 @@ import { ResumeParseSchema } from '@/lib/ai/schemas';
 import { RESUME_PROMPT, RESUME_PROMPT_VERSION } from '@/lib/ai/prompts/resume';
 import { calculateResumeScore, RESUME_SCORING_VERSION } from './scoring';
 import type { ResumeParsedData } from './types';
-import { buildDeterministicResume, extractResumeText } from './parser';
+import { buildDeterministicResume, extractResumeText, ResumeExtractionError } from './parser';
 import { resolveTargetCareerIds } from '@/lib/career/target-roles';
 import { calculateAndSaveReadinessAssessment } from '@/lib/readiness/actions';
 import { isReusableResumeAnalysis } from '@/lib/ai/cache';
@@ -47,7 +47,7 @@ export async function uploadAndAnalyzeResume(formData: FormData, requestedRoleId
   const buffer = Buffer.from(await file.arrayBuffer());
   if (file.type === 'application/pdf' && !buffer.subarray(0, 5).equals(Buffer.from('%PDF-'))) return { success: false, error: 'The uploaded PDF signature is invalid.' };
   let text: string;
-  try { text = extractResumeText(buffer, file.type).slice(0, 50000); if (!text) throw new Error('No readable text was found in the uploaded resume.'); }
+  try { text = (await extractResumeText(buffer, file.type)).slice(0, 50000); if (!text) throw new ResumeExtractionError('unreadable_pdf', 'This PDF contains no readable text. Please upload a text-readable PDF.'); }
   catch (error) { return { success: false, error: error instanceof Error ? error.message : 'Resume text extraction failed.' }; }
   const { data: reusableRows } = await supabase
     .from('resumes')
