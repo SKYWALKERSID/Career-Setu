@@ -83,18 +83,31 @@ export const CareerRecommendationsSchema = z.preprocess((value) => {
 export type CareerRecommendationAIResult = z.infer<typeof CareerRecommendationsSchema>;
 
 export const CareerIntelligenceSchema = z.object({
-  career_perspective: z.string().min(1).max(700),
-  why_fits: z.array(z.string().min(1).max(300)).min(2).max(4),
-  strongest_evidence: z.array(z.string().min(1).max(200)).min(1).max(6),
+  career_perspective: z.string().min(1).max(1200),
+  career_setu_take: z.string().min(1).max(1200),
+  why_fits: z.array(z.string().min(1).max(400)).min(2).max(5),
+  strengths: z.array(z.string().min(1).max(400)).min(1).max(6),
+  weaknesses: z.array(z.string().min(1).max(400)).min(1).max(6),
+  evidence_analysis: z.array(z.object({
+    observation: z.string().min(1).max(300),
+    why_it_matters: z.string().min(1).max(350),
+    evidence: z.string().min(1).max(350),
+    action: z.string().min(1).max(350),
+  })).min(1).max(8),
+  strongest_evidence: z.array(z.string().min(1).max(300)).min(1).max(8),
   priority_gaps: z.array(z.object({
     skill_id: z.string().uuid(),
     skill_name: z.string().min(1).max(100),
     why_it_matters: z.string().min(1).max(300),
     first_step: z.string().min(1).max(300),
     evidence_to_build: z.string().min(1).max(300),
-  })).max(5),
-  next_action: z.string().min(1).max(300),
-  learning_strategy: z.array(z.string().min(1).max(300)).min(1).max(5),
+  })).max(6),
+  priority_improvements: z.array(z.string().min(1).max(400)).min(1).max(6),
+  next_action: z.string().min(1).max(400),
+  focus_first: z.string().min(1).max(350),
+  material_readiness_improvement: z.string().min(1).max(450),
+  learning_strategy: z.array(z.string().min(1).max(350)).min(2).max(6),
+  caveats: z.array(z.string().min(1).max(300)).max(4),
 });
 
 export type CareerIntelligenceResult = z.infer<typeof CareerIntelligenceSchema>;

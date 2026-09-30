@@ -11,6 +11,14 @@ import { isReusableCareerIntelligence } from '@/lib/ai/cache';
 
 type RoleSkill = { skill_id: string; required: boolean; importance: 'high' | 'medium' | 'low'; skills?: { id: string; name: string } | Array<{ id: string; name: string }> | null };
 type StudentSkill = { skill_id: string; proficiency: 'beginner' | 'intermediate' | 'advanced'; evidence_type?: 'self_declared' | 'project' | 'certification' | 'assessment' | 'resume'; evidence?: string | null; skills?: { name?: string } | null };
+type ResumeFacts = Record<string, unknown>;
+
+function compactResumeFacts(parsed: unknown): ResumeFacts | null {
+  if (!parsed || typeof parsed !== 'object') return null;
+  const source = parsed as Record<string, unknown>;
+  const fields = ['name', 'summary', 'education', 'experience', 'projects', 'skills', 'achievements', 'certifications', 'extracurriculars'];
+  return Object.fromEntries(fields.filter((field) => source[field] !== undefined && source[field] !== null).map((field) => [field, source[field]]));
+}
 
 async function loadCareerIntelligenceContext(supabase: Awaited<ReturnType<typeof createClient>>, userId: string, roleId: string) {
   const [{ data: student }, { data: role }] = await Promise.all([
@@ -19,20 +27,25 @@ async function loadCareerIntelligenceContext(supabase: Awaited<ReturnType<typeof
   ]);
   if (!student || !role) return null;
 
-  const { data: studentSkills } = await supabase.from('student_skills').select('skill_id, proficiency, evidence_type, evidence, skills(name)').eq('student_id', student.id);
+  const [{ data: studentSkills }, { data: resume }] = await Promise.all([
+    supabase.from('student_skills').select('skill_id, proficiency, evidence_type, evidence, skills(name)').eq('student_id', student.id),
+    supabase.from('resumes').select('parsed_json, version, score').eq('student_id', student.id).eq('target_role_id', roleId).not('parsed_json', 'is', null).order('version', { ascending: false }).limit(1).maybeSingle(),
+  ]);
   const requirements = (role.career_role_skills || []) as unknown as RoleSkill[];
   const currentSkills = (studentSkills || []) as StudentSkill[];
   const skillGaps = calculateSkillGaps(requirements.map((item) => { const skill = Array.isArray(item.skills) ? item.skills[0] : item.skills; const current = currentSkills.find((studentSkill) => studentSkill.skill_id === item.skill_id); return { skill_id: item.skill_id, skill_name: skill?.name || item.skill_id, required: item.required, importance: item.importance, student_proficiency: current?.proficiency, student_evidence_type: current?.evidence_type, student_evidence: current?.evidence }; }));
   const context = {
     student: { college: student.college, course: student.course, branch: student.branch, degree_id: student.degree_id, branch_id: student.branch_id, specialization_id: student.specialization_id, degree_other: student.degree_other, branch_other: student.branch_other, specialization_other: student.specialization_other, semester: student.semester, cgpa: student.cgpa, interests: student.interests || [], target_careers: student.target_careers || [] },
-    current_skills: currentSkills.map((skill) => ({ skill_id: skill.skill_id, name: skill.skills?.name, proficiency: skill.proficiency })),
+    current_skills: currentSkills.map((skill) => ({ skill_id: skill.skill_id, name: skill.skills?.name, proficiency: skill.proficiency, evidence_type: skill.evidence_type, evidence: skill.evidence })),
     career: { id: role.id, title: role.title, category: role.category, description: role.description, growth_outlook: role.growth_outlook, salary_range: role.salary_range, required_skills: requirements.map((item) => ({ skill_id: item.skill_id, name: (Array.isArray(item.skills) ? item.skills[0] : item.skills)?.name, importance: item.importance, required: item.required })) },
-    deterministic_skill_gaps: skillGaps.map((gap) => ({ skill_id: gap.skill_id, skill_name: gap.skill_name, status: gap.status, priority: gap.priority })),
+    deterministic_skill_gaps: skillGaps.map((gap) => ({ skill_id: gap.skill_id, skill_name: gap.skill_name, status: gap.status, priority: gap.priority, proficiency: gap.student_proficiency, evidence_type: gap.student_evidence_type, evidence: gap.student_evidence })),
+    resume: compactResumeFacts(resume?.parsed_json),
+    analysis_version: CAREER_INTELLIGENCE_PROMPT_VERSION,
   };
   return { student, role, currentSkills, requirements, skillGaps, context, inputHash: createHash('sha256').update(JSON.stringify(context)).digest('hex') };
 }
 
-export async function getCareerIntelligence(roleId: string): Promise<{ success: boolean; data?: CareerIntelligenceResult; cached?: boolean; error?: string }> {
+export async function getCareerIntelligence(roleId: string, forceRegenerate = false): Promise<{ success: boolean; data?: CareerIntelligenceResult; cached?: boolean; error?: string }> {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { success: false, error: 'Unauthorized: Authentication required.' };
@@ -42,7 +55,7 @@ export async function getCareerIntelligence(roleId: string): Promise<{ success: 
   const { student, role, skillGaps, context, inputHash } = loaded;
   const missing = skillGaps.filter((gap) => gap.status !== 'acquired');
   const { data: cached } = await supabase.from('career_intelligence').select('insight').eq('student_id', student.id).eq('role_id', role.id).eq('input_hash', inputHash).maybeSingle();
-  if (cached?.insight && isReusableCareerIntelligence(inputHash, inputHash, cached.insight)) return { success: true, data: CareerIntelligenceSchema.parse(cached.insight), cached: true };
+  if (!forceRegenerate && cached?.insight && isReusableCareerIntelligence(inputHash, inputHash, cached.insight)) return { success: true, data: CareerIntelligenceSchema.parse(cached.insight), cached: true };
 
   const provider = aiClient.getProvider();
   const startedAt = Date.now();
