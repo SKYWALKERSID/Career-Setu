@@ -148,7 +148,7 @@ async function runRoleSwitchTests() {
     student_id: 'student-1',
     target_role_id: roleA,
     extracted_text: sampleText2,
-    parsed_json: { ...detA2, analysis_source: 'deterministic_fallback', analysis_version: 'v3.0-deep-career-aware', analysis_context_hash: `hash_${roleA}` },
+    parsed_json: { ...detA2, analysis_source: 'deterministic_fallback' as const, analysis_version: 'v3.0-deep-career-aware', analysis_context_hash: `hash_${roleA}` },
     score: calculateResumeScore(detA2),
     version: 2,
   };
