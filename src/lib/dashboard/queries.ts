@@ -63,6 +63,10 @@ export async function getDashboardData(requestedRoleId?: string, requestedRoadma
   const { data: targetCareer } = activeRoleId
     ? await supabase.from('career_roles').select('id, title').eq('id', activeRoleId).maybeSingle()
     : { data: null };
+  const { data: activeRoleSkills } = activeRoleId
+    ? await supabase.from('career_role_skills').select('skill_id').eq('role_id', activeRoleId)
+    : { data: [] };
+  const activeRoleSkillIds = Array.from(new Set((activeRoleSkills || []).map((item) => item.skill_id)));
 
   const completionScore = calculateProfileCompletion({
     name: sp.name,
@@ -126,20 +130,29 @@ export async function getDashboardData(requestedRoleId?: string, requestedRoadma
     }
   }
 
-  // 5. Query Catalog Courses Preview
-  const { data: previewCourses } = await supabase
-    .from('courses')
-    .select('id, title, provider, level, is_free, price, url')
-    .limit(3);
-
-  // 6. Query Catalog Opportunities Preview
-  const { data: previewOpportunities } = await supabase
-    .from('opportunities')
-    .select('id, title, organization, type, location, application_deadline, is_verified')
-    .eq('status', 'active')
-    .eq('is_verified', true)
-    .order('created_at', { ascending: false })
-    .limit(3);
+  // 5. Query catalog previews through the active role's canonical skill mappings.
+  let previewCourses: Course[] = [];
+  let previewOpportunities: Opportunity[] = [];
+  if (activeRoleSkillIds.length) {
+    const [{ data: courseSkillRows }, { data: opportunitySkillRows }] = await Promise.all([
+      supabase.from('course_skills').select('course_id, courses(id, title, provider, level, is_free, price, url)').in('skill_id', activeRoleSkillIds),
+      supabase.from('opportunity_skills').select('opportunity_id, opportunities(id, title, organization, type, location, application_deadline, is_verified, status)').in('skill_id', activeRoleSkillIds),
+    ]);
+    const courseMap = new Map<string, unknown>();
+    for (const row of courseSkillRows || []) {
+      const course = Array.isArray(row.courses) ? row.courses[0] : row.courses;
+      if (course) courseMap.set((course as { id: string }).id, course);
+    }
+    previewCourses = Array.from(courseMap.values()).slice(0, 3) as Course[];
+    const opportunityMap = new Map<string, unknown>();
+    for (const row of opportunitySkillRows || []) {
+      const opportunity = Array.isArray(row.opportunities) ? row.opportunities[0] : row.opportunities;
+      if (opportunity && (opportunity as { status?: string; is_verified?: boolean }).status === 'active' && (opportunity as { is_verified?: boolean }).is_verified === true) {
+        opportunityMap.set((opportunity as { id: string }).id, opportunity);
+      }
+    }
+    previewOpportunities = Array.from(opportunityMap.values()).slice(0, 3) as Opportunity[];
+  }
 
   return {
     success: true,
