@@ -16,6 +16,14 @@ import { isReusableResumeAnalysis } from '@/lib/ai/cache';
 const MAX_BYTES = 5 * 1024 * 1024;
 const ALLOWED = new Map([['application/pdf', '.pdf'], ['text/plain', '.txt']]);
 
+function logResumeUploadStage(stage: string, metadata: Record<string, string | number | boolean | null>) {
+  console.info('[resume-upload]', { stage, runtime: process.env.VERCEL_ENV || process.env.NODE_ENV || 'unknown', ...metadata });
+}
+
+function safeFilename(name: string) {
+  return name.replace(/[^a-zA-Z0-9._-]/g, '_').slice(0, 96);
+}
+
 export async function getLatestResume(roleId?: string) {
   const supabase = await createClient(); const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { success: false, resume: null, error: 'Unauthorized: Authentication required.' };
@@ -45,10 +53,23 @@ export async function uploadAndAnalyzeResume(formData: FormData, requestedRoleId
   if (!roleId) return { success: false, error: 'No target career selected. Choose a career before analyzing your resume.' };
   const analysisContextHash = createHash('sha256').update(JSON.stringify({ roleId, promptVersion: RESUME_PROMPT_VERSION, scoringVersion: RESUME_SCORING_VERSION })).digest('hex');
   const buffer = Buffer.from(await file.arrayBuffer());
-  if (file.type === 'application/pdf' && !buffer.subarray(0, 5).equals(Buffer.from('%PDF-'))) return { success: false, error: 'The uploaded PDF signature is invalid.' };
+  const hasPdfSignature = buffer.subarray(0, 5).equals(Buffer.from('%PDF-'));
+  const byteHash = createHash('sha256').update(buffer).digest('hex').slice(0, 16);
+  logResumeUploadStage('server_bytes_received', { filename: safeFilename(file.name), received_mime: file.type, byte_length: buffer.length, byte_hash: byteHash, pdf_signature: hasPdfSignature });
+  if (file.type === 'application/pdf' && !hasPdfSignature) {
+    logResumeUploadStage('signature_rejected', { error_category: 'invalid_pdf_signature', byte_length: buffer.length, pdf_signature: false });
+    return { success: false, error: 'The uploaded PDF signature is invalid.' };
+  }
   let text: string;
-  try { text = (await extractResumeText(buffer, file.type)).slice(0, 50000); if (!text) throw new ResumeExtractionError('unreadable_pdf', 'This PDF contains no readable text. Please upload a text-readable PDF.'); }
-  catch (error) { return { success: false, error: error instanceof Error ? error.message : 'Resume text extraction failed.' }; }
+  try {
+    logResumeUploadStage('pdfjs_open_start', { byte_length: buffer.length, byte_hash: byteHash, pdf_signature: hasPdfSignature });
+    text = (await extractResumeText(buffer, file.type)).slice(0, 50000);
+    if (!text) throw new ResumeExtractionError('unreadable_pdf', 'This PDF contains no readable text. Please upload a text-readable PDF.');
+    logResumeUploadStage('text_extraction_succeeded', { extracted_text_length: text.length });
+  } catch (error) {
+    logResumeUploadStage('text_extraction_failed', { error_category: error instanceof ResumeExtractionError ? error.code : 'pdfjs_or_parser_error', pdf_signature: hasPdfSignature, byte_length: buffer.length, byte_hash: byteHash });
+    return { success: false, error: error instanceof Error ? error.message : 'Resume text extraction failed.' };
+  }
   const { data: reusableRows } = await supabase
     .from('resumes')
     .select('id, extracted_text, parsed_json, score')
@@ -64,7 +85,8 @@ export async function uploadAndAnalyzeResume(formData: FormData, requestedRoleId
   const { data: latest } = await supabase.from('resumes').select('version').eq('student_id', student.id).order('version', { ascending: false }).limit(1).maybeSingle();
   const version = (latest?.version || 0) + 1; const storagePath = `${student.id}/${version}-${crypto.randomUUID()}${extension}`;
   const { error: uploadError } = await supabase.storage.from('private-resumes').upload(storagePath, buffer, { contentType: file.type, upsert: false });
-  if (uploadError) return { success: false, error: 'Resume upload failed.' };
+  if (uploadError) { logResumeUploadStage('storage_upload_failed', { error_category: 'storage_upload_failed', byte_length: buffer.length, byte_hash: byteHash, storage_path_hash: createHash('sha256').update(storagePath).digest('hex').slice(0, 16) }); return { success: false, error: 'Resume upload failed.' }; }
+  logResumeUploadStage('storage_upload_succeeded', { byte_length: buffer.length, byte_hash: byteHash, storage_path_hash: createHash('sha256').update(storagePath).digest('hex').slice(0, 16) });
   const { data: resume, error: resumeError } = await supabase.from('resumes').insert({ student_id: student.id, target_role_id: roleId, storage_path: storagePath, extracted_text: text, score: null, version }).select('id').single();
   if (resumeError || !resume) { await supabase.storage.from('private-resumes').remove([storagePath]); return { success: false, error: 'Resume record could not be created.' }; }
   const [{ data: skills }, { data: allRoles }] = await Promise.all([
