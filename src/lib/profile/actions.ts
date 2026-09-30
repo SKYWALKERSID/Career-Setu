@@ -213,7 +213,7 @@ export async function saveStudentProfile(input: StudentProfileInput) {
     }
   }
 
-  await calculateAndSaveReadinessAssessment();
+  await calculateAndSaveReadinessAssessment('profile_update');
   await generateCareerRecommendations();
 
   revalidatePath('/dashboard');

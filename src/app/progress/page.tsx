@@ -23,7 +23,9 @@ import {
 } from 'lucide-react';
 import { getProgressSnapshot } from '@/lib/progress/actions';
 import { calculateAndSaveReadinessAssessment } from '@/lib/readiness/actions';
+import { countExplicitAssessments, getReadinessSourceMeta } from '@/lib/readiness/provenance';
 import type { ProgressSnapshot } from '@/lib/progress/types';
+import type { ReadinessAssessment } from '@/types';
 
 export default function ProgressPage() { return <Suspense fallback={<div className="flex min-h-screen items-center justify-center bg-[#f4f8fc]"><LoadingState label="Loading progress..." /></div>}><ProgressContent /></Suspense>; }
 
@@ -71,6 +73,8 @@ function ProgressContent() {
     { label: 'Interview Readiness', score: currentReadiness?.interview_score ?? null },
     { label: 'Career Alignment', score: currentReadiness?.alignment_score ?? null },
   ];
+  const explicitAssessmentCount = snapshot ? countExplicitAssessments(snapshot.readiness.history) : 0;
+  const snapshotCount = snapshot?.readiness.history.filter((record) => record.source !== 'explicit_assessment').length ?? 0;
 
   return (
     <div className="flex min-h-screen bg-[#f4f8fc]">
@@ -318,50 +322,29 @@ function ProgressContent() {
 
               {/* Bottom Row: History & Recommended Next Actions */}
               <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_340px]">
-                {/* Readiness Assessment History Log */}
+                {/* Readiness History Log */}
                 <Card className="rounded-[3px] border border-[#dfe8f1] bg-white p-6 shadow-[0_2px_9px_rgba(27,63,105,0.04)]">
                   <div className="flex items-center justify-between border-b border-[#edf3f8] pb-4">
                     <div className="flex items-center gap-2">
                       <History className="h-5 w-5 text-[#1769d4]" />
-                      <h2 className="text-lg font-bold text-[#10285a]">Previous Readiness Assessments</h2>
+                      <h2 className="text-lg font-bold text-[#10285a]">Readiness History</h2>
                     </div>
-                    <span className="text-xs text-slate-400">
-                      {snapshot.readiness.history.length} Previous Assessments
+                    <span className="text-right text-xs text-slate-400">
+                      {snapshotCount} snapshot{snapshotCount === 1 ? '' : 's'} · {explicitAssessmentCount} explicit assessment{explicitAssessmentCount === 1 ? '' : 's'}
                     </span>
                   </div>
 
                   <div className="mt-5">
                     {!snapshot.readiness.history.length ? (
                       <p className="text-xs text-slate-500">
-                        No readiness assessments have been saved yet. Click &quot;Recalculate Readiness&quot; above to generate your first assessment record.
+                        No readiness history has been saved yet. Recalculate readiness above to create a snapshot.
                       </p>
                     ) : (
                       <>
-                      <p className="mb-4 text-xs text-slate-500">These are completed assessments saved previously. They are historical context, not an active assessment.</p>
+                      <p className="mb-4 text-xs text-slate-500">Automatic snapshots and explicit assessments are shown separately by provenance.</p>
                       <div className="divide-y divide-[#edf3f8]">
-                        {snapshot.readiness.history.map((record, idx) => (
-                          <div key={record.id} className="flex items-center justify-between py-3.5 first:pt-0 last:pb-0 text-xs">
-                            <div>
-                              <p className="font-bold text-[#10285a]">
-                                Assessment #{idx + 1}
-                              </p>
-                              <p className="text-xs text-slate-500">
-                                {new Date(record.created_at).toLocaleDateString(undefined, {
-                                  year: 'numeric',
-                                  month: 'short',
-                                  day: 'numeric',
-                                })}
-                              </p>
-                            </div>
-                            <div className="flex items-center gap-3">
-                              <span className="text-sm font-extrabold text-[#10285a]">
-                                {record.overall_score}/100
-                              </span>
-                              <Badge variant="info" className="text-xs">
-                                Saved
-                              </Badge>
-                            </div>
-                          </div>
+                        {snapshot.readiness.history.map((record) => (
+                          <ReadinessHistoryRow key={record.id} record={record} />
                         ))}
                       </div>
                       </>
@@ -417,6 +400,23 @@ function ProgressContent() {
             </>
           ) : null}
         </main>
+      </div>
+    </div>
+  );
+}
+
+function ReadinessHistoryRow({ record }: { record: ReadinessAssessment }) {
+  const details = getReadinessSourceMeta(record.source);
+
+  return (
+    <div className="flex items-center justify-between py-3.5 text-xs first:pt-0 last:pb-0">
+      <div>
+        <p className="font-bold text-[#10285a]">{details.title}</p>
+        <p className="text-xs text-slate-500">{details.description} · {new Date(record.created_at).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })}</p>
+      </div>
+      <div className="flex items-center gap-3">
+        <span className="text-sm font-extrabold text-[#10285a]">{record.overall_score}/100</span>
+        <Badge variant={record.source === 'explicit_assessment' ? 'success' : 'info'} className="text-xs">{details.badge}</Badge>
       </div>
     </div>
   );

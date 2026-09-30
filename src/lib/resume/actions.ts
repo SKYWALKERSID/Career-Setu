@@ -115,7 +115,7 @@ export async function uploadAndAnalyzeResume(formData: FormData, requestedRoleId
   if (analysisSaveError) return { success: false, resumeId: resume.id, error: 'Resume analysis could not be persisted. The uploaded file was preserved; please retry.' };
   // Resume evidence changes the readiness inputs; refresh the persisted
   // assessment only after the parsed result has been saved.
-  await calculateAndSaveReadinessAssessment();
+  await calculateAndSaveReadinessAssessment('resume_update');
   revalidatePath('/resume'); revalidatePath('/progress'); revalidatePath('/dashboard');
   return { success: true, resumeId: resume.id, warning: usedFallback ? 'AI insight unavailable right now. Deterministic resume checks were saved.' : undefined };
 }

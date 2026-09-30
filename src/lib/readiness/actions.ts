@@ -5,8 +5,9 @@ import { calculateReadinessScore } from './scoring';
 import { ReadinessScoreResult } from './types';
 import { revalidatePath } from 'next/cache';
 import { resolveTargetCareerIds } from '@/lib/career/target-roles';
+import type { ReadinessSource } from './provenance';
 
-export async function calculateAndSaveReadinessAssessment(): Promise<{
+export async function calculateAndSaveReadinessAssessment(source: ReadinessSource = 'manual_recalculation'): Promise<{
   success: boolean;
   assessment?: ReadinessScoreResult;
   assessmentId?: string;
@@ -130,6 +131,7 @@ export async function calculateAndSaveReadinessAssessment(): Promise<{
       resume_score: assessment.dimensions.resume.score,
       interview_score: assessment.dimensions.interview.score,
       alignment_score: assessment.dimensions.alignment.score,
+      source,
     })
     .select('id')
     .single();

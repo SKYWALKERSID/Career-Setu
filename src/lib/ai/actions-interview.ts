@@ -143,7 +143,7 @@ export async function submitInterviewAnswer(interviewId: string, answer: string)
     if (!updated) return { success: false, error: 'This answer was already submitted.' };
     const { error: completeError } = await supabase.from('interviews').update({ session_status: 'completed', overall_score: report.result.data.overall_score, feedback_summary: report.result.data.feedback_summary, report_json: report.result.data }).eq('id', interviewId).eq('student_id', student.id).eq('session_status', 'active');
     if (completeError) return { success: false, error: 'Interview could not be completed safely.' };
-    await calculateAndSaveReadinessAssessment();
+    await calculateAndSaveReadinessAssessment('interview_completion');
     revalidatePath('/interview/report'); return { success: true, completed: true, report: report.result.data };
   }
   const next = await aiCall(supabase, student.id, 'interview_question', INTERVIEW_QUESTION_PROMPT_VERSION, INTERVIEW_QUESTION_PROMPT.replace('{{context}}', JSON.stringify({ role, difficulty: interview.difficulty, previous_turns: [...(previous || []), { ...turn, answer, rubric_score: evaluationData.rubric_score }] })), InterviewQuestionSchema);

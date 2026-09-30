@@ -65,6 +65,7 @@ export interface ReadinessAssessment {
   interview_score?: number | null;
   alignment_score?: number | null;
   ai_run_id?: string | null;
+  source?: 'explicit_assessment' | 'profile_update' | 'resume_update' | 'interview_completion' | 'manual_recalculation' | 'legacy_unknown' | null;
   created_at: string;
 }
 
