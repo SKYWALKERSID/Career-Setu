@@ -25,12 +25,88 @@ function safeFilename(name: string) {
 export async function getLatestResume(roleId?: string) {
   const supabase = await createClient(); const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { success: false, resume: null, error: 'Unauthorized: Authentication required.' };
-  const { data: student } = await supabase.from('student_profiles').select('id').eq('user_id', user.id).single();
+  const { data: student } = await supabase.from('student_profiles').select('id, target_careers').eq('user_id', user.id).single();
   if (!student) return { success: false, resume: null, error: 'Student profile not found.' };
-  let query = supabase.from('resumes').select('*').eq('student_id', student.id);
-  if (roleId) query = query.eq('target_role_id', roleId);
-  const { data: resume } = await query.order('version', { ascending: false }).limit(1).maybeSingle();
-  return { success: true, resume };
+
+  // 1. Fetch the student's latest uploaded resume (highest version across ALL roles)
+  const { data: latestRecord } = await supabase
+    .from('resumes')
+    .select('*')
+    .eq('student_id', student.id)
+    .order('version', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (!latestRecord || !latestRecord.extracted_text) {
+    return { success: true, resume: null };
+  }
+
+  const targetRole = roleId || latestRecord.target_role_id || student.target_careers?.[0];
+  if (!targetRole) {
+    return { success: true, resume: latestRecord };
+  }
+
+  // 2. If the latestRecord is already associated with targetRole, return it!
+  if (latestRecord.target_role_id === targetRole) {
+    return { success: true, resume: latestRecord };
+  }
+
+  // 3. Search for an existing analysis record for THIS EXACT extracted_text and targetRole
+  const { data: roleRecord } = await supabase
+    .from('resumes')
+    .select('*')
+    .eq('student_id', student.id)
+    .eq('target_role_id', targetRole)
+    .eq('extracted_text', latestRecord.extracted_text)
+    .order('version', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (roleRecord) {
+    return { success: true, resume: roleRecord };
+  }
+
+  // 4. No analysis record exists yet for targetRole on this resume document.
+  // Generate deterministic role review so the resume document and facts remain immediately visible!
+  const [{ data: skills }, { data: allRoles }] = await Promise.all([
+    supabase.from('skills').select('id, name, aliases'),
+    supabase.from('career_roles').select('id, title, career_role_skills(skill_id, skills(id, name))'),
+  ]);
+
+  const targetRoleIds = resolveTargetCareerIds([targetRole], allRoles || []);
+  const roles = (allRoles || []).filter((role) => targetRoleIds.includes(role.id));
+  const roleSkills = [...new Set((roles || []).flatMap((role) => role.career_role_skills || []).map((item) => item.skill_id))];
+  const selectedRoleTitle = roles[0]?.title || 'selected target career';
+
+  const deterministicParsed = buildDeterministicResume(latestRecord.extracted_text, skills || [], roleSkills, selectedRoleTitle);
+  const analysisContextHash = createHash('sha256')
+    .update(JSON.stringify({ roleId: targetRole, analysisVersion: RESUME_ANALYSIS_VERSION, promptVersion: RESUME_PROMPT_VERSION, scoringVersion: RESUME_SCORING_VERSION }))
+    .digest('hex');
+
+  const fallbackParsed: ResumeParsedData = {
+    ...deterministicParsed,
+    analysis_source: 'deterministic_fallback',
+    analysis_version: RESUME_ANALYSIS_VERSION,
+    analysis_context_hash: analysisContextHash,
+  };
+  const score = calculateResumeScore(fallbackParsed);
+
+  // Save the deterministic record for targetRole linked to the uploaded resume
+  const { data: newRoleRecord } = await supabase
+    .from('resumes')
+    .insert({
+      student_id: student.id,
+      target_role_id: targetRole,
+      storage_path: latestRecord.storage_path,
+      extracted_text: latestRecord.extracted_text,
+      parsed_json: fallbackParsed,
+      score,
+      version: latestRecord.version,
+    })
+    .select('*')
+    .single();
+
+  return { success: true, resume: newRoleRecord || latestRecord };
 }
 
 export async function triggerResumeAiAnalysis(
@@ -62,9 +138,13 @@ export async function triggerResumeAiAnalysis(
   }
 
   if (!targetResumeRecord) {
-    let query = supabase.from('resumes').select('id, target_role_id, extracted_text, version, parsed_json, score').eq('student_id', student.id);
-    if (requestedRoleId) query = query.eq('target_role_id', requestedRoleId);
-    const { data } = await query.order('version', { ascending: false }).limit(1).maybeSingle();
+    const { data } = await supabase
+      .from('resumes')
+      .select('id, target_role_id, extracted_text, version, parsed_json, score')
+      .eq('student_id', student.id)
+      .order('version', { ascending: false })
+      .limit(1)
+      .maybeSingle();
     targetResumeRecord = data;
   }
 
