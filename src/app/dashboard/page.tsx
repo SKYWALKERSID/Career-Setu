@@ -15,7 +15,6 @@ import { ArrowRight, Award, BookOpen, Building2, CalendarDays, CheckCircle2, Che
 import { getDashboardData, type DashboardData } from '@/lib/dashboard/queries';
 import { generateCareerRecommendations } from '@/lib/ai/actions-recommendations';
 
-import { formatSemesterOrdinal } from '@/lib/profile/user-profile-summary';
 
 function PortalFrame({ children }: { children: React.ReactNode }) {
   return <div className="portal-page min-h-screen flex"><Sidebar /><div className="flex-1 min-w-0 flex flex-col"><TopNav />{children}</div></div>;
@@ -63,11 +62,6 @@ function DashboardContent() {
   const studentSkills = dashboardData?.studentSkills || [];
   const activeCareer = dashboardData?.targetCareer;
 
-  const semesterFormatted = formatSemesterOrdinal(sp?.semester);
-  const collegeSubtitle = sp?.college
-    ? (semesterFormatted ? `${sp.college} · ${semesterFormatted}` : sp.college)
-    : 'Student career platform';
-
   async function handleGenerateRecommendations() {
     if (recommendationsLoading) return;
     setRecommendationsLoading(true);
@@ -96,9 +90,6 @@ function DashboardContent() {
             <p className="text-xs uppercase tracking-widest font-bold text-brand-700 mb-1">Student dashboard</p>
             <h1 className="text-3xl sm:text-4xl leading-tight font-extrabold text-[#102b63]">Welcome, {sp?.name || 'Student'}</h1>
             <p className="text-sm text-slate-500 mt-1">Your personalized career overview.</p>
-          </div>
-          <div className="text-right text-xs text-slate-500">
-            <p>{collegeSubtitle}</p>
           </div>
         </section>
 
