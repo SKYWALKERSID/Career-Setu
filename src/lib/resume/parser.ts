@@ -50,7 +50,7 @@ export async function extractResumeText(buffer: Buffer, type: string): Promise<s
     if (errorName === 'InvalidPDFException' || errorName === 'MissingPDFException') {
       throw new ResumeExtractionError('invalid_pdf', 'This PDF could not be opened. Please upload a valid PDF.');
     }
-    throw new ResumeExtractionError('pdfjs_open_failed', 'This PDF could not be processed by the document reader. Please try a text-readable PDF.');
+    throw new ResumeExtractionError('pdfjs_open_failed', 'This PDF file could not be opened or read. Please try a valid, text-readable PDF.');
   }
 
   const pages: string[] = [];
