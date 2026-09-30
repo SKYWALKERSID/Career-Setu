@@ -98,8 +98,7 @@ function DashboardContent() {
             <p className="text-sm text-slate-500 mt-1">Your personalized career overview.</p>
           </div>
           <div className="text-right text-xs text-slate-500">
-            <p><span className="font-semibold text-slate-700">हिंदी</span><span className="mx-1">|</span>English</p>
-            <p className="mt-2">{collegeSubtitle}</p>
+            <p>{collegeSubtitle}</p>
           </div>
         </section>
 
