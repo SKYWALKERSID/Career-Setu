@@ -11,6 +11,7 @@ export async function getProgressSnapshot(requestedRoleId?: string) {
   if (!user) return { success: false, error: 'Unauthorized: Authentication required.' };
   const { data: student } = await supabase.from('student_profiles').select('id, target_careers').eq('user_id', user.id).single();
   if (!student) return { success: false, error: 'Student profile not found.' };
+  if (requestedRoleId && !(student.target_careers || []).includes(requestedRoleId)) return { success: false, error: 'Career role is not selected for this student.' };
   const validRoleId = requestedRoleId && (student.target_careers || []).includes(requestedRoleId) ? requestedRoleId : student.target_careers?.[0];
   const [{ data: roadmap }, { data: readiness }, { data: role }, { data: targetCareers }, { count: currentSkills }, { count: completedInterviews }, { count: analyzedResumes }] = await Promise.all([
     supabase.from('roadmaps').select('id, target_role_id').eq('student_id', student.id).eq(validRoleId ? 'target_role_id' : 'student_id', validRoleId || student.id).order('generated_at', { ascending: false }).limit(1).maybeSingle(),

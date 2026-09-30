@@ -15,6 +15,7 @@ async function getAuthenticatedStudent() {
 async function buildMatches(opportunityId?: string, roleId?: string) {
   const { supabase, student } = await getAuthenticatedStudent();
   if (!student) return { success: false, error: 'Unauthorized: Authentication required.', matches: [] };
+  if (roleId && !(student.target_careers || []).includes(roleId)) return { success: false, error: 'Career role is not selected for this student.', matches: [] };
   const [{ data: studentSkills }, { data: roleSkills }, { data: opportunities }] = await Promise.all([
     supabase.from('student_skills').select('skill_id, proficiency').eq('student_id', student.id),
     supabase.from('career_role_skills').select('skill_id').in('role_id', roleId && (student.target_careers || []).includes(roleId) ? [roleId] : (student.target_careers || [])),
