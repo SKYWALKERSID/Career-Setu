@@ -374,7 +374,7 @@ export default function SettingsPage() {
                           </Select>
                         </FormField>
 
-                        <FormField label="CGPA (0-10 scale)">
+                        <FormField label="Aggregate CGPA">
                           <Input
                             type="number"
                             step="0.01"
@@ -385,6 +385,7 @@ export default function SettingsPage() {
                             placeholder="e.g. 8.4"
                             className="h-10 text-xs"
                           />
+                          <p className="mt-1 text-xs text-slate-500">0-10 scale</p>
                         </FormField>
                       </div>
                     </div>

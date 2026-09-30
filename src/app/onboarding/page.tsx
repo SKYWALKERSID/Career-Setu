@@ -399,7 +399,7 @@ export default function OnboardingPage() {
                   </Select>
                 </FormField>
 
-                <FormField label="CGPA (0-10 scale)">
+                <FormField label="Aggregate CGPA">
                   <Input
                     type="number"
                     step="0.01"
@@ -409,6 +409,7 @@ export default function OnboardingPage() {
                     onChange={(e) => setFormData({ ...formData, cgpa: e.target.value })}
                     placeholder="e.g. 8.4"
                   />
+                  <p className="mt-1 text-xs text-slate-500">0-10 scale</p>
                 </FormField>
               </div>
 
@@ -658,7 +659,7 @@ export default function OnboardingPage() {
               <p><span className="font-semibold text-slate-700">Full Name:</span> {formData.name}</p>
               <p><span className="font-semibold text-slate-700">College:</span> {formData.college}</p>
               <p><span className="font-semibold text-slate-700">Preferred Location:</span> {formData.location || 'Not selected'}</p>
-              <p><span className="font-semibold text-slate-700">Academic:</span> {formData.course} ({formData.branch}) • {formatSemester(formData.semester)} Sem • CGPA {formData.cgpa || 'Not provided'}</p>
+              <p><span className="font-semibold text-slate-700">Academic:</span> {formData.course} ({formData.branch}) • {formatSemester(formData.semester)} Sem • Aggregate CGPA {formData.cgpa || 'Not provided'}</p>
               <p><span className="font-semibold text-slate-700">Domain Interests:</span> {formData.interests.join(', ')}</p>
               <p><span className="font-semibold text-slate-700">Selected Skills ({formData.selectedSkillIds.length}):</span> {formData.selectedSkillIds.length} skills mapped</p>
               <p><span className="font-semibold text-slate-700">Target Roles:</span> {formData.selectedCareerTitles.join(', ')}</p>
