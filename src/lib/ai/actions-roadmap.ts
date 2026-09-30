@@ -31,7 +31,8 @@ export async function generateCareerRoadmap(roleId: string): Promise<{ success: 
   const studentSkillRows = (skills || []) as unknown as Array<{ skill_id: string; proficiency: 'beginner' | 'intermediate' | 'advanced'; evidence_type?: 'self_declared' | 'project' | 'certification' | 'assessment' | 'resume'; evidence?: string | null }>;
   const skillInputs = [...new Map(role.career_role_skills.map((item) => [item.skill_id, item])).values()];
   const skillGaps = calculateSkillGaps(skillInputs.map((item) => { const student = studentSkillRows.find((skill) => skill.skill_id === item.skill_id); return { skill_id: item.skill_id, skill_name: item.skills?.name || item.skill_id, importance: (item.importance || 'high') as 'high' | 'medium' | 'low', required: item.required, student_proficiency: student?.proficiency, student_evidence_type: student?.evidence_type, student_evidence: student?.evidence }; }));
-  const relevantSkillIds = [...new Set(skillGaps.filter((gap) => gap.status !== 'acquired').map((gap) => gap.skill_id))];
+  const relevantGaps = skillGaps.filter((gap) => gap.status !== 'acquired');
+  const relevantSkillIds = [...new Set(relevantGaps.map((gap) => gap.skill_id))];
   const { data: courseSkillRows } = relevantSkillIds.length
     ? await supabase.from('course_skills').select('course_id, skill_id').in('skill_id', relevantSkillIds)
     : { data: [] as Array<{ course_id: string; skill_id: string }> };
@@ -40,13 +41,13 @@ export async function generateCareerRoadmap(roleId: string): Promise<{ success: 
     ? await supabase.from('courses').select('id, title, provider, url').in('id', courseIds)
     : { data: [] as Array<{ id: string; title: string; provider: string; url: string }> };
   const courseRows: RoadmapCourse[] = (relevantCourses || []).map((course) => ({ ...course, skill_ids: [...new Set((courseSkillRows || []).filter((row) => row.course_id === course.id).map((row) => row.skill_id))] }));
-  const catalog = { roleIds: new Set(roleRows.map((item) => item.id)), skillIds: new Set(skillInputs.map((item) => item.skill_id)), courseIds: new Set(courseRows.map((course) => course.id)) };
-  const relevantStudentSkills = studentSkillRows.filter((skill) => skillGaps.some((gap) => gap.skill_id === skill.skill_id));
+  const catalog = { roleIds: new Set(roleRows.map((item) => item.id)), skillIds: new Set(relevantSkillIds), courseIds: new Set(courseRows.map((course) => course.id)) };
+  const relevantStudentSkills = studentSkillRows.filter((skill) => relevantGaps.some((gap) => gap.skill_id === skill.skill_id));
   const context = JSON.stringify(buildRoadmapContext({
     student,
     role: { id: role.id, title: role.title, description: role.description },
     studentSkills: relevantStudentSkills,
-    skillGaps,
+    skillGaps: relevantGaps,
     courses: courseRows,
     readiness: readiness ? { overall_score: readiness.overall_score, pending: ['project_score', 'resume_score', 'interview_score'].filter((key) => readiness[key as keyof typeof readiness] == null) } : null,
   }));
@@ -62,7 +63,7 @@ export async function generateCareerRoadmap(roleId: string): Promise<{ success: 
   if (!aiResult.success && !aiResult.fallbackFrom) {
     const compactContext = JSON.stringify({
       target_role: { id: role.id, title: role.title, description: role.description },
-      gaps: skillGaps.map((gap) => ({ skill_id: gap.skill_id, skill_name: gap.skill_name, status: gap.status, importance: gap.importance })),
+      gaps: relevantGaps.map((gap) => ({ skill_id: gap.skill_id, skill_name: gap.skill_name, status: gap.status, importance: gap.importance })),
       student_skills: relevantStudentSkills.map((skill) => ({ skill_id: skill.skill_id, proficiency: skill.proficiency })),
       courses: courseRows.slice(0, 12),
       readiness: readiness ? { overall_score: readiness.overall_score, pending: ['project_score', 'resume_score', 'interview_score'].filter((key) => readiness[key as keyof typeof readiness] == null) } : null,

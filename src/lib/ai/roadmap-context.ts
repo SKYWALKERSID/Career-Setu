@@ -8,7 +8,8 @@ export function buildRoadmapContext(input: {
   courses: RoadmapCourse[];
   readiness: { overall_score?: number | null; pending: string[] } | null;
 }) {
-  const gapIds = new Set(input.skillGaps.map((gap) => gap.skill_id));
+  const relevantGaps = input.skillGaps.filter((gap) => gap.status !== 'acquired');
+  const gapIds = new Set(relevantGaps.map((gap) => gap.skill_id));
   const studentSkills = new Map(input.studentSkills.filter((skill) => gapIds.has(skill.skill_id)).map((skill) => [skill.skill_id, skill]));
   const courses = new Map(input.courses
     .filter((course) => course.skill_ids.some((skillId) => gapIds.has(skillId)))
@@ -22,7 +23,7 @@ export function buildRoadmapContext(input: {
       interests: input.student.interests || [],
     },
     target_role: input.role,
-    skill_gaps: input.skillGaps.map(({ skill_id, skill_name, status, importance, priority }) => ({ skill_id, skill_name, status, importance, priority })),
+    skill_gaps: relevantGaps.map(({ skill_id, skill_name, status, importance, priority }) => ({ skill_id, skill_name, status, importance, priority })),
     student_skills: [...studentSkills.values()],
     courses: [...courses.values()],
     readiness: input.readiness,
