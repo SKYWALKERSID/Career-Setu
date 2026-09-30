@@ -24,7 +24,7 @@ assert.equal(isReusableCareerIntelligence('same', 'same', { unavailable: true })
 
 const resume = {
   extracted_text: 'resume text',
-  parsed_json: { analysis_version: 'v1', analysis_context_hash: 'hash-a' },
+  parsed_json: { analysis_source: 'ai', analysis_version: 'v1', analysis_context_hash: 'hash-a' },
   score: 80,
 };
 assert.equal(isReusableResumeAnalysis(resume, 'resume text', 'v1', 'hash-a'), true);

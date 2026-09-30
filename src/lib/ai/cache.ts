@@ -12,7 +12,7 @@ export function isReusableResumeAnalysis(record: {
   return record.extracted_text === extractedText
     && record.parsed_json?.analysis_source === 'ai'
     && record.parsed_json?.analysis_version === analysisVersion
-    && record.parsed_json.analysis_context_hash === contextHash
+    && record.parsed_json?.analysis_context_hash === contextHash
     && record.score !== null
     && record.score !== undefined;
 }
