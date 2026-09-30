@@ -62,6 +62,7 @@ export class GeminiProvider implements AIProvider {
         },
       ],
       generationConfig: {
+        temperature: 0.1,
         thinkingConfig: {
           thinkingLevel: process.env.GEMINI_THINKING_LEVEL || 'low',
         },

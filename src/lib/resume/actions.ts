@@ -68,17 +68,19 @@ export async function getLatestResume(roleId?: string) {
 
   // 4. No analysis record exists yet for targetRole on this resume document.
   // Generate deterministic role review so the resume document and facts remain immediately visible!
-  const [{ data: skills }, { data: allRoles }] = await Promise.all([
-    supabase.from('skills').select('id, name, aliases'),
-    supabase.from('career_roles').select('id, title, career_role_skills(skill_id, skills(id, name))'),
+  const [{ data: rawSkills }, { data: rawAllRoles }] = await Promise.all([
+    supabase.from('skills').select('id, name, aliases').order('id', { ascending: true }),
+    supabase.from('career_roles').select('id, title, career_role_skills(skill_id, skills(id, name))').order('id', { ascending: true }),
   ]);
 
-  const targetRoleIds = resolveTargetCareerIds([targetRole], allRoles || []);
-  const roles = (allRoles || []).filter((role) => targetRoleIds.includes(role.id));
-  const roleSkills = [...new Set((roles || []).flatMap((role) => role.career_role_skills || []).map((item) => item.skill_id))];
+  const skills = rawSkills || [];
+  const allRoles = rawAllRoles || [];
+  const targetRoleIds = resolveTargetCareerIds([targetRole], allRoles);
+  const roles = allRoles.filter((role) => targetRoleIds.includes(role.id));
+  const roleSkills = [...new Set(roles.flatMap((role) => role.career_role_skills || []).map((item) => item.skill_id))].sort();
   const selectedRoleTitle = roles[0]?.title || 'selected target career';
 
-  const deterministicParsed = buildDeterministicResume(latestRecord.extracted_text, skills || [], roleSkills, selectedRoleTitle);
+  const deterministicParsed = buildDeterministicResume(latestRecord.extracted_text, skills, roleSkills, selectedRoleTitle);
   const analysisContextHash = createHash('sha256')
     .update(JSON.stringify({ roleId: targetRole, analysisVersion: RESUME_ANALYSIS_VERSION, promptVersion: RESUME_PROMPT_VERSION, scoringVersion: RESUME_SCORING_VERSION }))
     .digest('hex');
@@ -165,21 +167,24 @@ export async function triggerResumeAiAnalysis(
     return { success: true, resumeId: targetResumeRecord.id };
   }
 
-  const [{ data: skills }, { data: allRoles }] = await Promise.all([
-    supabase.from('skills').select('id, name, aliases'),
-    supabase.from('career_roles').select('id, title, career_role_skills(skill_id, skills(id, name))'),
+  const [{ data: rawSkills }, { data: rawAllRoles }] = await Promise.all([
+    supabase.from('skills').select('id, name, aliases').order('id', { ascending: true }),
+    supabase.from('career_roles').select('id, title, career_role_skills(skill_id, skills(id, name))').order('id', { ascending: true }),
   ]);
 
-  const targetRoleIds = resolveTargetCareerIds([roleId], allRoles || []);
-  const roles = (allRoles || []).filter((role) => targetRoleIds.includes(role.id));
-  const roleSkills = [...new Set((roles || []).flatMap((role) => role.career_role_skills || []).map((item) => item.skill_id))];
-  const selectedRole = roles[0] || (roles || []).find((r) => r.id === roleId);
+  const skills = rawSkills || [];
+  const allRoles = rawAllRoles || [];
+  const targetRoleIds = resolveTargetCareerIds([roleId], allRoles);
+  const roles = allRoles.filter((role) => targetRoleIds.includes(role.id));
+  const roleSkills = [...new Set(roles.flatMap((role) => role.career_role_skills || []).map((item) => item.skill_id))].sort();
+  const selectedRole = roles[0] || roles.find((r) => r.id === roleId);
   const selectedRoleTitle = selectedRole?.title || 'selected target career';
 
-  const deterministicParsed = buildDeterministicResume(text, skills || [], roleSkills, selectedRoleTitle);
+  const deterministicParsed = buildDeterministicResume(text, skills, roleSkills, selectedRoleTitle);
   const roleSkillNames = (selectedRole?.career_role_skills || [])
     .map((item) => (item.skills as unknown as { name: string })?.name)
-    .filter(Boolean);
+    .filter(Boolean)
+    .sort();
 
   const deterministicScore = calculateResumeScore(deterministicParsed);
   const context = JSON.stringify({

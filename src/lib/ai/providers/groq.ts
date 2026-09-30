@@ -52,6 +52,7 @@ export class GroqProvider implements AIProvider {
         { role: 'user', content: prompt },
       ],
       model: this.modelName,
+      temperature: 0.1,
       response_format: { type: 'json_object' },
     };
   }
