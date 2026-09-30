@@ -168,6 +168,47 @@ export const RoadmapSchema = z.preprocess((value) => {
 
 export type RoadmapAIResult = z.infer<typeof RoadmapSchema>;
 
+const resumeReviewSection = z.enum(['Summary', 'Experience', 'Projects', 'Skills', 'Education', 'Achievements', 'Certifications', 'Other']);
+const resumeTextList = z.array(z.string().min(1).max(500)).max(15);
+const resumePriorityIssue = z.object({
+  title: z.string().min(1).max(160),
+  priority: z.enum(['critical', 'high', 'medium', 'low']),
+  section: resumeReviewSection,
+  problem: z.string().min(1).max(600),
+  why_it_matters: z.string().min(1).max(600),
+  recommended_change: z.string().min(1).max(600),
+});
+const resumeSectionReview = z.object({
+  section: resumeReviewSection,
+  status: z.enum(['strong', 'needs_work', 'missing', 'not_applicable']),
+  what_works: resumeTextList,
+  what_is_weak: resumeTextList,
+  recommended_improvement: resumeTextList,
+});
+const resumeBulletReview = z.object({
+  section: z.enum(['Summary', 'Experience', 'Projects']),
+  original: z.string().min(1).max(700),
+  issue: z.string().min(1).max(400),
+  why_it_is_weak: z.string().min(1).max(500),
+  suggested: z.string().min(1).max(700),
+  missing_information: resumeTextList,
+});
+const resumeAtsAnalysis = z.object({
+  present: resumeTextList,
+  weak_or_missing: resumeTextList,
+  placement_suggestions: resumeTextList,
+  formatting_concerns: resumeTextList,
+  ordering_suggestions: resumeTextList,
+});
+const resumeCareerAlignmentAnalysis = z.object({
+  aligned_areas: resumeTextList,
+  underrepresented_areas: resumeTextList,
+  missing_role_evidence: resumeTextList,
+  priority_changes: resumeTextList,
+});
+const resumeStrategy = z.object({ emphasize: resumeTextList, reduce: resumeTextList, reorder: resumeTextList, remove: resumeTextList, add_if_true: resumeTextList });
+const resumeActionPlan = z.object({ fix_now: resumeTextList, improve_next: resumeTextList, optional_polish: resumeTextList });
+
 const ResumeParseSchemaBase = z.object({
   analysis_source: z.enum(['ai', 'deterministic_fallback']).optional(),
   analysis_version: z.string().max(80).optional(),
@@ -177,6 +218,10 @@ const ResumeParseSchemaBase = z.object({
   location: z.string().max(200).optional(),
   summary: z.string().max(1200).optional(),
   education: z.array(z.string().max(300)).max(10), skills: z.array(z.string().max(100)).max(50), projects: z.array(z.string().max(500)).max(20), experience: z.array(z.string().max(500)).max(20), certifications: z.array(z.string().max(300)).max(20), achievements: z.array(z.string().max(300)).max(20), evidenced_skill_ids: z.array(z.string().uuid()).max(50), role_required_skill_ids: z.array(z.string().uuid()).max(50), not_evidenced_skill_ids: z.array(z.string().uuid()).max(50), strengths: z.array(z.string().max(300)).max(10), improvement_areas: z.array(z.string().max(300)).max(10), suggestions: z.array(z.string().max(400)).max(15),
+  overall_assessment: z.string().min(1).max(900), biggest_opportunity: z.string().min(1).max(600),
+  priority_issues: z.array(resumePriorityIssue).min(1).max(8), section_analysis: z.array(resumeSectionReview).min(1).max(8), bullet_improvements: z.array(resumeBulletReview).max(10),
+  ats_keywords: resumeAtsAnalysis, career_alignment_analysis: resumeCareerAlignmentAnalysis, resume_strategy: resumeStrategy, action_plan: resumeActionPlan,
+  reanalysis_focus: z.string().min(1).max(500),
 });
 export const ResumeParseSchema = z.preprocess((value) => {
   if (!value || typeof value !== 'object') return value;
@@ -200,6 +245,16 @@ export const ResumeParseSchema = z.preprocess((value) => {
     experience: textArray(output.experience ?? output.work_experience), certifications: textArray(output.certifications), achievements: textArray(output.achievements),
     evidenced_skill_ids: idArray(output.evidenced_skill_ids ?? output.evidencedSkillIds), role_required_skill_ids: idArray(output.role_required_skill_ids ?? output.roleRequiredSkillIds), not_evidenced_skill_ids: idArray(output.not_evidenced_skill_ids ?? output.notEvidencedSkillIds),
     strengths: textArray(output.strengths), improvement_areas: textArray(output.improvement_areas ?? output.improvementAreas), suggestions: textArray(output.suggestions ?? output.recommendations),
+    overall_assessment: typeof output.overall_assessment === 'string' ? output.overall_assessment : output.overallAssessment,
+    biggest_opportunity: typeof output.biggest_opportunity === 'string' ? output.biggest_opportunity : output.biggestOpportunity,
+    priority_issues: Array.isArray(output.priority_issues) ? output.priority_issues : [],
+    section_analysis: Array.isArray(output.section_analysis) ? output.section_analysis : [],
+    bullet_improvements: Array.isArray(output.bullet_improvements) ? output.bullet_improvements : [],
+    ats_keywords: output.ats_keywords,
+    career_alignment_analysis: output.career_alignment_analysis,
+    resume_strategy: output.resume_strategy,
+    action_plan: output.action_plan,
+    reanalysis_focus: typeof output.reanalysis_focus === 'string' ? output.reanalysis_focus : output.reanalysisFocus,
   };
 }, ResumeParseSchemaBase);
 export type ResumeParseResult = z.infer<typeof ResumeParseSchema>;

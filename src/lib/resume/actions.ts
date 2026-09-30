@@ -5,7 +5,7 @@ import { createHash } from 'node:crypto';
 import { createClient } from '@/lib/supabase/server';
 import { aiClient } from '@/lib/ai/client';
 import { ResumeParseSchema } from '@/lib/ai/schemas';
-import { RESUME_PROMPT, RESUME_PROMPT_VERSION } from '@/lib/ai/prompts/resume';
+import { RESUME_ANALYSIS_VERSION, RESUME_PROMPT, RESUME_PROMPT_VERSION } from '@/lib/ai/prompts/resume';
 import { calculateResumeScore, RESUME_SCORING_VERSION } from './scoring';
 import type { ResumeParsedData } from './types';
 import { buildDeterministicResume, extractResumeText, ResumeExtractionError } from './parser';
@@ -52,7 +52,7 @@ export async function uploadAndAnalyzeResume(formData: FormData, requestedRoleId
   if (requestedRoleId && !targetRole) return { success: false, error: 'That target career is not selected for this student.' };
   const roleId = targetRole?.id || student.target_careers?.[0];
   if (!roleId) return { success: false, error: 'No target career selected. Choose a career before analyzing your resume.' };
-  const analysisContextHash = createHash('sha256').update(JSON.stringify({ roleId, promptVersion: RESUME_PROMPT_VERSION, scoringVersion: RESUME_SCORING_VERSION })).digest('hex');
+  const analysisContextHash = createHash('sha256').update(JSON.stringify({ roleId, analysisVersion: RESUME_ANALYSIS_VERSION, promptVersion: RESUME_PROMPT_VERSION, scoringVersion: RESUME_SCORING_VERSION })).digest('hex');
   const byteHash = createHash('sha256').update(buffer).digest('hex').slice(0, 16);
   logResumeUploadStage('server_bytes_received', { filename: safeFilename(file.name), received_mime: file.type, byte_length: buffer.length, byte_hash: byteHash, pdf_signature: hasPdfSignature });
   let text: string;
@@ -75,8 +75,8 @@ export async function uploadAndAnalyzeResume(formData: FormData, requestedRoleId
     .not('parsed_json', 'is', null)
     .not('score', 'is', null)
     .order('version', { ascending: false });
-  const reusable = (reusableRows || []).find((record) => isReusableResumeAnalysis(record, text, RESUME_SCORING_VERSION, analysisContextHash));
-  if (!forceReanalysis && reusable && isReusableResumeAnalysis(reusable, text, RESUME_SCORING_VERSION, analysisContextHash)) {
+  const reusable = (reusableRows || []).find((record) => isReusableResumeAnalysis(record, text, RESUME_ANALYSIS_VERSION, analysisContextHash));
+  if (!forceReanalysis && reusable && isReusableResumeAnalysis(reusable, text, RESUME_ANALYSIS_VERSION, analysisContextHash)) {
     return { success: true, resumeId: reusable.id };
   }
   const { data: latest } = await supabase.from('resumes').select('version').eq('student_id', student.id).order('version', { ascending: false }).limit(1).maybeSingle();
@@ -95,12 +95,19 @@ export async function uploadAndAnalyzeResume(formData: FormData, requestedRoleId
   const roleSkills = [...new Set((roles || []).flatMap((role) => role.career_role_skills || []).map((item) => item.skill_id))];
   const selectedRoleTitle = roles[0]?.title || 'selected target career';
   const deterministicParsed = buildDeterministicResume(text, skills || [], roleSkills, selectedRoleTitle);
-  const context = JSON.stringify({ academic: { course: student.course, branch: student.branch, degree_id: student.degree_id, branch_id: student.branch_id, specialization_id: student.specialization_id, degree_other: student.degree_other, branch_other: student.branch_other, specialization_other: student.specialization_other }, skills: skills || [], target_roles: roles || [], role_required_skill_ids: roleSkills });
+  const context = JSON.stringify({
+    academic: { course: student.course, branch: student.branch, degree_id: student.degree_id, branch_id: student.branch_id, specialization_id: student.specialization_id, degree_other: student.degree_other, branch_other: student.branch_other, specialization_other: student.specialization_other },
+    target_role: roles[0] || { id: roleId, title: selectedRoleTitle },
+    canonical_skills: skills || [],
+    role_required_skill_ids: roleSkills,
+    deterministic_resume_facts: { name: deterministicParsed.name, summary: deterministicParsed.summary, education: deterministicParsed.education, skills: deterministicParsed.skills, projects: deterministicParsed.projects, experience: deterministicParsed.experience, certifications: deterministicParsed.certifications, achievements: deterministicParsed.achievements },
+    deterministic_gaps: { evidenced_skill_ids: deterministicParsed.evidenced_skill_ids, not_evidenced_skill_ids: deterministicParsed.not_evidenced_skill_ids },
+  });
   const provider = aiClient.getProvider(); const started = Date.now();
   const resumePrompt = RESUME_PROMPT.replace('{{context}}', context).replace('{{resume}}', text);
   let result = await provider.generateStructuredOutput(resumePrompt, ResumeParseSchema, 'Fact-preserving structured resume parser.');
   if (!result.success && !result.fallbackFrom && result.errorCategory === 'AI_PROVIDER_ERROR' && result.error?.includes('HTTP 400')) {
-    const retryPrompt = `Return one valid JSON object only. Extract only facts explicitly present in this resume. Use empty arrays for absent sections. Every list item must be a plain string. Use only supplied UUIDs for evidence arrays. Exact keys: contact, education, skills, projects, experience, certifications, achievements, evidenced_skill_ids, role_required_skill_ids, not_evidenced_skill_ids, strengths, improvement_areas, suggestions.\nCATALOG: ${context}\nRESUME: ${text}`;
+    const retryPrompt = `${RESUME_PROMPT}\n\nReturn valid JSON only and preserve every required deep-analysis field.\nCATALOG: ${context}\nRESUME: ${text}`;
     result = await provider.generateStructuredOutput(retryPrompt, ResumeParseSchema, 'Return valid JSON only for a fact-preserving resume parser.');
   }
   const { data: run } = await supabase.from('ai_runs').insert({ feature: 'resume_parse', model: result.model, provider: result.provider, primary_provider: result.attempts?.[0]?.provider || result.provider, primary_model: result.attempts?.[0]?.model || result.model, fallback_provider: result.attempts?.[1]?.provider || null, fallback_model: result.attempts?.[1]?.model || null, fallback_reason: result.fallbackReason || null, error_category: result.errorCategory || null, prompt_version: RESUME_PROMPT_VERSION, student_id: student.id, latency_ms: Date.now() - started, tokens_used: result.tokensUsed ?? null, success: result.success, error_message: result.success ? null : `${result.errorCategory || 'AI_UNKNOWN_ERROR'}: ${result.error || 'Resume analysis failed.'}` }).select('id').single();
@@ -114,11 +121,21 @@ export async function uploadAndAnalyzeResume(formData: FormData, requestedRoleId
     parsed = {
       ...deterministicParsed,
       analysis_source: 'ai',
-      analysis_version: RESUME_SCORING_VERSION,
+      analysis_version: RESUME_ANALYSIS_VERSION,
       analysis_context_hash: analysisContextHash,
       strengths: aiParsed.strengths.length ? aiParsed.strengths : deterministicParsed.strengths,
       improvement_areas: aiParsed.improvement_areas.length ? aiParsed.improvement_areas : deterministicParsed.improvement_areas,
       suggestions: aiParsed.suggestions.length ? aiParsed.suggestions : deterministicParsed.suggestions,
+      overall_assessment: aiParsed.overall_assessment,
+      biggest_opportunity: aiParsed.biggest_opportunity,
+      priority_issues: aiParsed.priority_issues,
+      section_analysis: aiParsed.section_analysis,
+      bullet_improvements: aiParsed.bullet_improvements,
+      ats_keywords: aiParsed.ats_keywords,
+      career_alignment_analysis: aiParsed.career_alignment_analysis,
+      resume_strategy: aiParsed.resume_strategy,
+      action_plan: aiParsed.action_plan,
+      reanalysis_focus: aiParsed.reanalysis_focus,
     };
   }
   const catalogSkillIds = new Set((skills || []).map((skill) => skill.id)); const validRoleSkills = new Set(roleSkills);
@@ -128,7 +145,7 @@ export async function uploadAndAnalyzeResume(formData: FormData, requestedRoleId
     if (run?.id) await supabase.from('ai_runs').update({ success: false, error_message: 'AI_SCHEMA_ERROR: Resume parser returned unsupported catalog entities; deterministic fallback persisted.' }).eq('id', run.id);
   }
   const score = calculateResumeScore(parsed);
-  parsed.analysis_version = RESUME_SCORING_VERSION;
+  parsed.analysis_version = RESUME_ANALYSIS_VERSION;
   parsed.analysis_context_hash = analysisContextHash;
   const { error: analysisSaveError } = await supabase.from('resumes').update({ parsed_json: parsed, score }).eq('id', resume.id).eq('student_id', student.id);
   if (analysisSaveError) return { success: false, resumeId: resume.id, error: 'Resume analysis could not be persisted. The uploaded file was preserved; please retry.' };
