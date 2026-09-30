@@ -6,6 +6,7 @@ import { aiClient } from '@/lib/ai/client';
 import { RoadmapSchema } from '@/lib/ai/schemas';
 import { ROADMAP_PROMPT, ROADMAP_PROMPT_VERSION } from '@/lib/ai/prompts/roadmap';
 import { validateRoadmap } from '@/lib/ai/roadmap';
+import { buildRoadmapContext, type RoadmapCourse } from '@/lib/ai/roadmap-context';
 import { calculateSkillGaps } from '@/lib/skill-gap/scoring';
 import { resolveTargetCareerIds } from '@/lib/career/target-roles';
 
@@ -18,22 +19,37 @@ export async function generateCareerRoadmap(roleId: string): Promise<{ success: 
 
   const { data: student } = await supabase.from('student_profiles').select('id, name, course, branch, degree_id, branch_id, specialization_id, degree_other, branch_other, specialization_other, interests, target_careers').eq('user_id', user.id).single();
   if (!student) return { success: false, error: 'Student profile not found.' };
-  const [{ data: roles }, { data: skills }, { data: recommendations }, { data: readiness }, { data: courses }] = await Promise.all([
+  const [{ data: roles }, { data: skills }, { data: readiness }] = await Promise.all([
     supabase.from('career_roles').select('id, title, description, career_role_skills(skill_id, required, importance, skills(id, name))'),
     supabase.from('student_skills').select('skill_id, proficiency, evidence_type, evidence, skills(id, name)').eq('student_id', student.id),
-    supabase.from('career_recommendations').select('role_id, score').eq('student_id', student.id).order('score', { ascending: false }).limit(5),
     supabase.from('readiness_assessments').select('*').eq('student_id', student.id).order('created_at', { ascending: false }).limit(1).maybeSingle(),
-    supabase.from('courses').select('id, title, provider, url, course_skills(skill_id)'),
   ]);
   const roleRows = (roles || []) as unknown as RoleRow[];
   const targetRoleIds = resolveTargetCareerIds(student.target_careers || [], roleRows);
   const role = roleRows.find((candidate) => candidate.id === roleId && targetRoleIds.includes(candidate.id));
   if (!role) return { success: false, error: 'Select a target career or generate career recommendations first.' };
-  const courseRows = (courses || []) as unknown as Array<{ id: string; title: string; provider: string; url: string; course_skills: Array<{ skill_id: string }> }>;
-  const catalog = { roleIds: new Set(roleRows.map((item) => item.id)), skillIds: new Set(role.career_role_skills.map((item) => item.skill_id)), courseIds: new Set(courseRows.map((item) => item.id)) };
   const studentSkillRows = (skills || []) as unknown as Array<{ skill_id: string; proficiency: 'beginner' | 'intermediate' | 'advanced'; evidence_type?: 'self_declared' | 'project' | 'certification' | 'assessment' | 'resume'; evidence?: string | null }>;
-  const skillGaps = calculateSkillGaps(role.career_role_skills.map((item) => { const student = studentSkillRows.find((skill) => skill.skill_id === item.skill_id); return { skill_id: item.skill_id, skill_name: item.skills?.name || item.skill_id, importance: (item.importance || 'high') as 'high' | 'medium' | 'low', required: item.required, student_proficiency: student?.proficiency, student_evidence_type: student?.evidence_type, student_evidence: student?.evidence }; }));
-  const context = JSON.stringify({ student, selected_role: role, student_skills: skills || [], skill_gaps: skillGaps, recommendations: recommendations || [], readiness: readiness || null, courses: courseRows });
+  const skillInputs = [...new Map(role.career_role_skills.map((item) => [item.skill_id, item])).values()];
+  const skillGaps = calculateSkillGaps(skillInputs.map((item) => { const student = studentSkillRows.find((skill) => skill.skill_id === item.skill_id); return { skill_id: item.skill_id, skill_name: item.skills?.name || item.skill_id, importance: (item.importance || 'high') as 'high' | 'medium' | 'low', required: item.required, student_proficiency: student?.proficiency, student_evidence_type: student?.evidence_type, student_evidence: student?.evidence }; }));
+  const relevantSkillIds = [...new Set(skillGaps.filter((gap) => gap.status !== 'acquired').map((gap) => gap.skill_id))];
+  const { data: courseSkillRows } = relevantSkillIds.length
+    ? await supabase.from('course_skills').select('course_id, skill_id').in('skill_id', relevantSkillIds)
+    : { data: [] as Array<{ course_id: string; skill_id: string }> };
+  const courseIds = [...new Set((courseSkillRows || []).map((row) => row.course_id))];
+  const { data: relevantCourses } = courseIds.length
+    ? await supabase.from('courses').select('id, title, provider, url').in('id', courseIds)
+    : { data: [] as Array<{ id: string; title: string; provider: string; url: string }> };
+  const courseRows: RoadmapCourse[] = (relevantCourses || []).map((course) => ({ ...course, skill_ids: [...new Set((courseSkillRows || []).filter((row) => row.course_id === course.id).map((row) => row.skill_id))] }));
+  const catalog = { roleIds: new Set(roleRows.map((item) => item.id)), skillIds: new Set(skillInputs.map((item) => item.skill_id)), courseIds: new Set(courseRows.map((course) => course.id)) };
+  const relevantStudentSkills = studentSkillRows.filter((skill) => skillGaps.some((gap) => gap.skill_id === skill.skill_id));
+  const context = JSON.stringify(buildRoadmapContext({
+    student,
+    role: { id: role.id, title: role.title, description: role.description },
+    studentSkills: relevantStudentSkills,
+    skillGaps,
+    courses: courseRows,
+    readiness: readiness ? { overall_score: readiness.overall_score, pending: ['project_score', 'resume_score', 'interview_score'].filter((key) => readiness[key as keyof typeof readiness] == null) } : null,
+  }));
   const provider = aiClient.getProvider();
   const started = Date.now();
   let aiResult;
@@ -47,8 +63,8 @@ export async function generateCareerRoadmap(roleId: string): Promise<{ success: 
     const compactContext = JSON.stringify({
       target_role: { id: role.id, title: role.title, description: role.description },
       gaps: skillGaps.map((gap) => ({ skill_id: gap.skill_id, skill_name: gap.skill_name, status: gap.status, importance: gap.importance })),
-      student_skills: (skills || []).map((skill) => ({ skill_id: skill.skill_id, proficiency: skill.proficiency })),
-      courses: courseRows.slice(0, 12).map((course) => ({ id: course.id, title: course.title, provider: course.provider, skill_ids: course.course_skills.map((item) => item.skill_id) })),
+      student_skills: relevantStudentSkills.map((skill) => ({ skill_id: skill.skill_id, proficiency: skill.proficiency })),
+      courses: courseRows.slice(0, 12),
       readiness: readiness ? { overall_score: readiness.overall_score, pending: ['project_score', 'resume_score', 'interview_score'].filter((key) => readiness[key as keyof typeof readiness] == null) } : null,
     });
     const compactPrompt = `Return exactly one JSON object with these top-level keys: target_role_id, duration_days, rationale, tasks. Use target_role_id "${role.id}" and duration_days 90. Create exactly 6 tasks across weeks 1, 3, 5, 7, 9, and 11. Each task must have task_type learning, project, or interview_prep; title; description; skill_ids with at most 2 IDs from the supplied gaps; and course_ids with at most 1 ID from the supplied courses. Use only supplied UUIDs. Do not invent IDs, markdown, nested objects, or extra keys. Keep rationale under 200 characters and descriptions under 300 characters. Context: ${compactContext}`;
