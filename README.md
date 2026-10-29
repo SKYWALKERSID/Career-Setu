@@ -12,9 +12,9 @@ An AI-driven career guidance, skill readiness, and placement enablement platform
 [![Tailwind CSS](https://img.shields.io/badge/Tailwind-3.4-38B2AC?logo=tailwind-css)](https://tailwindcss.com/)
 [![Supabase](https://img.shields.io/badge/Supabase-PostgreSQL-3ECF8E?logo=supabase)](https://supabase.com/)
 [![Presentation Deck](https://img.shields.io/badge/Presentation-18--Slide%20Deck%20(Live)-06B6D4?logo=slides)](https://career-setu-hslc.vercel.app/presentation.html)
-[![Download PDF](https://img.shields.io/badge/Download-Slides%20(PDF)-14B8A6?logo=adobe-acrobat-reader)](docs/CareerSetu_Master_Deck.pdf)
+[![Download PDF](https://img.shields.io/badge/Download-Slides%20(PDF)-14B8A6?logo=adobe-acrobat-reader)](docs/CareerSetu_Presentation_Deck.pdf)
 
-[**Explore Live Demo**](https://career-setu-hslc.vercel.app) • [**Live Presentation Deck (HTML)**](https://career-setu-hslc.vercel.app/presentation.html) • [**Download Slides (PDF)**](docs/CareerSetu_Master_Deck.pdf) • [**Architecture & Docs**](#%EF%B8%8F-system-architecture)
+[**Explore Live Demo**](https://career-setu-hslc.vercel.app) • [**Live Presentation Deck (HTML)**](https://career-setu-hslc.vercel.app/presentation.html) • [**Download Slides (PDF)**](docs/CareerSetu_Presentation_Deck.pdf) • [**Architecture & Docs**](#%EF%B8%8F-system-architecture)
 
 </div>
 
@@ -23,7 +23,7 @@ An AI-driven career guidance, skill readiness, and placement enablement platform
 > 📽️ **Presentation Deck Available**: You can interactively present the complete 18-slide Civic-Tech presentation deck right in your browser:
 > - 🌐 **Live Web Presentation**: [**Open Interactive Deck (Full Screen)**](https://career-setu-hslc.vercel.app/presentation.html) *(or view via [GitHub HTMLPreview](https://htmlpreview.github.io/?https://github.com/SKYWALKERSID/Career-Setu/blob/main/docs/presentation-deck.html))*
 > - 💻 **GitHub Repository File**: [`docs/presentation-deck.html`](docs/presentation-deck.html)
-> - 📄 **Download Widescreen PDF**: [`docs/CareerSetu_Master_Deck.pdf`](docs/CareerSetu_Master_Deck.pdf) (16:9 printable executive slides)
+> - 📄 **Download Widescreen PDF**: [`docs/CareerSetu_Presentation_Deck.pdf`](docs/CareerSetu_Presentation_Deck.pdf) (16:9 printable executive slides)
 
 ---
 
@@ -303,6 +303,6 @@ Distributed under the **MIT License**. See [`LICENSE`](LICENSE) for complete det
 
 Built with ❤️ for ambitious students everywhere.
 
-[**Launch CareerSetu**](https://career-setu-hslc.vercel.app) • [**Live Presentation Deck**](https://career-setu-hslc.vercel.app/presentation.html) • [**Download Master Deck (PDF)**](docs/CareerSetu_Master_Deck.pdf)
+[**Launch CareerSetu**](https://career-setu-hslc.vercel.app) • [**Live Presentation Deck**](https://career-setu-hslc.vercel.app/presentation.html) • [**Download Master Deck (PDF)**](docs/CareerSetu_Presentation_Deck.pdf)
 
 </div>

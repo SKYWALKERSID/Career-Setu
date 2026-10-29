@@ -446,6 +446,7 @@
         color: #F8FAFC !important;
         margin: 0 !important;
         padding: 0 !important;
+        overflow: visible !important;
       }
 
       .deck-container {
@@ -456,20 +457,29 @@
         border-radius: 0 !important;
         box-shadow: none !important;
         background: transparent !important;
+        overflow: visible !important;
+        display: block !important;
+        height: auto !important;
+        position: static !important;
       }
 
       .slide {
         display: flex !important;
+        flex-direction: column !important;
         width: 1920px !important;
         height: 1080px !important;
+        min-height: 1080px !important;
+        max-height: 1080px !important;
         box-sizing: border-box !important;
-        padding: 3.5rem 5rem !important;
+        padding: 4rem 5.5rem !important;
         background: radial-gradient(circle at 80% 20%, #0F2042 0%, #0A1128 60%) !important;
         -webkit-print-color-adjust: exact !important;
         print-color-adjust: exact !important;
         page-break-after: always !important;
         page-break-inside: avoid !important;
         break-after: page !important;
+        break-inside: avoid !important;
+        position: relative !important;
       }
 
       .deck-controls {
