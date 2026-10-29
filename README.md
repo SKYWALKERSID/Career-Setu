@@ -11,24 +11,24 @@ An AI-driven career guidance, skill readiness, and placement enablement platform
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.7-3178C6?logo=typescript)](https://www.typescriptlang.org/)
 [![Tailwind CSS](https://img.shields.io/badge/Tailwind-3.4-38B2AC?logo=tailwind-css)](https://tailwindcss.com/)
 [![Supabase](https://img.shields.io/badge/Supabase-PostgreSQL-3ECF8E?logo=supabase)](https://supabase.com/)
-[![Presentation Deck](https://img.shields.io/badge/Presentation-18--Slide%20Deck%20(Live)-06B6D4?logo=slides)](https://career-setu-hslc.vercel.app/presentation.html)
+[![Presentation Deck](https://img.shields.io/badge/Presentation-18--Slide%20Deck%20(GitHub)-06B6D4?logo=slides)](https://htmlpreview.github.io/?https://github.com/SKYWALKERSID/Career-Setu/blob/main/docs/presentation-deck.html)
 [![Download PDF](https://img.shields.io/badge/Download-Slides%20(PDF)-14B8A6?logo=adobe-acrobat-reader)](docs/CareerSetu_Presentation_Deck.pdf)
-[![Watch Commercial (Live)](https://img.shields.io/badge/Watch%20Commercial-1080p%2060fps%20(Live%20Player)-E11D48?logo=youtube)](https://career-setu-hslc.vercel.app/commercial.html)
+[![Watch Commercial](https://img.shields.io/badge/Watch%20Commercial-1080p%2060fps%20(GitHub)-E11D48?logo=youtube)](https://htmlpreview.github.io/?https://github.com/SKYWALKERSID/Career-Setu/blob/main/docs/commercial-player.html)
 [![Download MP4](https://img.shields.io/badge/Download-Commercial%20(MP4)-F43F5E?logo=vlc-media-player)](careersetu-cinematic-ad.mp4)
 
-[**Explore Live Demo**](https://career-setu-hslc.vercel.app) • [**Watch Commercial (Live Player)**](https://career-setu-hslc.vercel.app/commercial.html) • [**Download Commercial (MP4)**](careersetu-cinematic-ad.mp4) • [**Live Presentation Deck (HTML)**](https://career-setu-hslc.vercel.app/presentation.html) • [**Download Slides (PDF)**](docs/CareerSetu_Presentation_Deck.pdf)
+[**Explore Live Demo**](https://career-setu-hslc.vercel.app) • [**Watch Commercial (GitHub Player)**](https://htmlpreview.github.io/?https://github.com/SKYWALKERSID/Career-Setu/blob/main/docs/commercial-player.html) • [**Commercial Video File (MP4)**](careersetu-cinematic-ad.mp4) • [**Presentation Deck (GitHub)**](https://htmlpreview.github.io/?https://github.com/SKYWALKERSID/Career-Setu/blob/main/docs/presentation-deck.html) • [**Download Slides (PDF)**](docs/CareerSetu_Presentation_Deck.pdf)
 
 </div>
 
 ---
 
 > 🎬 **Launch Commercial Video (1080p 60fps + Gemini Studio Voiceover)**:
-> - 🌐 **Live Web Theater Player**: [**Watch Interactive 9-Scene Commercial (Full Screen)**](https://career-setu-hslc.vercel.app/commercial.html) *(or stream direct [MP4](https://career-setu-hslc.vercel.app/careersetu-cinematic-ad.mp4))*
-> - 💻 **GitHub Repository File**: [`careersetu-cinematic-ad.mp4`](careersetu-cinematic-ad.mp4) *(also mirrored in [`demo-videos/careersetu-cinematic-ad.mp4`](demo-videos/careersetu-cinematic-ad.mp4))*
+> - ▶️ **Watch on GitHub (Interactive Player)**: [**Open 1080p 60fps Commercial Player**](https://htmlpreview.github.io/?https://github.com/SKYWALKERSID/Career-Setu/blob/main/docs/commercial-player.html)
+> - 💻 **GitHub Repository Video File**: [`careersetu-cinematic-ad.mp4`](careersetu-cinematic-ad.mp4) *(also in [`demo-videos/careersetu-cinematic-ad.mp4`](demo-videos/careersetu-cinematic-ad.mp4))*
 >
 > 📽️ **18-Slide Master Presentation Deck**:
-> - 🌐 **Live Web Presentation**: [**Open Interactive Deck (Full Screen)**](https://career-setu-hslc.vercel.app/presentation.html) *(or view via [GitHub HTMLPreview](https://htmlpreview.github.io/?https://github.com/SKYWALKERSID/Career-Setu/blob/main/docs/presentation-deck.html))*
-> - 💻 **GitHub Repository File**: [`docs/presentation-deck.html`](docs/presentation-deck.html)
+> - 🌐 **View on GitHub (Interactive Slides)**: [**Open 18-Slide Presentation Deck**](https://htmlpreview.github.io/?https://github.com/SKYWALKERSID/Career-Setu/blob/main/docs/presentation-deck.html)
+> - 💻 **GitHub Repository HTML File**: [`docs/presentation-deck.html`](docs/presentation-deck.html)
 > - 📄 **Download Widescreen PDF**: [`docs/CareerSetu_Presentation_Deck.pdf`](docs/CareerSetu_Presentation_Deck.pdf) (16:9 printable executive slides)
 
 ---
