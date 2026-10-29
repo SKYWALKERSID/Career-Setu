@@ -4,6 +4,8 @@
 
 ### AI-Powered Career Readiness & Employability Platform
 
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE) [![Next.js](https://img.shields.io/badge/Next.js-15-black)](https://nextjs.org/) [![TypeScript](https://img.shields.io/badge/TypeScript-5.7-blue)](https://www.typescriptlang.org/) [![Tailwind CSS](https://img.shields.io/badge/Tailwind-3.4-38B2AC)](https://tailwindcss.com/) [![Supabase](https://img.shields.io/badge/Supabase-PostgreSQL-emerald)](https://supabase.com/)
+
 **Move from academic profile → career target → skill gap → action plan → opportunity → interview readiness.**
 
 [Live Demo](https://career-setu-hslc.vercel.app) · [GitHub Repository](https://github.com/SKYALKERSID/Career-Setu)
@@ -80,7 +82,7 @@ Mock Interview
 Progress Tracking
 ```
 
-The PRD defines this as the central product journey, connecting career discovery with concrete preparation and measurable progress. fileciteturn12file0L62-L65
+The PRD defines this as the central product journey, connecting career discovery with concrete preparation and measurable progress.
 
 ---
 
@@ -100,7 +102,7 @@ Students create and maintain a structured profile containing:
 - preferred career domains
 - target careers
 
-The profile is editable and can be used to recalculate readiness. fileciteturn12file0L66-L74
+The profile is editable and can be used to recalculate readiness.
 
 ---
 
@@ -115,7 +117,7 @@ The intended output includes structured:
 - evidence
 - missing data
 
-AI outputs are validated before being persisted or shown in the UI. fileciteturn12file0L75-L79 fileciteturn12file1L95-L108
+AI outputs are validated before being persisted or shown in the UI.
 
 ---
 
@@ -132,7 +134,7 @@ CareerSetu uses an explainable **0–100 Career Readiness Score** rather than an
 | Communication / interview readiness | 15% |
 | Career alignment | 10% |
 
-The score is an **advisory indicator**, not a hiring decision. fileciteturn12file0L149-L150 fileciteturn12file0L155-L168
+The score is an **advisory indicator**, not a hiring decision.
 
 ---
 
@@ -147,7 +149,7 @@ Each recommendation is intended to provide:
 - missing skills
 - next steps
 
-The MVP target is the **top 3 career paths with fit explanation** where defensible catalog matches exist. fileciteturn12file0L80-L88
+The MVP target is the **top 3 career paths with fit explanation** where defensible catalog matches exist.
 
 ---
 
@@ -160,7 +162,7 @@ It is intended to produce:
 - ranked skill gaps
 - suggested learning actions
 
-This connects career recommendations to practical preparation rather than stopping at a recommendation. fileciteturn12file0L93-L98
+This connects career recommendations to practical preparation rather than stopping at a recommendation.
 
 ---
 
@@ -172,7 +174,7 @@ The platform turns identified gaps into a structured 90-day action plan with wee
 - projects
 - interview preparation
 
-The roadmap is expected to contain measurable tasks and coherent sequencing. fileciteturn12file0L99-L104
+The roadmap is expected to contain measurable tasks and coherent sequencing.
 
 ---
 
@@ -180,7 +182,7 @@ The roadmap is expected to contain measurable tasks and coherent sequencing. 
 
 CareerSetu maps identified gaps to curated learning resources.
 
-The intended experience includes relevance and reasons for each recommendation, connecting learning directly to the student's identified needs. fileciteturn12file0L120-L125
+The intended experience includes relevance and reasons for each recommendation, connecting learning directly to the student's identified needs.
 
 ---
 
@@ -210,9 +212,9 @@ Hard filters can include:
 - experience
 - explicit eligibility where available
 
-Semantic ranking then considers skill overlap, career goals, interests, and roadmap alignment. fileciteturn12file1L119-L131
+Semantic ranking then considers skill overlap, career goals, interests, and roadmap alignment.
 
-The PRD also identifies government employment opportunities as a first-class destination in the product. fileciteturn12file0L141-L148
+The PRD also identifies government employment opportunities as a first-class destination in the product.
 
 ---
 
@@ -228,7 +230,7 @@ Parsed Resume + Target Role
 Issues + Rewritten Bullets + Missing Evidence
 ```
 
-The product requirement is explicit that improved bullets must **not invent facts**. fileciteturn12file1L99-L110 fileciteturn12file0L112-L115
+The product requirement is explicit that improved bullets must **not invent facts**.
 
 The broader Resume Copilot workflow is intended to keep the resume grounded in source information while producing actionable career-specific improvements.
 
@@ -246,7 +248,7 @@ It is designed to:
 - return rubric-based feedback
 - continue the interview with the next question
 
-The technical prompt architecture uses target role, difficulty, and prior answers as inputs. fileciteturn12file0L116-L119 fileciteturn12file1L105-L110
+The technical prompt architecture uses target role, difficulty, and prior answers as inputs.
 
 ---
 
@@ -254,7 +256,7 @@ The technical prompt architecture uses target role, difficulty, and prior answer
 
 Progress Tracking connects roadmap completion with readiness and score trends.
 
-Students can mark roadmap tasks complete and review progress over time. fileciteturn12file0L126-L129
+Students can mark roadmap tasks complete and review progress over time.
 
 ---
 
@@ -269,7 +271,7 @@ The PRD identifies use cases including:
 - intervention metrics
 - placement / counselling support
 
-The admin dashboard is a P1 feature in the MVP prioritization and is intended for demo/admin use. fileciteturn12file0L130-L133
+The admin dashboard is a P1 feature in the MVP prioritization and is intended for demo/admin use.
 
 ---
 
@@ -283,7 +285,7 @@ The PRD highlights five differentiating principles:
 2. Evidence-backed recommendations tied to the student profile.
 3. Government employment opportunities as a first-class destination.
 4. A 90-day action plan that converts recommendations into tasks.
-5. One continuous journey from profile to mock interview. fileciteturn12file0L141-L148
+5. One continuous journey from profile to mock interview.
 
 This creates a connected flow:
 
@@ -315,17 +317,17 @@ CareerSetu's technical design intentionally keeps AI structured and controllable
 
 ## Structured Outputs
 
-Every AI feature feeding the UI should request JSON matching a strict schema and should be validated with Zod before persistence or display. Malformed responses are rejected and can be repaired once through a repair prompt. fileciteturn12file1L95-L98
+Every AI feature feeding the UI should request JSON matching a strict schema and should be validated with Zod before persistence or display. Malformed responses are rejected and can be repaired once through a repair prompt.
 
 ## Retrieval-First Design
 
 Factual catalogs should come from application-controlled records rather than being invented by the model.
 
-Career role requirements, course metadata, and opportunities should be retrieved from controlled application data. The model interprets and ranks retrieved records; it does not create official eligibility facts from memory. fileciteturn12file1L111-L114
+Career role requirements, course metadata, and opportunities should be retrieved from controlled application data. The model interprets and ranks retrieved records; it does not create official eligibility facts from memory.
 
 ## AI as Interpretation, Not Authority
 
-AI is designed to support decisions and provide explanations. Official sources remain authoritative for eligibility and real-world opportunity information. fileciteturn12file0L38-L43
+AI is designed to support decisions and provide explanations. Official sources remain authoritative for eligibility and real-world opportunity information.
 
 ---
 
@@ -333,7 +335,7 @@ AI is designed to support decisions and provide explanations. Official sources r
 
 CareerSetu follows a **modular monolith** approach using managed infrastructure and structured AI outputs.
 
-The engineering principle is to maximize judging reliability and visible functionality while avoiding unnecessary microservices or custom model training. fileciteturn12file1L5-L8
+The engineering principle is to maximize judging reliability and visible functionality while avoiding unnecessary microservices or custom model training.
 
 ### High-Level Architecture
 
@@ -353,7 +355,7 @@ Search / AI Gateway
 LLM Provider
 ```
 
-The AI Gateway centralizes prompt templates, model calls, retries, JSON-schema validation, and safety rules. fileciteturn12file1L48-L65
+The AI Gateway centralizes prompt templates, model calls, retries, JSON-schema validation, and safety rules.
 
 ---
 
@@ -373,7 +375,7 @@ The AI Gateway centralizes prompt templates, model calls, retries, JSON-schema v
 | Telemetry | Sentry + lightweight event logging |
 | Deployment | Vercel + Supabase |
 
-These choices come directly from the TRD's recommended stack. fileciteturn12file1L16-L41 fileciteturn12file1L43-L47
+These choices come directly from the TRD's recommended stack.
 
 ---
 
@@ -391,8 +393,6 @@ The platform is organized into domain-oriented services:
 | Interview Service | Question generation, answer capture, scoring, feedback |
 | AI Gateway | Prompt templates, model calls, retries, schema validation, safety |
 | Data layer | Postgres, storage, vector embeddings, audit metadata |
-
-fileciteturn12file1L51-L65
 
 ---
 
@@ -431,8 +431,6 @@ Important relationships include:
 - interviews → student + role
 - AI runs → feature-level AI telemetry
 
-fileciteturn12file1L66-L76 fileciteturn12file1L81-L94
-
 ---
 
 # API Surface
@@ -453,7 +451,7 @@ The technical design defines the following protected product actions:
 | POST | `/api/interview/respond` | Score answer and generate next question |
 | GET | `/api/dashboard` | Return student progress data |
 
-Every protected action should apply server-side authorization, and provider API keys must never reach the client. fileciteturn12file1L132-L146
+Every protected action should apply server-side authorization, and provider API keys must never reach the client.
 
 ---
 
@@ -475,9 +473,7 @@ CareerSetu is designed to:
 - avoid sensitive demographic attributes in recommendation scores
 - provide account/data deletion workflow in the technical backlog
 
-fileciteturn12file1L147-L160
-
-The product also requires unauthorized access to another student's data to fail. fileciteturn12file1L224-L234
+The product also requires unauthorized access to another student's data to fail.
 
 ---
 
@@ -492,8 +488,6 @@ CareerSetu's AI layer follows several explicit trust requirements:
 - Do not use sensitive personal attributes for career ranking.
 - Provide a "Why am I seeing this?" explanation for recommendations.
 - Allow users to correct profile data and regenerate outputs.
-
-fileciteturn12file0L173-L180
 
 ---
 
@@ -510,9 +504,7 @@ The TRD explicitly designs for third-party failure and judging reliability.
 | Resume parsing fails | Manual profile input + actionable error |
 | Internet degradation | Core dashboard, sample profiles, and precomputed demo outputs |
 
-fileciteturn12file1L161-L171
-
-The architecture also keeps provider choice swappable behind the AI Gateway rather than tightly coupling the application to one model or one opportunity source. fileciteturn12file1L278-L290
+The architecture also keeps provider choice swappable behind the AI Gateway rather than tightly coupling the application to one model or one opportunity source.
 
 ---
 
@@ -529,8 +521,6 @@ The hackathon MVP targets:
 | Accessibility | Keyboard-navigable primary flows, readable contrast, clear form labels |
 | Responsive support | Desktop-first for judging + usable mobile layout |
 
-fileciteturn12file1L172-L181
-
 ---
 
 # Frontend Information Architecture
@@ -546,8 +536,6 @@ The hackathon MVP targets:
 | `/interview` | Mock interview workspace |
 | `/progress` | Roadmap tasks, score trend, achievements |
 | `/admin` | Demo-only aggregate dashboard |
-
-fileciteturn12file1L182-L198
 
 ---
 
@@ -590,8 +578,6 @@ The technical plan uses multiple layers of verification:
 - seeded profile
 - controlled failure scenarios
 
-fileciteturn12file1L224-L234
-
 ---
 
 # Seed Dataset
@@ -604,8 +590,6 @@ The hackathon dataset is planned around:
 - **10–20 scholarships / government schemes** as a future or P1 module.
 - **3–5 prepared demo student personas** representing different branches and goals.
 
-fileciteturn12file1L235-L241
-
 ---
 
 # Deployment & Environments
@@ -616,8 +600,6 @@ The hackathon dataset is planned around:
 | Preview | Vercel preview deployment with masked test data |
 | Demo | Dedicated Vercel production project, stable seed dataset, backup AI responses |
 | Secrets | Vercel / Supabase secret storage; never commit keys |
-
-fileciteturn12file1L242-L248
 
 ---
 
@@ -638,7 +620,13 @@ cd Career-Setu
 npm install
 ```
 
-Create `.env.local` using the environment variables required by the application. **Never commit secrets.**
+Copy the environment template and fill in your Supabase and AI provider credentials:
+
+```bash
+cp .env.example .env.local
+```
+
+Configure your API keys in `.env.local` (Groq / Gemini and Supabase). **Never commit secrets.**
 
 Start the development server:
 
@@ -664,7 +652,7 @@ The TRD explicitly recommends a vertical-slice workflow using Codex + Antigravit
 - **Antigravity:** UI exploration, page composition, visual polish, interaction states, responsive layout, and front-end iteration.
 - **Human review:** product decisions, data realism, API permissions, AI output quality, demo script, and final QA.
 
-The guiding rule is to maintain one source of truth for requirements, build small vertical slices, test them, and only then move on. fileciteturn12file1L199-L208
+The guiding rule is to maintain one source of truth for requirements, build small vertical slices, test them, and only then move on.
 
 ---
 
@@ -682,8 +670,6 @@ The project plan specifies this implementation sequence:
 8. Add mock interview.
 9. Polish UI, loading/error/empty states, and demo persona.
 10. Freeze features and rehearse the complete demo three times.
-
-fileciteturn12file1L209-L219
 
 ---
 
@@ -713,8 +699,6 @@ The PRD organizes features into three priority levels.
 
 - Hindi Voice Interaction
 
-fileciteturn12file0L66-L88 fileciteturn12file0L93-L139
-
 ---
 
 # Success Metrics for the MVP
@@ -730,8 +714,6 @@ The PRD defines these demo-oriented targets:
 | Opportunity relevance | ≥ 70% of top-5 opportunities judged relevant in manual test |
 | Demo reliability | No P0 failure in three consecutive full demo runs |
 
-fileciteturn12file0L181-L188
-
 ---
 
 # Technical Risks & Mitigations
@@ -744,8 +726,6 @@ The PRD defines these demo-oriented targets:
 | Live API failure | Medium | High | Seeded dataset, graceful fallbacks, precomputed critical demo responses |
 | Poor recommendation quality | Medium | High | Curated role taxonomy, explicit scoring, human review |
 | Agent-generated regressions | Medium | Medium | Small commits, automated tests, review after every vertical slice |
-
-fileciteturn12file1L249-L277
 
 ---
 
@@ -764,8 +744,6 @@ The MVP is considered complete when:
 - The application remains demoable using seeded data if an external service fails.
 - The complete demo can be executed in under 6 minutes without changing code.
 
-fileciteturn12file1L278-L288
-
 ---
 
 # Hackathon Demo Flow
@@ -781,8 +759,6 @@ The PRD's recommended demo script is:
 7. Run a short mock interview and show its feedback report.
 8. Finish with an impact dashboard showing readiness, interventions, and opportunities unlocked.
 
-fileciteturn12file0L193-L201
-
 ---
 
 # Future Scope
@@ -796,21 +772,19 @@ The PRD identifies the following future directions:
 - employer-side matching and apprenticeship workflows
 - longitudinal outcomes from skill completion through application, interview, and placement
 
-fileciteturn12file0L202-L208
-
 ---
 
 # Project Scope & Disclaimer
 
-MP CareerSetu is specified as a **hackathon MVP**, not a production government deployment. Real-world data integrations and eligibility rules must be verified before operational use. fileciteturn12file0L209-L210
+MP CareerSetu is specified as a **hackathon MVP**, not a production government deployment. Real-world data integrations and eligibility rules must be verified before operational use.
 
-CareerSetu is an advisory career-development platform. Its readiness scores and AI-generated guidance are not hiring decisions, employment guarantees, or authoritative eligibility determinations. Official sources remain authoritative where applicable. fileciteturn12file0L38-L43 fileciteturn12file0L168-L168
+CareerSetu is an advisory career-development platform. Its readiness scores and AI-generated guidance are not hiring decisions, employment guarantees, or authoritative eligibility determinations. Official sources remain authoritative where applicable.
 
 ---
 
 # License
 
-Add the repository's actual license here when one is intentionally selected. Do not claim an open-source license unless the repository has been licensed accordingly.
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
 ---
 
