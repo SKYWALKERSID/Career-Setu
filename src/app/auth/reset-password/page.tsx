@@ -295,7 +295,7 @@ export default function ResetPasswordPage() {
             <ResetPasswordForm />
           </Suspense>
         </div>
-        <p className="text-center text-[11px] text-[#7789a5]">Skilled youth · Stronger Madhya Pradesh</p>
+        <p className="text-center text-[11px] text-[#7789a5]">Skilled youth · Brighter future</p>
       </section>
       <AuthVisualPanel />
     </main>

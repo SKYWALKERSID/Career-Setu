@@ -1,4 +1,4 @@
-# MP CareerSetu Stabilization Plan
+# CareerSetu Stabilization Plan
 
 Updated: 2026-09-30
 

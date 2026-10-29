@@ -341,7 +341,7 @@ export default function SettingsPage() {
                         <Input
                           value={formData.location}
                           onChange={(e) => setFormData({ ...formData, location: e.target.value })}
-                          placeholder="e.g. Bhopal, MP"
+                          placeholder="e.g. Bhopal, India"
                           className="h-10 text-xs"
                           required
                         />

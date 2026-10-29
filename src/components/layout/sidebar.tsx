@@ -37,10 +37,10 @@ export function Sidebar() {
       {/* Brand Header */}
       <div className="h-[62px] px-4 border-b border-[#e8f0f7] flex items-center gap-2.5">
         <div className="h-8 w-8 rounded-full bg-[#2f7d3d] flex items-center justify-center text-white font-bold text-xs shadow-sm">
-          MP
+          CS
         </div>
         <div>
-          <h1 className="font-bold text-[#10295d] text-base leading-tight">MP CareerSetu</h1>
+          <h1 className="font-bold text-[#10295d] text-base leading-tight">CareerSetu</h1>
           <p className="text-xs text-slate-500 font-medium">Student platform</p>
         </div>
       </div>
@@ -80,10 +80,10 @@ export function Sidebar() {
       <div className="p-3 border-t border-slate-100 bg-[#f5f9ff] m-2.5 rounded-md border border-slate-200">
         <div className="flex items-center gap-2 mb-1">
           <Award className="h-4 w-4 text-emerald-600 shrink-0" />
-          <span className="text-xs font-semibold text-slate-900">Skilled Youth MP</span>
+          <span className="text-xs font-semibold text-slate-900">Career Readiness</span>
         </div>
         <p className="text-xs text-slate-500 leading-normal">
-          Stronger Madhya Pradesh. More opportunities, brighter futures.
+          Building skills, unlocking real opportunities, and shaping brighter futures.
         </p>
       </div>
     </aside>

@@ -47,7 +47,7 @@ export async function runAIInfrastructureTest() {
   const aiResult = await provider.generateStructuredOutput<AIInfrastructureTestResult>(
     formattedPrompt,
     AIInfrastructureTestSchema,
-    'System: You are a structured JSON AI model for MP CareerSetu.'
+    'System: You are a structured JSON AI model for CareerSetu.'
   );
 
   const latencyMs = Date.now() - startTime;

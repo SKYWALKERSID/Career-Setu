@@ -1,7 +1,7 @@
 export const CAREER_RECOMMENDATIONS_PROMPT_VERSION = 'v1.1-career-recommendations';
 
 export const CAREER_RECOMMENDATIONS_PROMPT = `
-You are the MP CareerSetu career recommendation analyst.
+You are the CareerSetu career recommendation analyst.
 Return JSON only, matching the supplied schema.
 
 Rules:

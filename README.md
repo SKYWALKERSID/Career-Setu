@@ -1,10 +1,10 @@
 <div align="center">
 
-# MP CareerSetu 🚀
+# CareerSetu 🚀
 
-**Bridging Higher Education to Meaningful Careers Across Madhya Pradesh**
+**Bridging Higher Education to Meaningful Careers**
 
-An AI-driven career guidance, skill readiness, and placement enablement platform built for students across universities, colleges, and polytechnics in MP.
+An AI-driven career guidance, skill readiness, and placement enablement platform built for students across universities, colleges, and polytechnics.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Next.js 15](https://img.shields.io/badge/Next.js-15.1-black?logo=next.js)](https://nextjs.org/)
@@ -18,9 +18,9 @@ An AI-driven career guidance, skill readiness, and placement enablement platform
 
 ---
 
-## 💡 Why MP CareerSetu?
+## 💡 Why CareerSetu?
 
-Most college students in Tier-2 and Tier-3 institutions across Madhya Pradesh face a common barrier: **the gap between what is taught in academic syllabi and what modern employers or state public sector exams demand.**
+Most college students in Tier-2 and Tier-3 institutions face a common barrier: **the gap between what is taught in academic syllabi and what modern employers demand.**
 
 Without access to personalized career coaching or placement cells, students frequently don't know:
 - Which career trajectories match their degree, branch, and current semester.
@@ -29,7 +29,7 @@ Without access to personalized career coaching or placement cells, students freq
 - How to draft an ATS-friendly, evidence-backed resume without exaggerating facts.
 - How to practice technical and behavioral interviews with real-time feedback.
 
-**MP CareerSetu** addresses this challenge with a unified platform that transforms a student's profile into an **actionable, evidence-backed 90-day readiness roadmap**.
+**CareerSetu** addresses this challenge with a unified platform that transforms a student's profile into an **actionable, evidence-backed 90-day readiness roadmap**.
 
 ---
 
@@ -38,7 +38,7 @@ Without access to personalized career coaching or placement cells, students freq
 ### 1. 🎓 Degree-Aware Academic Profiling
 - Built on a comprehensive academic taxonomy covering UGC, AICTE, and state university degrees (**B.Tech, BCA, B.Sc, B.Com, MCA, Polytechnic Diplomas, and more**).
 - Dynamic semester progression awareness (2-year to 5-year degrees).
-- District-level location preferences across all 55+ districts in Madhya Pradesh.
+- Granular location preferences and regional placement matching.
 
 ### 2. 📊 Explainable Career Readiness Score (0–100)
 Rather than a black-box percentage, the platform evaluates readiness across six transparent, weighted dimensions:
@@ -61,8 +61,8 @@ Rather than a black-box percentage, the platform evaluates readiness across six 
   - **Weeks 9–12**: Interview preparation, system design/problem solving, and application prep.
 - Interactive task tracking with completion progress synced directly to your readiness score.
 
-### 5. 💼 Opportunity Matching & State Initiatives
-- Aggregates internships, entry-level corporate openings, and Madhya Pradesh state public initiatives.
+### 5. 💼 Opportunity Matching & Career Initiatives
+- Aggregates internships, entry-level corporate openings, and public-sector initiatives.
 - Provides transparent match breakdowns explaining *why* an opportunity fits your profile.
 - Hard filters for district location, minimum eligibility, degree level, and semester.
 
@@ -126,7 +126,7 @@ Rather than a black-box percentage, the platform evaluates readiness across six 
 |---|---|
 | **Framework** | [Next.js 15](https://nextjs.org/) (App Router, Server Actions, Route Handlers) |
 | **Language** | [TypeScript 5.7](https://www.typescriptlang.org/) |
-| **Styling** | [Tailwind CSS 3.4](https://tailwindcss.com/) with custom MP Government theme palette |
+| **Styling** | [Tailwind CSS 3.4](https://tailwindcss.com/) with custom civic-tech theme palette |
 | **UI Components** | [shadcn/ui](https://ui.shadcn.com/) primitives + [Lucide Icons](https://lucide.dev/) |
 | **Database & Auth** | [Supabase](https://supabase.com/) (PostgreSQL 15, Row Level Security, Auth, Storage) |
 | **AI Providers** | [Groq](https://groq.com/) (`openai/gpt-oss-120b`) & [Google Gemini API](https://ai.google.dev/) (`gemini-2.0-flash`) |
@@ -292,8 +292,8 @@ Distributed under the **MIT License**. See [`LICENSE`](LICENSE) for complete det
 
 <div align="center">
 
-Built with ❤️ for the students of Madhya Pradesh.
+Built with ❤️ for ambitious students everywhere.
 
-[**Launch MP CareerSetu**](https://career-setu-hslc.vercel.app)
+[**Launch CareerSetu**](https://career-setu-hslc.vercel.app)
 
 </div>

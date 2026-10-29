@@ -2,8 +2,8 @@ import type { Metadata } from 'next';
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: 'MP CareerSetu — AI-Powered Career Readiness & Employability Platform',
-  description: 'Personalized career guidance, skill gap analysis, roadmaps, and opportunities for Madhya Pradesh students.',
+  title: 'CareerSetu — AI-Powered Career Readiness & Employability Platform',
+  description: 'Personalized career guidance, skill gap analysis, roadmaps, and opportunities for college students.',
 };
 
 export default function RootLayout({

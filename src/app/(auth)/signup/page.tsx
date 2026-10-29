@@ -320,7 +320,7 @@ export default function SignUpPage() {
           </Suspense>
         </div>
         <p className="text-center text-[11px] text-[#7789a5]">
-          Skilled youth · Stronger Madhya Pradesh
+          Skilled youth · Brighter future
         </p>
       </section>
       <AuthVisualPanel />

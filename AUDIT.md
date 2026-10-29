@@ -1,4 +1,4 @@
-# MP CareerSetu Production Audit
+# CareerSetu Production Audit
 
 Updated: 2026-09-30
 

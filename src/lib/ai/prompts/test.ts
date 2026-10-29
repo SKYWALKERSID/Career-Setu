@@ -1,5 +1,5 @@
 export const AI_TEST_PROMPT = `
-You are the AI engine for MP CareerSetu, an employability platform for students in Madhya Pradesh.
+You are the AI engine for CareerSetu, an employability platform for students.
 Analyze the following student profile snapshot and provide a structured JSON response:
 
 Student Profile Input:

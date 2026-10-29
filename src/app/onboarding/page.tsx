@@ -38,7 +38,7 @@ const AVAILABLE_DOMAIN_INTERESTS = [
   'Business & Entrepreneurship',
 ];
 
-const MP_DISTRICTS = [
+const PREFERRED_LOCATIONS = [
   'Bhopal',
   'Indore',
   'Gwalior',
@@ -59,8 +59,8 @@ const MP_DISTRICTS = [
   'Damoh',
   'Khandwa',
   'Khargone',
-  'Other MP District',
-  'Outside MP',
+  'Other District',
+  'Remote / Anywhere',
 ];
 
 function formatSemester(value: number) {
@@ -225,7 +225,7 @@ export default function OnboardingPage() {
     }
 
     if (!formData.location.trim()) {
-      errors.location = 'Please select your preferred MP district or location.';
+      errors.location = 'Please select your preferred district or location.';
     }
 
     setFieldErrors(errors);
@@ -339,10 +339,10 @@ export default function OnboardingPage() {
         <section className="flex flex-col justify-center px-8 py-12 sm:px-16 lg:px-20">
           <div className="flex items-center gap-3">
             <span className="flex h-9 w-9 items-center justify-center rounded-full bg-[#2f7d3d] text-[10px] font-bold text-white">
-              MP
+              CS
             </span>
             <span>
-              <strong className="block text-[15px] text-[#10295d]">MP CareerSetu</strong>
+              <strong className="block text-[15px] text-[#10295d]">CareerSetu</strong>
             </span>
           </div>
           <div className="mt-12 max-w-[440px]">
@@ -365,7 +365,7 @@ export default function OnboardingPage() {
                 'Personalized recommendations',
                 'Access to courses & opportunities',
                 'Tools for career growth',
-                'Be a part of a stronger Madhya Pradesh',
+                'Be a part of a stronger future',
               ].map((item) => (
                 <p key={item} className="flex items-center gap-3 text-sm text-[#536987]">
                   <CheckCircle className="h-5 w-5 shrink-0 fill-[#3f9b54] text-white" />
@@ -435,7 +435,7 @@ export default function OnboardingPage() {
   if (!formData.degreeId || (formData.degreeId === 'other' && !formData.degreeOther.trim())) step1Missing.push('Degree Course');
   if (!formData.branchId || (formData.branchId === 'other' && !formData.branchOther.trim())) step1Missing.push('Branch / Discipline');
   if (!formData.semester || formData.semester < 1 || formData.semester > maxSemesters) step1Missing.push('Current Semester');
-  if (!formData.location.trim()) step1Missing.push('Preferred MP District / Location');
+  if (!formData.location.trim()) step1Missing.push('Preferred District / Location');
 
   const step3Missing: string[] = [];
   if (formData.interests.length === 0) step3Missing.push('At least 1 Domain Interest');
@@ -448,11 +448,11 @@ export default function OnboardingPage() {
         <div className="flex justify-between items-center border-b border-[#dce7f2] pb-4">
           <div className="flex items-center gap-3">
             <div className="h-8 w-8 rounded-full bg-[#2f7d3d] text-white font-bold flex items-center justify-center text-sm shadow-sm">
-              MP
+              CS
             </div>
             <div>
-              <span className="font-bold text-[#10295d] text-base block leading-none">MP CareerSetu</span>
-              <span className="text-[10px] text-slate-500 font-medium">Government Employability Readiness Portal</span>
+              <span className="font-bold text-[#10295d] text-base block leading-none">CareerSetu</span>
+              <span className="text-[10px] text-slate-500 font-medium">Employability Readiness & Placement Portal</span>
             </div>
           </div>
           <div className="text-right">
@@ -510,7 +510,7 @@ export default function OnboardingPage() {
                 <div>
                   <span className="font-semibold">How to fill this step:</span> Select your{' '}
                   <strong>Degree Course</strong> first to unlock matching <strong>Branches</strong>, then choose your{' '}
-                  <strong>Current Semester</strong> and <strong>Preferred MP District</strong>.
+                  <strong>Current Semester</strong> and <strong>Preferred District</strong>.
                 </div>
               </div>
 
@@ -750,7 +750,7 @@ export default function OnboardingPage() {
                 </FormField>
 
                 <FormField
-                  label="Preferred MP Location"
+                  label="Preferred Location"
                   required
                   error={fieldErrors.location}
                   hint="Where you prefer internships or jobs."
@@ -764,9 +764,9 @@ export default function OnboardingPage() {
                     className={fieldErrors.location ? 'border-red-400 focus:border-red-500' : ''}
                   >
                     <option value="" disabled>
-                      Select MP district...
+                      Select district / location...
                     </option>
-                    {MP_DISTRICTS.map((loc) => (
+                    {PREFERRED_LOCATIONS.map((loc) => (
                       <option key={loc} value={loc}>
                         {loc}
                       </option>

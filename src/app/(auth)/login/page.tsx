@@ -192,7 +192,7 @@ function LoginForm() {
         Welcome back
       </p>
       <h2 className="mt-3 text-3xl font-extrabold tracking-[-0.02em] text-[#10295d]">
-        Sign in to MP CareerSetu
+        Sign in to CareerSetu
       </h2>
       <p className="mt-2 text-sm text-[#536987]">
         Sign in to continue your career journey.
@@ -338,7 +338,7 @@ export default function LoginPage() {
           </Suspense>
         </div>
         <p className="text-center text-[11px] text-[#7789a5]">
-          Skilled youth · Stronger Madhya Pradesh
+          Skilled youth · Brighter future
         </p>
       </section>
       <AuthVisualPanel />

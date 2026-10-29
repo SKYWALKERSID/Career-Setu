@@ -3,7 +3,7 @@ import { StudentProfileSchema } from './validation';
 
 const baseProfile = {
   name: 'Test Student',
-  location: 'Bhopal, MP',
+  location: 'Bhopal, India',
   college: 'Test College',
   course: 'B.Tech',
   branch: 'Computer Science',

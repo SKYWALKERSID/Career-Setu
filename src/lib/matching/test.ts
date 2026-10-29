@@ -3,7 +3,7 @@ import { calculateOpportunityMatch, isOpportunityExpired, rankOpportunityMatches
 import type { OpportunityCatalogItem } from './types';
 
 const skill = (id: string, category = 'Technology') => ({ id, name: id, category });
-const opportunity = (overrides: Partial<OpportunityCatalogItem> = {}): OpportunityCatalogItem => ({ id: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', title: 'Catalog opportunity', organization: 'Catalog organization', type: 'internship', location: 'Bhopal, MP', eligibility: 'Published eligibility available', status: 'active', url: 'https://example.com/apply', source: 'Catalog', source_url: 'https://example.com', is_verified: true, skills: [skill('11111111-1111-4111-8111-111111111111')], ...overrides });
+const opportunity = (overrides: Partial<OpportunityCatalogItem> = {}): OpportunityCatalogItem => ({ id: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', title: 'Catalog opportunity', organization: 'Catalog organization', type: 'internship', location: 'Bhopal, India', eligibility: 'Published eligibility available', status: 'active', url: 'https://example.com/apply', source: 'Catalog', source_url: 'https://example.com', is_verified: true, skills: [skill('11111111-1111-4111-8111-111111111111')], ...overrides });
 const student = { skills: [{ skill_id: '11111111-1111-4111-8111-111111111111', proficiency: 'advanced' as const }], targetRoleSkillIds: new Set(['11111111-1111-4111-8111-111111111111']), interests: ['Technology'] };
 
 const matched = calculateOpportunityMatch(opportunity(), student, new Date('2026-09-09T00:00:00Z'))!;

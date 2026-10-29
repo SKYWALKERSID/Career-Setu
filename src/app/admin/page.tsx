@@ -94,13 +94,13 @@ export default function AdminPage() {
             <div className="flex flex-wrap items-end justify-between gap-6">
               <div className="max-w-2xl">
                 <p className="text-[10px] font-extrabold uppercase tracking-[0.24em] text-[#1769d4]">
-                  GOVERNMENT ADMINISTRATION · OVERVIEW
+                  ADMINISTRATION · OVERVIEW
                 </p>
                 <h1 className="mt-2 text-3xl font-extrabold tracking-[-0.03em] text-[#10285a] sm:text-4xl">
-                  MP CareerSetu System Analytics
+                  CareerSetu System Analytics
                 </h1>
                 <p className="mt-2 text-sm leading-6 text-[#526d89]">
-                  Aggregate platform usage, student readiness metrics, catalog volume, and AI engine telemetry for state-wide program management.
+                  Aggregate platform usage, student readiness metrics, catalog volume, and AI engine telemetry for institutional program management.
                 </p>
               </div>
               <div className="flex items-center gap-3">

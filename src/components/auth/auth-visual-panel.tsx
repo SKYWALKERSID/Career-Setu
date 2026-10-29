@@ -11,10 +11,10 @@ export function AuthVisualPanel() {
       <div className="relative flex h-full min-h-screen flex-col justify-between p-12 text-[#10295d]">
         <Link href="/" className="flex items-center gap-3">
           <span className="flex h-9 w-9 items-center justify-center rounded-full bg-[#2f7d3d] text-[10px] font-bold text-white">
-            MP
+            CS
           </span>
           <span>
-            <strong className="block text-[15px] leading-tight">MP CareerSetu</strong>
+            <strong className="block text-[15px] leading-tight">CareerSetu</strong>
             <small className="block text-[10px] text-slate-600">
               Student career platform
             </small>
@@ -25,10 +25,10 @@ export function AuthVisualPanel() {
             Learn. Upskill. Explore. Grow.
           </p>
           <h1 className="text-5xl font-extrabold leading-[1.03]">
-            Your Goals<br />Today.<br />A Stronger<br />Madhya Pradesh<br />Tomorrow.
+            Your Goals<br />Today.<br />A Stronger<br />Career<br />Tomorrow.
           </h1>
           <p className="mt-5 max-w-[380px] text-[16px] leading-6 text-[#536987]">
-            Personalized career guidance, skill development and real opportunities — all in one platform for MP&apos;s students.
+            Personalized career guidance, skill development and real opportunities — all in one platform for ambitious students.
           </p>
           <div className="mt-8 grid grid-cols-4 gap-3 text-center text-[10px] font-semibold">
             <span>Personalized<br />Guidance</span>

@@ -1,4 +1,4 @@
-# MP CareerSetu — Development Status
+# CareerSetu — Development Status
 
 ## Phase 1: Foundation & Architecture Setup (COMPLETED & VERIFIED 🟢)
 
@@ -6,7 +6,7 @@
 - **Database Schema**: Created `supabase/migrations/01_initial_schema.sql` (19 tables, indexes, cascading triggers, RLS policies enforcing `student_profiles.user_id = auth.uid()`). Verified via direct SQL audit.
 - **Data Seeding**: Created `supabase/seed.ts` (60 normalized skills, 18 career roles, 25 courses, 15 realistic opportunities with `source_url`, `is_verified`, `application_deadline`).
 - **Design System**: Built custom primitive components in `src/components/ui/` (`Button`, `Card`, `Badge`, `Input`, `Select`, `Progress`, `Dialog`, `Tabs`, `PageHeader`, `Breadcrumb`, `EmptyState`, `LoadingState`, `ErrorState`, `FormField`).
-- **Layout System**: Implemented `Sidebar` and `TopNav` in `src/components/layout/` following official MP Government design reference pictures.
+- **Layout System**: Implemented `Sidebar` and `TopNav` in `src/components/layout/` following official Civic-Tech design reference pictures.
 - **Route Shells & Scaffolding**:
   - `/(landing)` — Public landing page (`src/app/page.tsx`)
   - `/(auth)/login` — Supabase Auth integrated login shell (`src/app/(auth)/login/page.tsx`)
@@ -262,7 +262,7 @@ Admin Dashboard is the last completed documented feature work item in the curren
 - Validation completed with exit code `0`: admin, admin-security, progress, course, opportunity, readiness, recommendation, roadmap, skill-gap, resume, and interview tests; TypeScript; lint; and production build.
 
 ### Final UI Reconstruction — Batch 1 (IMPLEMENTED)
-- Reconstructed the shared public visual shell using the approved references: compact MP CareerSetu branding, pale-blue/navy visual language, restrained borders, compact controls, and responsive landing composition.
+- Reconstructed the shared public visual shell using the approved references: compact CareerSetu branding, pale-blue/navy visual language, restrained borders, compact controls, and responsive landing composition.
 - Updated the authenticated sidebar and top navigation styling without changing the locked information architecture or admin-only visibility behavior.
 - Reconstructed the landing page with the approved hero, feature strip, live catalog counts, workflow steps, and reference imagery. Public metrics are sourced from `career_roles`, `courses`, and `opportunities`; no sample counts were retained.
 - Added `public/landing-reference.jpeg` from `SAMPLE PICTURES/LANDING PAGE.jpeg` for the landing hero visual treatment.
@@ -367,7 +367,7 @@ Quality, Security & Reliability is complete. Deployment/Demo and Final UI recons
 
 ## UI Reconstruction Batch 12 — Admin Dashboard (COMPLETED & VERIFIED 🟢)
 
-- Reconstructed `/admin` using the established MP CareerSetu Government design language (hero banner, KPI aggregate cards grid, career role demand list, platform catalog summary, student feature activity totals, and AI gateway telemetry).
+- Reconstructed `/admin` using the established CareerSetu Government design language (hero banner, KPI aggregate cards grid, career role demand list, platform catalog summary, student feature activity totals, and AI gateway telemetry).
 - Preserved all existing admin authorization rules (`isAdminRole`), server actions (`getAdminMetrics`), aggregate calculations (`calculateAdminMetrics`), and Supabase RLS security models (`05_admin_dashboard.sql`).
 - Maintained aggregate-only privacy constraints: zero student personal details, resume contents, or interview answers are exposed.
 - Enforced strict zero-fabrication guarantees: all KPI metrics (total students, average readiness, roadmap completion, opportunity matches, catalog counts, feature activity, AI runs/tokens) derive strictly from persisted backend queries.
