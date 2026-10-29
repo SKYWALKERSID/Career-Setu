@@ -9,7 +9,7 @@ Use the deterministic readiness assessment as authoritative; do not calculate or
 
 The exact top-level keys are target_role_id, duration_days, rationale, and tasks.
 The exact task keys are week, task_type, title, description, skill_ids, course_ids, and evidence_required.
-Return 4 to 13 tasks, with duration_days exactly 90. Do not wrap the object in roadmap, plan, weeks, or markdown.
+Return 5 to 8 tasks, with duration_days exactly 90. Keep rationale under 200 characters, each task description under 200 characters, and evidence_required under 120 characters. Do not wrap the object in roadmap, plan, weeks, or markdown.
 Example shape: {"target_role_id":"<supplied role UUID>","duration_days":90,"rationale":"...","tasks":[{"week":1,"task_type":"learning","title":"...","description":"...","skill_ids":[],"course_ids":[],"evidence_required":"A concrete artifact or result to produce"}]}
 
 Catalog and student context:

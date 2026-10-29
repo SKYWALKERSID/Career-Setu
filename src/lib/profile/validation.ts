@@ -1,21 +1,31 @@
 import { z } from 'zod';
 
 export const StudentProfileSchema = z.object({
-  name: z.string().min(2, 'Name must be at least 2 characters'),
-  location: z.string().min(2, 'Location is required'),
-  college: z.string().min(2, 'College name is required'),
-  course: z.string().min(1, 'Course degree is required'),
-  branch: z.string().min(1, 'Branch / discipline is required'),
-  degree_id: z.string().min(1, 'Please select a valid degree.'),
-  branch_id: z.string().min(1, 'Please select a valid branch.'),
+  name: z.string().min(2, 'Full name must be at least 2 characters.'),
+  location: z.string().min(2, 'Please select your preferred district or location.'),
+  college: z.string().min(2, 'College or university name is required (at least 2 characters).'),
+  course: z.string().min(1, 'Degree course is required.'),
+  branch: z.string().min(1, 'Branch or discipline is required.'),
+  degree_id: z.string().min(1, 'Please select a valid degree course.'),
+  branch_id: z.string().min(1, 'Please select a valid branch or discipline.'),
   specialization_id: z.string().min(1).optional().nullable(),
   degree_other: z.string().optional().nullable(),
   branch_other: z.string().optional().nullable(),
   specialization_other: z.string().optional().nullable(),
-  semester: z.number().min(1).max(10),
-  cgpa: z.number().finite().min(0.0).max(10.0).optional().nullable(),
+  semester: z
+    .number({ invalid_type_error: 'Please select your current semester.' })
+    .int('Semester must be a whole number.')
+    .min(1, 'Please select your current semester (1st to 10th).')
+    .max(10, 'Semester must be between 1st and 10th.'),
+  cgpa: z
+    .number({ invalid_type_error: 'CGPA must be a valid number between 0 and 10.' })
+    .finite('CGPA must be a valid number between 0 and 10.')
+    .min(0.0, 'CGPA cannot be negative (must be between 0 and 10).')
+    .max(10.0, 'CGPA cannot exceed 10.0.')
+    .optional()
+    .nullable(),
   interests: z.array(z.string()).default([]),
-  target_careers: z.array(z.string()).min(1, 'Select at least 1 target career role'),
+  target_careers: z.array(z.string()).min(1, 'Please select at least 1 target career role.'),
   skill_ids: z.array(z.string().uuid()).default([]),
 });
 

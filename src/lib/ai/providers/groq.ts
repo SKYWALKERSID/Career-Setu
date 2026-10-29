@@ -1,12 +1,18 @@
+import { createHash } from 'node:crypto';
 import { z } from 'zod';
 import { AIErrorCategory, AIProvider, AIResponse } from '../types';
 
-const RATE_LIMIT_COOLDOWN_MS = 3000;
+const RATE_LIMIT_COOLDOWN_MS = 1000;
 const MAX_TRANSIENT_RETRIES = 1;
-const MAX_RETRY_DELAY_MS = 1500;
-const REQUEST_TIMEOUT_MS = 30000;
+const MAX_RETRY_DELAY_MS = 1000;
+const REQUEST_TIMEOUT_MS = 18000;
+const FALLBACK_GROQ_MODELS = ['openai/gpt-oss-20b', 'qwen/qwen3.8-27b'];
 
 const rateLimitMap = new Map<string, number>();
+
+function promptKey(prefix: string, prompt: string): string {
+  return `${prefix}:${createHash('sha256').update(prompt).digest('hex').slice(0, 24)}`;
+}
 
 function checkRateLimit(featureKey: string): string | null {
   const now = Date.now();
@@ -32,32 +38,37 @@ export class GroqProvider implements AIProvider {
     error: string,
     errorCategory: AIErrorCategory,
     startTime: number,
-    tokensUsed?: number
+    tokensUsed?: number,
+    model = this.modelName
   ): AIResponse<T> {
     return {
       success: false,
       error,
       errorCategory,
       provider: this.name,
-      model: this.modelName,
+      model,
       latencyMs: Date.now() - startTime,
       tokensUsed,
     };
   }
 
-  private buildRequestBody(prompt: string, systemInstruction?: string): Record<string, unknown> {
+  private buildRequestBody(prompt: string, systemInstruction?: string, model = this.modelName): Record<string, unknown> {
+    const estimatedPromptTokens = Math.ceil((prompt.length + (systemInstruction?.length || 0)) / 3.2);
+    const maxCompletionTokens = Math.max(1024, Math.min(2600, 7400 - estimatedPromptTokens));
     return {
       messages: [
         ...(systemInstruction ? [{ role: 'system', content: systemInstruction }] : []),
         { role: 'user', content: prompt },
       ],
-      model: this.modelName,
+      model,
       temperature: 0.1,
+      max_completion_tokens: maxCompletionTokens,
+      ...(model.startsWith('openai/gpt-oss') ? { reasoning_effort: 'medium' } : {}),
       response_format: { type: 'json_object' },
     };
   }
 
-  private async request(body: Record<string, unknown>): Promise<Response> {
+  private async requestWithModel(body: Record<string, unknown>): Promise<Response> {
     const endpoint = 'https://api.groq.com/openai/v1/chat/completions';
 
     for (let attempt = 0; ; attempt += 1) {
@@ -86,6 +97,27 @@ export class GroqProvider implements AIProvider {
     }
   }
 
+  private async request(prompt: string, systemInstruction?: string, jsonMode = true): Promise<{ response: Response; modelUsed: string }> {
+    const candidates = [this.modelName, ...FALLBACK_GROQ_MODELS.filter((m) => m !== this.modelName)];
+    let lastResponse: Response | null = null;
+    let lastModel = this.modelName;
+
+    for (const candidateModel of candidates) {
+      lastModel = candidateModel;
+      const body = this.buildRequestBody(prompt, systemInstruction, candidateModel);
+      if (!jsonMode) {
+        delete body.response_format;
+      }
+      const response = await this.requestWithModel(body);
+      lastResponse = response;
+      if (response.ok || ![429, 500, 502, 503, 504].includes(response.status)) {
+        return { response, modelUsed: candidateModel };
+      }
+    }
+
+    return { response: lastResponse!, modelUsed: lastModel };
+  }
+
   async generateStructuredOutput<T>(
     prompt: string,
     schema: z.ZodSchema<T>,
@@ -99,17 +131,17 @@ export class GroqProvider implements AIProvider {
 
     // Throttle identical retries, while allowing a sequential interview turn or
     // another distinct product operation to make its own provider request.
-    const rateLimitError = checkRateLimit(`structured:${prompt.slice(0, 160)}`);
+    const rateLimitError = checkRateLimit(promptKey('structured', prompt));
     if (rateLimitError) return this.failure(rateLimitError, 'AI_RATE_LIMIT_ERROR', startTime);
 
     try {
-      const response = await this.request(this.buildRequestBody(prompt, systemInstruction));
+      const { response, modelUsed } = await this.request(prompt, systemInstruction, true);
       const responseBody = await response.text();
       let parsedResponse: { error?: { message?: string }; choices?: Array<{ message?: { content?: string | null } }>; usage?: { total_tokens?: number } } = {};
       try {
         parsedResponse = JSON.parse(responseBody);
       } catch {
-        return { ...this.failure(`Groq Provider Error (HTTP ${response.status}): Invalid provider response.`, 'AI_PARSE_ERROR', startTime), statusCode: response.status };
+        return { ...this.failure(`Groq Provider Error (HTTP ${response.status}): Invalid provider response.`, 'AI_PARSE_ERROR', startTime, undefined, modelUsed), statusCode: response.status };
       }
 
       const tokensUsed = parsedResponse.usage?.total_tokens;
@@ -122,11 +154,11 @@ export class GroqProvider implements AIProvider {
             : status >= 500
               ? 'AI_CAPACITY_ERROR'
               : 'AI_PROVIDER_ERROR';
-        return { ...this.failure(`Groq Provider Error (HTTP ${status}): ${parsedResponse.error?.message || 'Request failed.'}`, category, startTime, tokensUsed), statusCode: status };
+        return { ...this.failure(`Groq Provider Error (HTTP ${status}): ${parsedResponse.error?.message || 'Request failed.'}`, category, startTime, tokensUsed, modelUsed), statusCode: status };
       }
 
       const rawText = parsedResponse.choices?.[0]?.message?.content;
-      if (!rawText) return this.failure('Groq Provider returned an empty response.', 'AI_EMPTY_RESPONSE', startTime, tokensUsed);
+      if (!rawText) return this.failure('Groq Provider returned an empty response.', 'AI_EMPTY_RESPONSE', startTime, tokensUsed, modelUsed);
 
       const cleanedText = rawText.trim().replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/i, '').trim();
 
@@ -135,16 +167,16 @@ export class GroqProvider implements AIProvider {
         parsedJson = JSON.parse(cleanedText);
       } catch (error: unknown) {
         const message = error instanceof Error ? error.message : 'Unknown JSON parsing error';
-        return this.failure(`Malformed JSON response from Groq model: ${message}`, 'AI_PARSE_ERROR', startTime, tokensUsed);
+        return this.failure(`Malformed JSON response from Groq model: ${message}`, 'AI_PARSE_ERROR', startTime, tokensUsed, modelUsed);
       }
 
       const result = schema.safeParse(parsedJson);
       if (!result.success) {
         const message = result.error.errors.map((entry) => `${entry.path.join('.')}: ${entry.message}`).join(', ');
-        return this.failure(`Zod validation failed for model response: ${message}`, 'AI_SCHEMA_ERROR', startTime, tokensUsed);
+        return this.failure(`Zod validation failed for model response: ${message}`, 'AI_SCHEMA_ERROR', startTime, tokensUsed, modelUsed);
       }
 
-      return { success: true, data: result.data, provider: this.name, model: this.modelName, latencyMs: Date.now() - startTime, tokensUsed };
+      return { success: true, data: result.data, provider: this.name, model: modelUsed, latencyMs: Date.now() - startTime, tokensUsed };
     } catch (error: unknown) {
       if (error instanceof Error && error.name === 'AbortError') {
         return this.failure('Groq provider request timed out.', 'AI_TIMEOUT_ERROR', startTime);
@@ -159,19 +191,17 @@ export class GroqProvider implements AIProvider {
       return this.failure('AI provider not configured: GROQ_API_KEY is missing or invalid.', 'AI_CONFIG_ERROR', startTime);
     }
 
-    const rateLimitError = checkRateLimit(`text:${prompt.slice(0, 160)}`);
+    const rateLimitError = checkRateLimit(promptKey('text', prompt));
     if (rateLimitError) return this.failure(rateLimitError, 'AI_RATE_LIMIT_ERROR', startTime);
 
     try {
-      const body = this.buildRequestBody(prompt, systemInstruction);
-      delete body.response_format;
-      const response = await this.request(body);
+      const { response, modelUsed } = await this.request(prompt, systemInstruction, false);
       const responseBody = await response.text();
       let parsedResponse: { error?: { message?: string }; choices?: Array<{ message?: { content?: string | null } }>; usage?: { total_tokens?: number } } = {};
       try {
         parsedResponse = JSON.parse(responseBody);
       } catch {
-        return { ...this.failure(`Groq Provider Error (HTTP ${response.status}): Invalid provider response.`, 'AI_PARSE_ERROR', startTime), statusCode: response.status };
+        return { ...this.failure(`Groq Provider Error (HTTP ${response.status}): Invalid provider response.`, 'AI_PARSE_ERROR', startTime, undefined, modelUsed), statusCode: response.status };
       }
 
       const tokensUsed = parsedResponse.usage?.total_tokens;
@@ -184,12 +214,12 @@ export class GroqProvider implements AIProvider {
             : status >= 500
               ? 'AI_CAPACITY_ERROR'
               : 'AI_PROVIDER_ERROR';
-        return { ...this.failure(`Groq Provider Error (HTTP ${status}): ${parsedResponse.error?.message || 'Request failed.'}`, category, startTime, tokensUsed), statusCode: status };
+        return { ...this.failure(`Groq Provider Error (HTTP ${status}): ${parsedResponse.error?.message || 'Request failed.'}`, category, startTime, tokensUsed, modelUsed), statusCode: status };
       }
 
       const rawText = parsedResponse.choices?.[0]?.message?.content;
-      if (!rawText) return this.failure('Groq Provider returned an empty response.', 'AI_EMPTY_RESPONSE', startTime, tokensUsed);
-      return { success: true, data: rawText, provider: this.name, model: this.modelName, latencyMs: Date.now() - startTime, tokensUsed };
+      if (!rawText) return this.failure('Groq Provider returned an empty response.', 'AI_EMPTY_RESPONSE', startTime, tokensUsed, modelUsed);
+      return { success: true, data: rawText, provider: this.name, model: modelUsed, latencyMs: Date.now() - startTime, tokensUsed };
     } catch (error: unknown) {
       if (error instanceof Error && error.name === 'AbortError') {
         return this.failure('Groq provider request timed out.', 'AI_TIMEOUT_ERROR', startTime);

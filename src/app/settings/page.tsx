@@ -119,24 +119,70 @@ export default function SettingsPage() {
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (saving) return;
+
+    if (!formData.name.trim() || formData.name.trim().length < 2) {
+      setActiveTab('profile');
+      setMsg({ type: 'error', text: 'Please enter your full name (at least 2 characters) in Personal Info.' });
+      return;
+    }
+    if (!formData.location.trim()) {
+      setActiveTab('profile');
+      setMsg({ type: 'error', text: 'Please enter your location or preferred district in Personal Info.' });
+      return;
+    }
+    if (!formData.college.trim() || formData.college.trim().length < 2) {
+      setActiveTab('academic');
+      setMsg({ type: 'error', text: 'Please enter your college or institution name in Academic Foundation.' });
+      return;
+    }
+    if (!formData.degree_id || (formData.degree_id === 'other' && !formData.degree_other.trim())) {
+      setActiveTab('academic');
+      setMsg({ type: 'error', text: 'Please select a valid degree course in Academic Foundation.' });
+      return;
+    }
+    if (!formData.branch_id || (formData.branch_id === 'other' && !formData.branch_other.trim())) {
+      setActiveTab('academic');
+      setMsg({ type: 'error', text: 'Please select a branch or discipline in Academic Foundation.' });
+      return;
+    }
+    if (!formData.semester || formData.semester < 1 || formData.semester > 10) {
+      setActiveTab('academic');
+      setMsg({ type: 'error', text: 'Please select your current semester (1st to 10th) in Academic Foundation.' });
+      return;
+    }
+    if (formData.cgpa.trim()) {
+      const cgpaNum = Number(formData.cgpa);
+      if (!Number.isFinite(cgpaNum) || cgpaNum < 0 || cgpaNum > 10) {
+        setActiveTab('academic');
+        setMsg({ type: 'error', text: 'Aggregate CGPA must be between 0.00 and 10.00.' });
+        return;
+      }
+    }
+    if (formData.target_careers.length === 0) {
+      setActiveTab('careers');
+      setMsg({ type: 'error', text: 'Please select at least 1 target career role in Target Careers.' });
+      return;
+    }
+
     setSaving(true);
     setMsg({ type: '', text: '' });
 
     try {
       const res = await saveStudentProfile({
-        name: formData.name,
-        college: formData.college,
+        name: formData.name.trim(),
+        college: formData.college.trim(),
         course: formData.course,
         branch: formData.branch,
         degree_id: formData.degree_id,
         branch_id: formData.branch_id,
         specialization_id: formData.specialization_id || null,
-        degree_other: formData.degree_other || null,
-        branch_other: formData.branch_other || null,
-        specialization_other: formData.specialization_other || null,
+        degree_other: formData.degree_other?.trim() || null,
+        branch_other: formData.branch_other?.trim() || null,
+        specialization_other: formData.specialization_other?.trim() || null,
         semester: Number(formData.semester),
-                            cgpa: formData.cgpa.trim() ? Number(formData.cgpa) : null,
-        location: formData.location,
+        cgpa: formData.cgpa.trim() ? Number(formData.cgpa) : null,
+        location: formData.location.trim(),
         interests: formData.interests,
         target_careers: formData.target_careers,
         skill_ids: formData.skill_ids,
@@ -236,11 +282,10 @@ export default function SettingsPage() {
 
           {msg.text && (
             <div
-              className={`rounded border p-3.5 text-xs font-semibold shadow-sm ${
-                msg.type === 'success'
+              className={`rounded border p-3.5 text-xs font-semibold shadow-sm ${msg.type === 'success'
                   ? 'border-emerald-200 bg-emerald-50 text-emerald-800'
                   : 'border-red-200 bg-red-50 text-red-700'
-              }`}
+                }`}
             >
               {msg.text}
             </div>
@@ -259,11 +304,10 @@ export default function SettingsPage() {
                 key={id}
                 type="button"
                 onClick={() => setActiveTab(id)}
-                className={`flex items-center gap-2 border-b-2 px-2 py-3 transition-colors ${
-                  activeTab === id
+                className={`flex items-center gap-2 border-b-2 px-2 py-3 transition-colors ${activeTab === id
                     ? 'border-[#1769d4] font-bold text-[#1769d4]'
                     : 'border-transparent text-slate-500 hover:text-slate-800'
-                }`}
+                  }`}
               >
                 <TabIcon className="h-4 w-4" />
                 {label}
@@ -360,35 +404,36 @@ export default function SettingsPage() {
                       </div>
 
                       <div className="grid grid-cols-2 gap-3">
-                        <FormField label="Semester" required>
-                          <Select
-                            value={formData.semester}
-                            onChange={(e) => setFormData({ ...formData, semester: Number(e.target.value) })}
-                            className="h-10 text-xs"
-                          >
-                            {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((s) => (
-                              <option key={s} value={s}>
-                                Sem {s}
-                              </option>
-                            ))}
-                          </Select>
-                        </FormField>
+                          <FormField label="Current Semester" required hint="Select 1st to 10th semester">
+                            <Select
+                              aria-label="Current Semester"
+                              value={formData.semester || 0}
+                              onChange={(e) => setFormData({ ...formData, semester: Number(e.target.value) })}
+                              className="h-10 text-xs"
+                            >
+                              <option value={0}>Select semester...</option>
+                              {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((s) => (
+                                <option key={s} value={s}>
+                                  Semester {s} (Year {Math.ceil(s / 2)})
+                                </option>
+                              ))}
+                            </Select>
+                          </FormField>
 
-                        <FormField label="Aggregate CGPA">
-                          <Input
-                            type="number"
-                            step="0.01"
-                            min="0"
-                            max="10"
-                            value={formData.cgpa}
-                            onChange={(e) => setFormData({ ...formData, cgpa: e.target.value })}
-                            placeholder="e.g. 8.4"
-                            className="h-10 text-xs"
-                          />
-                          <p className="mt-1 text-xs text-slate-500">0-10 scale</p>
-                        </FormField>
+                            <FormField label="Aggregate CGPA" hint="0.00 - 10.00 scale">
+                              <Input
+                                type="number"
+                                step="0.01"
+                                min="0"
+                                max="10"
+                                value={formData.cgpa}
+                                onChange={(e) => setFormData({ ...formData, cgpa: e.target.value })}
+                                placeholder="e.g. 8.4"
+                                className="h-10 text-xs"
+                              />
+                            </FormField>
+                          </div>
                       </div>
-                    </div>
                   </Card>
                 )}
 
@@ -416,11 +461,10 @@ export default function SettingsPage() {
                             type="button"
                             key={sk.id}
                             onClick={() => toggleSkill(sk.id)}
-                            className={`rounded border px-3 py-1.5 text-xs font-semibold transition-all ${
-                              isSelected
+                            className={`rounded border px-3 py-1.5 text-xs font-semibold transition-all ${isSelected
                                 ? 'border-[#1769d4] bg-[#eaf3ff] text-[#1769d4]'
                                 : 'border-[#dce7f0] bg-white text-slate-700 hover:bg-slate-50'
-                            }`}
+                              }`}
                           >
                             {isSelected ? '✓ ' : '+ '}
                             {sk.name}
@@ -454,11 +498,10 @@ export default function SettingsPage() {
                           <div
                             key={role.id}
                             onClick={() => toggleTargetCareer(role.id)}
-                            className={`cursor-pointer rounded border p-3.5 transition-all ${
-                              isSelected
+                            className={`cursor-pointer rounded border p-3.5 transition-all ${isSelected
                                 ? 'border-[#1769d4] bg-[#f0f6ff]'
                                 : 'border-[#e4ebf3] bg-white hover:bg-[#f8fbfe]'
-                            }`}
+                              }`}
                           >
                             <div className="flex items-center justify-between">
                               <h3 className="text-lg sm:text-xl font-bold text-[#10285a]">{role.title}</h3>
@@ -492,11 +535,10 @@ export default function SettingsPage() {
                             type="button"
                             key={interest}
                             onClick={() => toggleInterest(interest)}
-                            className={`rounded-full border px-3.5 py-1.5 text-xs font-medium transition-all ${
-                              isSelected
+                            className={`rounded-full border px-3.5 py-1.5 text-xs font-medium transition-all ${isSelected
                                 ? 'border-[#1769d4] bg-[#1769d4] text-white shadow-sm'
                                 : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-50'
-                            }`}
+                              }`}
                           >
                             {isSelected ? '✓ ' : '+ '} {interest}
                           </button>

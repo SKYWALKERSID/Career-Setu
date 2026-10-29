@@ -33,26 +33,37 @@ export default function InterviewSetupPage() {
   const [error, setError] = useState('');
 
   useEffect(() => {
-    void getInterviewTargetRoles().then((result) => {
-      const available = result.success ? result.roles : [];
-      setRoles(available);
-      if (available[0]) setRole(available[0].id);
-      if (!result.success) setError(result.error || 'Target careers could not be loaded.');
-      setLoading(false);
-    });
+    void getInterviewTargetRoles()
+      .then((result) => {
+        const available = result.success ? result.roles : [];
+        setRoles(available);
+        if (available[0]) setRole(available[0].id);
+        if (!result.success) setError(result.error || 'Target careers could not be loaded.');
+      })
+      .catch(() => {
+        setError('Target careers could not be loaded.');
+      })
+      .finally(() => {
+        setLoading(false);
+      });
   }, []);
 
   async function submit() {
-    if (!role) return;
+    if (!role || busy) return;
     setBusy(true);
     setError('');
-    const result = await startInterview(role, difficulty);
-    if (result.success && result.interviewId) {
-      router.push(`/interview?session=${result.interviewId}`);
-    } else {
-      setError(result.error || 'Interview session could not be started.');
+    try {
+      const result = await startInterview(role, difficulty);
+      if (result.success && result.interviewId) {
+        router.push(`/interview?session=${result.interviewId}`);
+      } else {
+        setError(result.error || 'Interview session could not be started.');
+      }
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Interview session could not be started.');
+    } finally {
+      setBusy(false);
     }
-    setBusy(false);
   }
 
   const selectedRoleObj = roles.find((r) => r.id === role);

@@ -66,12 +66,19 @@ function DashboardContent() {
     if (recommendationsLoading) return;
     setRecommendationsLoading(true);
     setRecommendationsError('');
-    const result = await generateCareerRecommendations();
-    if (result.success) {
-      const refreshed = await getDashboardData(requestedCareer || undefined);
-      if (refreshed.success && refreshed.data) setDashboardData(refreshed.data);
-    } else setRecommendationsError(result.error || 'Career recommendations are temporarily unavailable.');
-    setRecommendationsLoading(false);
+    try {
+      const result = await generateCareerRecommendations();
+      if (result.success) {
+        const refreshed = await getDashboardData(requestedCareer || undefined);
+        if (refreshed.success && refreshed.data) setDashboardData(refreshed.data);
+      } else {
+        setRecommendationsError(result.error || 'Career recommendations are temporarily unavailable.');
+      }
+    } catch (err: unknown) {
+      setRecommendationsError(err instanceof Error ? err.message : 'Career recommendations are temporarily unavailable.');
+    } finally {
+      setRecommendationsLoading(false);
+    }
   }
 
   const scoreRows = assessment ? [
@@ -82,7 +89,8 @@ function DashboardContent() {
     ['Interview Performance', assessment.interview_score],
     ['Career Alignment', assessment.alignment_score],
   ] as const : [];
-  return (
+
+  return (
     <PortalFrame>
       <main className="flex-1 bg-[#f4f8fc] p-4 sm:p-6 max-w-[1440px] w-full mx-auto space-y-5">
         <section className="flex flex-col md:flex-row md:items-end justify-between gap-3">
@@ -130,17 +138,29 @@ function DashboardContent() {
             <CardContent className="p-3">
               {recommendationsError && <p className="text-xs text-red-700 px-1 pb-2">{recommendationsError}</p>}
               {recommendations.length ? (
-                recommendations.map((recommendation, index) => (
-                  <Link key={recommendation.id} href={`/career/${recommendation.role?.id || ''}`} className="flex items-center gap-3 px-2 py-2.5 border-b last:border-0 border-slate-100 hover:bg-blue-50/50">
-                    <span className="h-7 w-7 rounded-full bg-blue-50 text-brand-700 flex items-center justify-center text-xs font-bold">{index + 1}</span>
-                    <span className="min-w-0 flex-1">
-                      <span className="block text-xs font-bold text-slate-900 truncate">{recommendation.role?.title}</span>
-                      <span className="block text-xs text-slate-500 truncate">{recommendation.rationale}</span>
-                    </span>
-                    <Badge variant="success" className="text-xs shrink-0">{recommendation.score}% Match</Badge>
-                    <ChevronRight className="h-3.5 w-3.5 text-slate-400" />
-                  </Link>
-                ))
+                <>
+                  {recommendations.map((recommendation, index) => (
+                    <Link key={recommendation.id} href={`/career/${recommendation.role?.id || ''}`} className="flex items-center gap-3 px-2 py-2.5 border-b last:border-0 border-slate-100 hover:bg-blue-50/50">
+                      <span className="h-7 w-7 rounded-full bg-blue-50 text-brand-700 flex items-center justify-center text-xs font-bold">{index + 1}</span>
+                      <span className="min-w-0 flex-1">
+                        <span className="block text-xs font-bold text-slate-900 truncate">{recommendation.role?.title}</span>
+                        <span className="block text-xs text-slate-500 truncate">{recommendation.rationale}</span>
+                      </span>
+                      <Badge variant="success" className="text-xs shrink-0">{recommendation.score}% Match</Badge>
+                      <ChevronRight className="h-3.5 w-3.5 text-slate-400" />
+                    </Link>
+                  ))}
+                  <div className="pt-2 px-2 flex justify-end">
+                    <button
+                      type="button"
+                      onClick={handleGenerateRecommendations}
+                      disabled={recommendationsLoading}
+                      className="text-[11px] font-semibold text-brand-700 hover:text-brand-900 disabled:opacity-50"
+                    >
+                      {recommendationsLoading ? 'Refreshing...' : 'Refresh Recommendations'}
+                    </button>
+                  </div>
+                </>
               ) : (
                 <EmptyState icon={<Sparkles className="h-7 w-7 text-slate-400" />} title="Recommendations Pending" description="Generate recommendations from your profile and skills." actionLabel={recommendationsLoading ? 'Generating...' : 'Generate Recommendations'} onAction={handleGenerateRecommendations} />
               )}

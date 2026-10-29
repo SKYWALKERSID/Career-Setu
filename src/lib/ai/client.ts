@@ -1,3 +1,4 @@
+import { z } from 'zod';
 import { AIProvider, AIResponse } from './types';
 import { GeminiProvider } from './providers/gemini';
 import { GroqProvider } from './providers/groq';
@@ -47,6 +48,30 @@ class SyntheticRateLimitProvider implements AIProvider {
   }
 }
 
+const STRUCTURED_CACHE_TTL_MS = 15 * 60 * 1000;
+const MAX_STRUCTURED_CACHE_ENTRIES = 100;
+const structuredOutputCache = new Map<string, { expiresAt: number; response: AIResponse<unknown> }>();
+
+function getCachedStructuredOutput<T>(key: string): AIResponse<T> | null {
+  if (process.env.AI_TEST_MODE === '1') return null;
+  const entry = structuredOutputCache.get(key);
+  if (!entry) return null;
+  if (Date.now() > entry.expiresAt) {
+    structuredOutputCache.delete(key);
+    return null;
+  }
+  return { ...(entry.response as AIResponse<T>), latencyMs: 0 };
+}
+
+function setCachedStructuredOutput<T>(key: string, response: AIResponse<T>): void {
+  if (process.env.AI_TEST_MODE === '1' || !response.success || !response.data) return;
+  if (structuredOutputCache.size >= MAX_STRUCTURED_CACHE_ENTRIES) {
+    const oldestKey = structuredOutputCache.keys().next().value;
+    if (oldestKey) structuredOutputCache.delete(oldestKey);
+  }
+  structuredOutputCache.set(key, { expiresAt: Date.now() + STRUCTURED_CACHE_TTL_MS, response });
+}
+
 class FallbackProvider implements AIProvider {
   name = 'AI Gateway';
   modelName: string;
@@ -70,8 +95,19 @@ class FallbackProvider implements AIProvider {
     };
   }
 
-  generateStructuredOutput<T>(prompt: string, schema: Parameters<AIProvider['generateStructuredOutput']>[1], systemInstruction?: string) {
-    return this.run<T>('generateStructuredOutput', [prompt, schema, systemInstruction]);
+  async generateStructuredOutput<T>(prompt: string, schema: Parameters<AIProvider['generateStructuredOutput']>[1], systemInstruction?: string): Promise<AIResponse<T>> {
+    const typedSchema = schema as z.ZodSchema<T>;
+    const cacheKey = `${systemInstruction || ''}::${prompt}`;
+    const cached = getCachedStructuredOutput<T>(cacheKey);
+    if (cached) {
+      const revalidated = typedSchema.safeParse(cached.data);
+      if (revalidated.success) {
+        return { ...cached, data: revalidated.data };
+      }
+    }
+    const result = await this.run<T>('generateStructuredOutput', [prompt, schema, systemInstruction]);
+    setCachedStructuredOutput(cacheKey, result);
+    return result;
   }
 
   generateText(prompt: string, systemInstruction?: string) {

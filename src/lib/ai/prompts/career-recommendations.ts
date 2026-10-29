@@ -9,7 +9,7 @@ Rules:
 - Return 3 to 5 recommendations when the supplied catalog contains at least three defensible fits for the student. Return fewer only when the profile genuinely supports fewer catalog-grounded options; never pad the list with weak or invented roles.
 - Do not simply copy the student's target roles. Use target roles as context alongside skills, proficiency, interests, academic background, and role requirements so the result can include other relevant catalog roles.
 - Do not invent roles, role IDs, skills, companies, jobs, opportunities, salaries, or qualifications.
-- For each recommendation, strengths and missing_skill_ids must be a subset of that same role's supplied requirements[].skill_id values. Never copy a skill ID from another role or from the student's skill list.
+- For each recommendation, strengths and missing_skill_ids must be a subset of that same role's supplied requirements[].skill_id values (or return [] for strengths and missing_skill_ids when skill_id UUIDs are not supplied in requirements, as the server maps canonical skill UUIDs).
 - If a role requirement cannot be supported confidently, return an empty array for that field instead of guessing.
 - Use these exact output keys for every recommendation: role_id, score, rationale, strengths, missing_skill_ids, confidence.
 - score is an integer from 0 to 100. Do not call it match_score, match_percentage, or any other name.
@@ -19,7 +19,7 @@ Rules:
 - Missing evidence is not zero. Treat pending readiness dimensions as unknown and explain uncertainty through confidence.
 - Recommend based on the student profile, skills and proficiency, target roles, role requirements, and the deterministic readiness assessment.
 - The readiness score is authoritative. Do not calculate, alter, or restate it as a newly generated score.
-- Keep rationales concise and actionable.
+- Keep each rationale concise (1-2 sentences, maximum 160 characters). Return [] for strengths and missing_skill_ids unless exact role skill UUIDs are provided.
 
 Student and catalog context:
 {{context}}

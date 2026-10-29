@@ -95,19 +95,24 @@ function InterviewPageContent() {
     if (!session || !answer.trim() || busy) return;
     setBusy(true);
     setError('');
-    const result = await submitInterviewAnswer(session.id, answer);
-    if (result.success) {
-      if (result.completed) {
-        window.location.href = `/interview/report?session=${session.id}`;
+    try {
+      const result = await submitInterviewAnswer(session.id, answer);
+      if (result.success) {
+        if (result.completed) {
+          window.location.href = `/interview/report?session=${session.id}`;
+        } else {
+          setQuestion(result.question || '');
+          setAnswer('');
+          setTurns((result.turns || []) as Turn[]);
+        }
       } else {
-        setQuestion(result.question || '');
-        setAnswer('');
-        setTurns((result.turns || []) as Turn[]);
+        setError(result.error || 'Answer evaluation failed. Your session remains preserved.');
       }
-    } else {
-      setError(result.error || 'Answer evaluation failed. Your session remains preserved.');
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Answer evaluation failed. Your session remains preserved.');
+    } finally {
+      setBusy(false);
     }
-    setBusy(false);
   }
 
   const currentNumber = turns.find((turn) => !turn.answer)?.turn_number || Math.min(turns.length + 1, 5);

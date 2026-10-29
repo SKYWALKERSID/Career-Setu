@@ -31,6 +31,7 @@ Rules:
 - Distinguish an existing fact from an action suggestion. Never present a suggestion as something the student has already achieved.
 - Keep the interpretation materially different when the supplied target role or role-relevant requirements change.
 - Do not generate a roadmap; identify the priority that the existing roadmap can operationalize.
+- Keep output compact: 2-3 items in why_fits, strengths, weaknesses, strongest_evidence, priority_improvements, and learning_strategy; 2-3 entries in evidence_analysis and priority_gaps; 1-2 items in caveats; keep each string concise (1-2 sentences).
 
 CONTEXT:
 {{context}}`;

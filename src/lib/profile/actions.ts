@@ -214,7 +214,11 @@ export async function saveStudentProfile(input: StudentProfileInput) {
   }
 
   await calculateAndSaveReadinessAssessment('profile_update');
-  await generateCareerRecommendations();
+  try {
+    await generateCareerRecommendations();
+  } catch (err) {
+    console.warn('[saveStudentProfile] AI recommendation refresh failed:', err);
+  }
 
   revalidatePath('/dashboard');
   revalidatePath('/onboarding');

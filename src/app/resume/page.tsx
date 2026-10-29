@@ -86,28 +86,33 @@ function ResumeContent() {
     setBusy(true);
     setError('');
     setWarning('');
-    const form = new FormData();
-    form.set('file', file);
-    const result = await uploadAndAnalyzeResume(form, activeCareer?.id || requestedCareer, false);
+    try {
+      const form = new FormData();
+      form.set('file', file);
+      const result = await uploadAndAnalyzeResume(form, activeCareer?.id || requestedCareer, false);
 
-    if (!result.success) {
-      // Upload/extraction failed
-      if (hadPreviousResume) {
-        // Old resume exists — show as amber WARNING, not red error.
-        // The old data remains displayed and should not appear broken.
-        setWarning(`New upload could not be processed: ${result.error || 'Resume processing failed.'} Your previous analysis is still displayed below.`);
-      } else {
-        // No old data — show as red error
-        setError(result.error || 'Resume processing failed.');
+      if (!result.success) {
+        // Upload/extraction failed
+        if (hadPreviousResume) {
+          // Old resume exists — show as amber WARNING, not red error.
+          // The old data remains displayed and should not appear broken.
+          setWarning(`New upload could not be processed: ${result.error || 'Resume processing failed.'} Your previous analysis is still displayed below.`);
+        } else {
+          // No old data — show as red error
+          setError(result.error || 'Resume processing failed.');
+        }
+      } else if (result.warning) {
+        // Upload succeeded but AI analysis unavailable
+        setWarning(result.warning);
       }
-    } else if (result.warning) {
-      // Upload succeeded but AI analysis unavailable
-      setWarning(result.warning);
-    }
 
-    await refresh();
-    setBusy(false);
-    event.target.value = '';
+      await refresh();
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Resume processing failed.');
+    } finally {
+      setBusy(false);
+      event.target.value = '';
+    }
   }
 
   async function handleTriggerAiAnalysis(force = false) {
@@ -115,14 +120,19 @@ function ResumeContent() {
     setBusy(true);
     setError('');
     setWarning('');
-    const result = await triggerResumeAiAnalysis(resume?.id, activeCareer?.id, force);
-    if (!result.success) {
-      // AI failed but deterministic data remains perfectly available.
-      // Show as amber WARNING, not red error.
-      setWarning(result.error || 'Deep AI analysis is currently unavailable. Deterministic review remains displayed.');
+    try {
+      const result = await triggerResumeAiAnalysis(resume?.id, activeCareer?.id, force);
+      if (!result.success) {
+        // AI failed but deterministic data remains perfectly available.
+        // Show as amber WARNING, not red error.
+        setWarning(result.error || 'Deep AI analysis is currently unavailable. Deterministic review remains displayed.');
+      }
+      await refresh();
+    } catch (err: unknown) {
+      setWarning(err instanceof Error ? err.message : 'Deep AI analysis is currently unavailable. Deterministic review remains displayed.');
+    } finally {
+      setBusy(false);
     }
-    await refresh();
-    setBusy(false);
   }
 
   const parsed = resume?.parsed_json;

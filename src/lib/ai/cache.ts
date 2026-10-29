@@ -1,4 +1,10 @@
+import { createHash } from 'node:crypto';
 import { CareerIntelligenceSchema } from './schemas';
+
+export function buildVersionedPromptTag(baseVersion: string, contextPayload: unknown): string {
+  const hash = createHash('sha256').update(JSON.stringify(contextPayload)).digest('hex').slice(0, 16);
+  return `${baseVersion}:${hash}`;
+}
 
 export function isReusableCareerIntelligence(inputHash: string, currentInputHash: string, insight: unknown): boolean {
   return inputHash === currentInputHash && CareerIntelligenceSchema.safeParse(insight).success;

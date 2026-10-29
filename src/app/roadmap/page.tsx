@@ -55,34 +55,55 @@ function RoadmapContent() {
 
   async function handleGenerate() {
     if (generating) return;
-    setGenerating(true); setError('');
     const roleId = data?.targetCareer?.id;
     if (!roleId) { setError('Choose a target career before generating a roadmap.'); return; }
-    const result = await generateCareerRoadmap(roleId);
-    if (result.success) { setGeneratedRoadmapId(result.roadmapId || null); setSaveState('ready'); await load(); } else setError(result.error || 'Career roadmap is temporarily unavailable.');
-    setGenerating(false);
+    setGenerating(true); setError('');
+    try {
+      const result = await generateCareerRoadmap(roleId);
+      if (result.success) { setGeneratedRoadmapId(result.roadmapId || null); setSaveState('ready'); await load(); } else setError(result.error || 'Career roadmap is temporarily unavailable.');
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Career roadmap is temporarily unavailable.');
+    } finally {
+      setGenerating(false);
+    }
   }
 
   async function handleSave() {
     const roadmapId = generatedRoadmapId || data?.roadmap?.id;
     if (!roadmapId) { setSaveState('failed'); setError('Generate a roadmap before saving it.'); return; }
     setSaveState('saving');
-    const result = await saveRoadmap(roadmapId);
-    if (result.success) setSaveState('saved'); else { setSaveState('failed'); setError(result.error || 'Roadmap could not be saved.'); }
+    try {
+      const result = await saveRoadmap(roadmapId);
+      if (result.success) setSaveState('saved'); else { setSaveState('failed'); setError(result.error || 'Roadmap could not be saved.'); }
+    } catch (err: unknown) {
+      setSaveState('failed');
+      setError(err instanceof Error ? err.message : 'Roadmap could not be saved.');
+    }
   }
 
   async function handleTaskStatus(task: DashboardData['roadmapTasks'][number]) {
     const nextStatus = task.status === 'completed' ? 'pending' : 'completed';
     setUpdatingTask(task.id);
-    const result = await updateRoadmapTaskStatus(task.id, nextStatus);
-    if (result.success) await load(); else setError(result.error || 'Roadmap task could not be updated.');
-    setUpdatingTask(null);
+    try {
+      const result = await updateRoadmapTaskStatus(task.id, nextStatus);
+      if (result.success) await load(); else setError(result.error || 'Roadmap task could not be updated.');
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Roadmap task could not be updated.');
+    } finally {
+      setUpdatingTask(null);
+    }
   }
 
   async function handleEvidence(taskId: string, url: string, note: string) {
     setEvidenceTask(taskId);
-    const result = await submitRoadmapTaskEvidence(taskId, url, note);
-    if (result.success) { setEvidenceTask(null); await load(); } else { setError(result.error || 'Evidence could not be saved.'); setEvidenceTask(null); }
+    try {
+      const result = await submitRoadmapTaskEvidence(taskId, url, note);
+      if (result.success) await load(); else setError(result.error || 'Evidence could not be saved.');
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Evidence could not be saved.');
+    } finally {
+      setEvidenceTask(null);
+    }
   }
 
   if (loading) return <Shell><main className="flex flex-1 items-center justify-center"><LoadingState label="Loading your skill gap roadmap..." /></main></Shell>;

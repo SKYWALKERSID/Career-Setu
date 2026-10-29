@@ -51,14 +51,20 @@ function ProgressContent() {
   useEffect(() => { void load(); }, [load]);
 
   async function recalculate() {
+    if (busy) return;
     setBusy(true);
     setError('');
-    const result = await calculateAndSaveReadinessAssessment();
-    if (!result.success) {
-      setError(result.error || 'Readiness assessment calculation failed.');
+    try {
+      const result = await calculateAndSaveReadinessAssessment();
+      if (!result.success) {
+        setError(result.error || 'Readiness assessment calculation failed.');
+      }
+      await load();
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Readiness assessment calculation failed.');
+    } finally {
+      setBusy(false);
     }
-    await load();
-    setBusy(false);
   }
 
   const currentReadiness = snapshot?.readiness.current;

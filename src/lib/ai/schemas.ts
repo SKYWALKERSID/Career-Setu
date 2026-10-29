@@ -45,47 +45,64 @@ export const AIInfrastructureTestSchema = z.object({
 
 export type AIInfrastructureTestResult = z.infer<typeof AIInfrastructureTestSchema>;
 
-export const CareerRecommendationItemSchema = z.preprocess((value) => {
-  if (!value || typeof value !== 'object' || Array.isArray(value)) return value;
-  const item = value as Record<string, unknown>;
-  // Some OpenAI-compatible models name this bounded catalog score `match_score`.
-  // Normalize that equivalent field before the shared domain schema validates it.
-  let normalized = item;
-  if (normalized.score === undefined && normalized.match_score !== undefined) normalized = { ...normalized, score: normalized.match_score };
-  if (typeof item.confidence === 'number' && item.confidence > 1) {
-    normalized = { ...normalized, confidence: item.confidence / 100 };
-  }
-  if (normalized !== item) {
-    return normalized;
-  }
-  return value;
-}, z.object({
+const CareerRecommendationItemSchemaBase = z.object({
   role_id: z.string().uuid(),
   score: z.number().int().min(0).max(100),
   rationale: z.string().min(1).max(600),
   strengths: z.array(z.string().uuid()).max(10),
   missing_skill_ids: z.array(z.string().uuid()).max(20),
   confidence: z.number().min(0).max(1),
-}));
+});
+
+export const CareerRecommendationItemSchema = z.preprocess((value) => {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return value;
+  const item = value as Record<string, unknown>;
+  // Some OpenAI-compatible models name this bounded catalog score `match_score`.
+  // Normalize that equivalent field before the shared domain schema validates it.
+  const normalized: Record<string, unknown> = { ...item };
+  if (normalized.score === undefined && normalized.match_score !== undefined) {
+    normalized.score = normalized.match_score;
+  }
+  if (typeof normalized.score === 'number' && Number.isFinite(normalized.score)) {
+    normalized.score = Math.round(normalized.score);
+  }
+  if (typeof normalized.rationale === 'string' && normalized.rationale.length > 600) {
+    normalized.rationale = normalized.rationale.slice(0, 600);
+  }
+  if (Array.isArray(normalized.strengths)) {
+    normalized.strengths = uuidArray(normalized.strengths).slice(0, 10);
+  }
+  if (Array.isArray(normalized.missing_skill_ids)) {
+    normalized.missing_skill_ids = uuidArray(normalized.missing_skill_ids).slice(0, 20);
+  }
+  if (typeof item.confidence === 'number' && item.confidence > 1) {
+    normalized.confidence = item.confidence / 100;
+  }
+  return normalized;
+}, CareerRecommendationItemSchemaBase) as unknown as z.ZodType<z.infer<typeof CareerRecommendationItemSchemaBase>>;
+
+const CareerRecommendationsSchemaBase = z.object({
+  recommendations: z.array(CareerRecommendationItemSchema).min(1).max(5),
+});
 
 export const CareerRecommendationsSchema = z.preprocess((value) => {
-  if (!value || typeof value !== 'object' || Array.isArray(value)) return value;
+  if (Array.isArray(value)) return { recommendations: value };
+  if (!value || typeof value !== 'object') return value;
   const output = value as Record<string, unknown>;
   // Keep the domain contract stable when a provider names the wrapper after the feature.
-  if (output.recommendations === undefined && Array.isArray(output.career_recommendations)) {
-    return { ...output, recommendations: output.career_recommendations };
+  const candidate = output.recommendations ?? output.career_recommendations ?? output.roles ?? output.results;
+  if (Array.isArray(candidate)) {
+    return { ...output, recommendations: candidate.slice(0, 5) };
   }
   return value;
-}, z.object({
-  recommendations: z.array(CareerRecommendationItemSchema).min(1).max(5),
-}));
+}, CareerRecommendationsSchemaBase) as unknown as z.ZodType<z.infer<typeof CareerRecommendationsSchemaBase>>;
 
-export type CareerRecommendationAIResult = z.infer<typeof CareerRecommendationsSchema>;
+export type CareerRecommendationAIResult = z.infer<typeof CareerRecommendationsSchemaBase>;
 
-export const CareerIntelligenceSchema = z.object({
+const CareerIntelligenceSchemaBase = z.object({
   career_perspective: z.string().min(1).max(1200),
   career_setu_take: z.string().min(1).max(1200),
-  why_fits: z.array(z.string().min(1).max(400)).min(2).max(5),
+  why_fits: z.array(z.string().min(1).max(400)).min(1).max(5),
   strengths: z.array(z.string().min(1).max(400)).min(1).max(6),
   weaknesses: z.array(z.string().min(1).max(400)).min(1).max(6),
   evidence_analysis: z.array(z.object({
@@ -106,11 +123,62 @@ export const CareerIntelligenceSchema = z.object({
   next_action: z.string().min(1).max(400),
   focus_first: z.string().min(1).max(350),
   material_readiness_improvement: z.string().min(1).max(450),
-  learning_strategy: z.array(z.string().min(1).max(350)).min(2).max(6),
+  learning_strategy: z.array(z.string().min(1).max(350)).min(1).max(6),
   caveats: z.array(z.string().min(1).max(300)).max(4),
 });
 
-export type CareerIntelligenceResult = z.infer<typeof CareerIntelligenceSchema>;
+export const CareerIntelligenceSchema = z.preprocess((value) => {
+  const unwrapped = Array.isArray(value) ? value[0] : value;
+  if (!unwrapped || typeof unwrapped !== 'object' || Array.isArray(unwrapped)) return value;
+  const source = unwrapped as Record<string, unknown>;
+  const nested = [source.career_intelligence, source.intelligence, source.analysis].find((item) => item && typeof item === 'object' && !Array.isArray(item));
+  const raw = (nested && typeof nested === 'object' ? nested : source) as Record<string, unknown>;
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  return {
+    ...raw,
+    career_perspective: typeof raw.career_perspective === 'string' ? raw.career_perspective.slice(0, 1200) : raw.career_perspective,
+    career_setu_take: typeof raw.career_setu_take === 'string' ? raw.career_setu_take.slice(0, 1200) : raw.career_setu_take,
+    why_fits: Array.isArray(raw.why_fits) ? textArray(raw.why_fits).map((s) => s.slice(0, 400)).slice(0, 5) : raw.why_fits,
+    strengths: Array.isArray(raw.strengths) ? textArray(raw.strengths).map((s) => s.slice(0, 400)).slice(0, 6) : raw.strengths,
+    weaknesses: Array.isArray(raw.weaknesses) ? textArray(raw.weaknesses).map((s) => s.slice(0, 400)).slice(0, 6) : raw.weaknesses,
+    evidence_analysis: Array.isArray(raw.evidence_analysis)
+      ? raw.evidence_analysis.slice(0, 8).map((item) => {
+          if (!item || typeof item !== 'object') return item;
+          const rec = item as Record<string, unknown>;
+          return {
+            observation: typeof rec.observation === 'string' ? rec.observation.slice(0, 300) : rec.observation,
+            why_it_matters: typeof rec.why_it_matters === 'string' ? rec.why_it_matters.slice(0, 350) : rec.why_it_matters,
+            evidence: typeof rec.evidence === 'string' ? rec.evidence.slice(0, 350) : rec.evidence,
+            action: typeof rec.action === 'string' ? rec.action.slice(0, 350) : rec.action,
+          };
+        })
+      : raw.evidence_analysis,
+    strongest_evidence: Array.isArray(raw.strongest_evidence) ? textArray(raw.strongest_evidence).map((s) => s.slice(0, 300)).slice(0, 8) : raw.strongest_evidence,
+    priority_gaps: Array.isArray(raw.priority_gaps)
+      ? raw.priority_gaps
+          .filter((item) => item && typeof item === 'object' && typeof (item as Record<string, unknown>).skill_id === 'string' && uuidRegex.test((item as Record<string, unknown>).skill_id as string))
+          .slice(0, 6)
+          .map((item) => {
+            const rec = item as Record<string, unknown>;
+            return {
+              skill_id: rec.skill_id,
+              skill_name: typeof rec.skill_name === 'string' ? rec.skill_name.slice(0, 100) : rec.skill_name,
+              why_it_matters: typeof rec.why_it_matters === 'string' ? rec.why_it_matters.slice(0, 300) : rec.why_it_matters,
+              first_step: typeof rec.first_step === 'string' ? rec.first_step.slice(0, 300) : rec.first_step,
+              evidence_to_build: typeof rec.evidence_to_build === 'string' ? rec.evidence_to_build.slice(0, 300) : rec.evidence_to_build,
+            };
+          })
+      : raw.priority_gaps,
+    priority_improvements: Array.isArray(raw.priority_improvements) ? textArray(raw.priority_improvements).map((s) => s.slice(0, 400)).slice(0, 6) : raw.priority_improvements,
+    next_action: typeof raw.next_action === 'string' ? raw.next_action.slice(0, 400) : raw.next_action,
+    focus_first: typeof raw.focus_first === 'string' ? raw.focus_first.slice(0, 350) : raw.focus_first,
+    material_readiness_improvement: typeof raw.material_readiness_improvement === 'string' ? raw.material_readiness_improvement.slice(0, 450) : raw.material_readiness_improvement,
+    learning_strategy: Array.isArray(raw.learning_strategy) ? textArray(raw.learning_strategy).map((s) => s.slice(0, 350)).slice(0, 6) : raw.learning_strategy,
+    caveats: Array.isArray(raw.caveats) ? textArray(raw.caveats).map((s) => s.slice(0, 300)).slice(0, 4) : raw.caveats,
+  };
+}, CareerIntelligenceSchemaBase) as unknown as z.ZodType<z.infer<typeof CareerIntelligenceSchemaBase>>;
+
+export type CareerIntelligenceResult = z.infer<typeof CareerIntelligenceSchemaBase>;
 
 const RoadmapTaskSchemaBase = z.object({
   week: z.number().int().min(1).max(13),
@@ -125,13 +193,16 @@ const RoadmapTaskSchemaBase = z.object({
 const RoadmapTaskSchema = z.preprocess((value) => {
   if (!value || typeof value !== 'object') return value;
   const item = value as Record<string, unknown>;
+  const rawWeek = weekNumber(item.week ?? item.week_number ?? item.weekNumber);
+  const rawTitle = item.title ?? item.name ?? item.objective ?? item.focus ?? item.action;
+  const rawDesc = item.description ?? item.details ?? item.task ?? item.objective ?? item.focus ?? item.action;
   return {
-    week: weekNumber(item.week ?? item.week_number ?? item.weekNumber),
+    week: typeof rawWeek === 'number' && Number.isFinite(rawWeek) ? Math.min(13, Math.max(1, Math.round(rawWeek))) : rawWeek,
     task_type: item.task_type ?? item.taskType ?? 'learning',
-    title: item.title ?? item.name ?? item.objective ?? item.focus ?? item.action,
-    description: item.description ?? item.details ?? item.task ?? item.objective ?? item.focus ?? item.action,
-    skill_ids: idArray(item.skill_ids ?? item.skillIds ?? item.skills),
-    course_ids: idArray(item.course_ids ?? item.courseIds ?? item.courses),
+    title: typeof rawTitle === 'string' ? rawTitle.slice(0, 160) : rawTitle,
+    description: typeof rawDesc === 'string' ? rawDesc.slice(0, 500) : rawDesc,
+    skill_ids: uuidArray(item.skill_ids ?? item.skillIds ?? item.skills).slice(0, 6),
+    course_ids: uuidArray(item.course_ids ?? item.courseIds ?? item.courses).slice(0, 3),
     evidence_required: typeof (item.evidence_required ?? item.evidenceRequired ?? item.evidence) === 'string' ? String(item.evidence_required ?? item.evidenceRequired ?? item.evidence).slice(0, 300) : undefined,
   };
 }, RoadmapTaskSchemaBase);
@@ -144,9 +215,10 @@ const RoadmapSchemaBase = z.object({
 });
 
 export const RoadmapSchema = z.preprocess((value) => {
-  if (!value || typeof value !== 'object') return value;
-  const source = value as Record<string, unknown>;
-  const nested = [source.roadmap, source.plan, source.roadmap_plan].find((item) => item && typeof item === 'object');
+  const unwrapped = Array.isArray(value) ? value[0] : value;
+  if (!unwrapped || typeof unwrapped !== 'object' || Array.isArray(unwrapped)) return value;
+  const source = unwrapped as Record<string, unknown>;
+  const nested = [source.roadmap, source.plan, source.roadmap_plan].find((item) => item && typeof item === 'object' && !Array.isArray(item));
   const output = (nested && typeof nested === 'object' ? nested : source) as Record<string, unknown>;
   const sourceTasks = output.tasks ?? output.milestones ?? output.weeks;
   const tasks = Array.isArray(sourceTasks) ? sourceTasks.flatMap((item) => {
@@ -158,15 +230,15 @@ export const RoadmapSchema = z.preprocess((value) => {
   }) : [];
   return {
     target_role_id: output.target_role_id ?? output.targetRoleId ?? output.role_id ?? output.roleId,
-    duration_days: output.duration_days ?? output.durationDays ?? 90,
+    duration_days: 90,
     rationale: typeof (output.rationale ?? output.summary ?? output.overview) === 'string'
       ? String(output.rationale ?? output.summary ?? output.overview).slice(0, 600)
       : output.rationale ?? output.summary ?? output.overview,
     tasks: tasks.slice(0, 13),
   };
-}, RoadmapSchemaBase);
+}, RoadmapSchemaBase) as unknown as z.ZodType<z.infer<typeof RoadmapSchemaBase>>;
 
-export type RoadmapAIResult = z.infer<typeof RoadmapSchema>;
+export type RoadmapAIResult = z.infer<typeof RoadmapSchemaBase>;
 
 const resumeReviewSection = z.enum(['Summary', 'Experience', 'Projects', 'Skills', 'Education', 'Achievements', 'Certifications', 'Other']);
 const resumeTextList = z.array(z.string().min(1).max(500)).max(15);
@@ -383,14 +455,48 @@ export type ResumeParseResult = z.infer<typeof ResumeParseSchema>;
 
 const InterviewQuestionSchemaBase = z.object({ question: z.string().min(10).max(500), category: z.enum(['technical', 'problem_solving', 'project', 'behavioral', 'role_specific']), focus_skill_id: z.string().uuid().nullable() });
 export const InterviewQuestionSchema = z.preprocess((value) => {
-  if (!value || typeof value !== 'object') return value;
-  const source = value as Record<string, unknown>;
+  const unwrapped = Array.isArray(value) ? value[0] : value;
+  if (!unwrapped || typeof unwrapped !== 'object') return value;
+  const source = unwrapped as Record<string, unknown>;
   const nested = [source.question, source.interview_question].find((item) => item && typeof item === 'object');
   const output = (nested && typeof nested === 'object' ? nested : source) as Record<string, unknown>;
-  return { question: output.question ?? output.prompt ?? output.text, category: output.category ?? 'role_specific', focus_skill_id: output.focus_skill_id ?? output.focusSkillId ?? null };
+  const rawQuestion = output.question ?? output.prompt ?? output.text;
+  const rawSkillId = output.focus_skill_id ?? output.focusSkillId ?? null;
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  return {
+    question: typeof rawQuestion === 'string' ? rawQuestion.slice(0, 500) : rawQuestion,
+    category: output.category ?? 'role_specific',
+    focus_skill_id: typeof rawSkillId === 'string' && uuidRegex.test(rawSkillId) ? rawSkillId : null,
+  };
 }, InterviewQuestionSchemaBase) as unknown as z.ZodType<z.infer<typeof InterviewQuestionSchemaBase>>;
-export const InterviewEvaluationSchema = z.object({ rubric_score: z.number().int().min(0).max(100), correctness: z.number().int().min(0).max(100), relevance: z.number().int().min(0).max(100), depth: z.number().int().min(0).max(100), clarity: z.number().int().min(0).max(100), feedback: z.string().min(1).max(700) });
-export const InterviewReportSchema = z.object({ overall_score: z.number().int().min(0).max(100), strengths: z.array(z.string().max(300)).max(10), areas_to_improve: z.array(z.string().max(300)).max(10), feedback_summary: z.string().min(1).max(700), recommendations: z.array(z.string().max(300)).max(10) });
+const InterviewEvaluationSchemaBase = z.object({ rubric_score: z.number().int().min(0).max(100), correctness: z.number().int().min(0).max(100), relevance: z.number().int().min(0).max(100), depth: z.number().int().min(0).max(100), clarity: z.number().int().min(0).max(100), feedback: z.string().min(1).max(700) });
+export const InterviewEvaluationSchema = z.preprocess((value) => {
+  const unwrapped = Array.isArray(value) ? value[0] : value;
+  if (!unwrapped || typeof unwrapped !== 'object') return value;
+  const raw = unwrapped as Record<string, unknown>;
+  const roundInt = (v: unknown) => typeof v === 'number' && Number.isFinite(v) ? Math.round(v) : v;
+  return {
+    rubric_score: roundInt(raw.rubric_score),
+    correctness: roundInt(raw.correctness),
+    relevance: roundInt(raw.relevance),
+    depth: roundInt(raw.depth),
+    clarity: roundInt(raw.clarity),
+    feedback: typeof raw.feedback === 'string' ? raw.feedback.slice(0, 700) : raw.feedback,
+  };
+}, InterviewEvaluationSchemaBase) as unknown as z.ZodType<z.infer<typeof InterviewEvaluationSchemaBase>>;
+const InterviewReportSchemaBase = z.object({ overall_score: z.number().int().min(0).max(100), strengths: z.array(z.string().max(300)).max(10), areas_to_improve: z.array(z.string().max(300)).max(10), feedback_summary: z.string().min(1).max(700), recommendations: z.array(z.string().max(300)).max(10) });
+export const InterviewReportSchema = z.preprocess((value) => {
+  const unwrapped = Array.isArray(value) ? value[0] : value;
+  if (!unwrapped || typeof unwrapped !== 'object') return value;
+  const raw = unwrapped as Record<string, unknown>;
+  return {
+    overall_score: typeof raw.overall_score === 'number' && Number.isFinite(raw.overall_score) ? Math.round(raw.overall_score) : raw.overall_score,
+    strengths: Array.isArray(raw.strengths) ? textArray(raw.strengths).map((s) => s.slice(0, 300)).slice(0, 10) : raw.strengths,
+    areas_to_improve: Array.isArray(raw.areas_to_improve) ? textArray(raw.areas_to_improve).map((s) => s.slice(0, 300)).slice(0, 10) : raw.areas_to_improve,
+    feedback_summary: typeof raw.feedback_summary === 'string' ? raw.feedback_summary.slice(0, 700) : raw.feedback_summary,
+    recommendations: Array.isArray(raw.recommendations) ? textArray(raw.recommendations).map((s) => s.slice(0, 300)).slice(0, 10) : raw.recommendations,
+  };
+}, InterviewReportSchemaBase) as unknown as z.ZodType<z.infer<typeof InterviewReportSchemaBase>>;
 
 // Reusable AI Analysis Contract Wrapper
 export interface AIAnalysisResult<T> {

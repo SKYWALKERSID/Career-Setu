@@ -9,10 +9,11 @@ import { validateRoadmap } from '@/lib/ai/roadmap';
 import { buildRoadmapContext, type RoadmapCourse } from '@/lib/ai/roadmap-context';
 import { calculateSkillGaps } from '@/lib/skill-gap/scoring';
 import { resolveTargetCareerIds } from '@/lib/career/target-roles';
+import { buildVersionedPromptTag } from '@/lib/ai/cache';
 
 type RoleRow = { id: string; title: string; description: string; career_role_skills: Array<{ skill_id: string; required: boolean; importance: string; skills: { id: string; name: string } | null }> };
 
-export async function generateCareerRoadmap(roleId: string): Promise<{ success: boolean; roadmapId?: string; error?: string }> {
+export async function generateCareerRoadmap(roleId: string, forceRegenerate = false): Promise<{ success: boolean; roadmapId?: string; cached?: boolean; error?: string }> {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { success: false, error: 'Unauthorized: Authentication required.' };
@@ -28,8 +29,8 @@ export async function generateCareerRoadmap(roleId: string): Promise<{ success: 
   const targetRoleIds = resolveTargetCareerIds(student.target_careers || [], roleRows);
   const role = roleRows.find((candidate) => candidate.id === roleId && targetRoleIds.includes(candidate.id));
   if (!role) return { success: false, error: 'Select a target career or generate career recommendations first.' };
-  const studentSkillRows = (skills || []) as unknown as Array<{ skill_id: string; proficiency: 'beginner' | 'intermediate' | 'advanced'; evidence_type?: 'self_declared' | 'project' | 'certification' | 'assessment' | 'resume'; evidence?: string | null }>;
-  const skillInputs = [...new Map(role.career_role_skills.map((item) => [item.skill_id, item])).values()];
+  const studentSkillRows = ((skills || []) as unknown as Array<{ skill_id: string; proficiency: 'beginner' | 'intermediate' | 'advanced'; evidence_type?: 'self_declared' | 'project' | 'certification' | 'assessment' | 'resume'; evidence?: string | null }>).slice().sort((a, b) => a.skill_id.localeCompare(b.skill_id));
+  const skillInputs = [...new Map(role.career_role_skills.map((item) => [item.skill_id, item])).values()].sort((a, b) => a.skill_id.localeCompare(b.skill_id));
   const skillGaps = calculateSkillGaps(skillInputs.map((item) => { const student = studentSkillRows.find((skill) => skill.skill_id === item.skill_id); return { skill_id: item.skill_id, skill_name: item.skills?.name || item.skill_id, importance: (item.importance || 'high') as 'high' | 'medium' | 'low', required: item.required, student_proficiency: student?.proficiency, student_evidence_type: student?.evidence_type, student_evidence: student?.evidence }; }));
   const relevantGaps = skillGaps.filter((gap) => gap.status !== 'acquired');
   const relevantSkillIds = [...new Set(relevantGaps.map((gap) => gap.skill_id))];
@@ -43,6 +44,23 @@ export async function generateCareerRoadmap(roleId: string): Promise<{ success: 
   const courseRows: RoadmapCourse[] = (relevantCourses || []).map((course) => ({ ...course, skill_ids: [...new Set((courseSkillRows || []).filter((row) => row.course_id === course.id).map((row) => row.skill_id))] }));
   const catalog = { roleIds: new Set(roleRows.map((item) => item.id)), skillIds: new Set(relevantSkillIds), courseIds: new Set(courseRows.map((course) => course.id)) };
   const relevantStudentSkills = studentSkillRows.filter((skill) => relevantGaps.some((gap) => gap.skill_id === skill.skill_id));
+
+  const promptTag = buildVersionedPromptTag(ROADMAP_PROMPT_VERSION, {
+    roleId: role.id,
+    gaps: relevantGaps.map((g) => ({ id: g.skill_id, s: g.status })),
+    skills: relevantStudentSkills.map((s) => ({ id: s.skill_id, p: s.proficiency })),
+  });
+
+  const { data: existingRoadmap } = await supabase.from('roadmaps').select('id, ai_run_id').eq('student_id', student.id).eq('target_role_id', role.id).maybeSingle();
+  if (!forceRegenerate && existingRoadmap?.id && existingRoadmap.ai_run_id) {
+    const [{ data: prevRun }, { count: taskCount }] = await Promise.all([
+      supabase.from('ai_runs').select('prompt_version').eq('id', existingRoadmap.ai_run_id).maybeSingle(),
+      supabase.from('roadmap_tasks').select('id', { count: 'exact', head: true }).eq('roadmap_id', existingRoadmap.id),
+    ]);
+    if (prevRun?.prompt_version === promptTag && (taskCount ?? 0) > 0) {
+      return { success: true, roadmapId: existingRoadmap.id, cached: true };
+    }
+  }
   const context = JSON.stringify(buildRoadmapContext({
     student,
     role: { id: role.id, title: role.title, description: role.description },
@@ -72,12 +90,20 @@ export async function generateCareerRoadmap(roleId: string): Promise<{ success: 
     try { aiResult = await provider.generateStructuredOutput(compactPrompt, RoadmapSchema, systemInstruction); }
     catch { aiResult = { success: false, error: 'AI roadmap generation failed.', provider: provider.name, model: provider.modelName, latencyMs: Date.now() - started }; }
   }
-  const { data: run } = await supabase.from('ai_runs').insert({ feature: 'career_roadmap', model: aiResult.model, provider: aiResult.provider, primary_provider: aiResult.attempts?.[0]?.provider || aiResult.provider, primary_model: aiResult.attempts?.[0]?.model || aiResult.model, fallback_provider: aiResult.attempts?.[1]?.provider || null, fallback_model: aiResult.attempts?.[1]?.model || null, fallback_reason: aiResult.fallbackReason || null, error_category: aiResult.errorCategory || null, prompt_version: ROADMAP_PROMPT_VERSION, student_id: student.id, latency_ms: Date.now() - started, tokens_used: aiResult.tokensUsed ?? null, success: aiResult.success, error_message: aiResult.success ? null : `${aiResult.errorCategory || 'AI_UNKNOWN_ERROR'}: ${aiResult.error || 'Career roadmap generation failed.'}` }).select('id').single();
+  const { data: run } = await supabase.from('ai_runs').insert({ feature: 'career_roadmap', model: aiResult.model, provider: aiResult.provider, primary_provider: aiResult.attempts?.[0]?.provider || aiResult.provider, primary_model: aiResult.attempts?.[0]?.model || aiResult.model, fallback_provider: aiResult.attempts?.[1]?.provider || null, fallback_model: aiResult.attempts?.[1]?.model || null, fallback_reason: aiResult.fallbackReason || null, error_category: aiResult.errorCategory || null, prompt_version: promptTag, student_id: student.id, latency_ms: Date.now() - started, tokens_used: aiResult.tokensUsed ?? null, success: aiResult.success, error_message: aiResult.success ? null : `${aiResult.errorCategory || 'AI_UNKNOWN_ERROR'}: ${aiResult.error || 'Career roadmap generation failed.'}` }).select('id').single();
   if (!aiResult.success || !aiResult.data || !run?.id) return { success: false, error: 'Career roadmap is temporarily unavailable.' };
-  const validated = validateRoadmap(aiResult.data, catalog);
+  const sanitizedRoadmap = {
+    ...aiResult.data,
+    target_role_id: catalog.roleIds.has(aiResult.data.target_role_id) ? aiResult.data.target_role_id : role.id,
+    tasks: aiResult.data.tasks.map((task) => ({
+      ...task,
+      skill_ids: task.skill_ids.filter((id) => catalog.skillIds.has(id)),
+      course_ids: task.course_ids.filter((id) => catalog.courseIds.has(id)),
+    })),
+  };
+  const validated = validateRoadmap(sanitizedRoadmap, catalog);
   if (!validated.success) { await supabase.from('ai_runs').update({ success: false, error_message: validated.error }).eq('id', run.id); return { success: false, error: validated.error }; }
-  const { data: existing } = await supabase.from('roadmaps').select('id').eq('student_id', student.id).eq('target_role_id', role.id).maybeSingle();
-  let roadmapId = existing?.id;
+  let roadmapId = existingRoadmap?.id;
   if (roadmapId) { await supabase.from('roadmap_tasks').delete().eq('roadmap_id', roadmapId); await supabase.from('roadmaps').update({ duration_days: 90, ai_run_id: run.id, generated_at: new Date().toISOString() }).eq('id', roadmapId); }
   else { const { data: created, error } = await supabase.from('roadmaps').insert({ student_id: student.id, target_role_id: role.id, duration_days: 90, ai_run_id: run.id }).select('id').single(); if (error || !created) return { success: false, error: 'Career roadmap could not be saved.' }; roadmapId = created.id; }
   const { error: taskError } = await supabase.from('roadmap_tasks').insert(validated.data.tasks.map((task) => ({ roadmap_id: roadmapId, week: task.week, task_type: task.task_type, title: task.title, description: `${task.description}${task.course_ids.length ? ` Courses: ${task.course_ids.join(', ')}` : ''}`, skill_id: task.skill_ids[0] || null, evidence_required: task.evidence_required || null, status: 'pending' })));

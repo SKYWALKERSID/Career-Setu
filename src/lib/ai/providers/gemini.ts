@@ -1,13 +1,20 @@
+import { createHash } from 'node:crypto';
 import { z } from 'zod';
 import { AIErrorCategory, AIProvider, AIResponse } from '../types';
 
-// Basic server-side rate limiting: track last call timestamp per feature
+// Basic server-side rate limiting: track last call timestamp per prompt
 const rateLimitMap = new Map<string, number>();
-const RATE_LIMIT_COOLDOWN_MS = 3000; // 3 seconds between calls per feature
-const MAX_TRANSIENT_RETRIES = 2;
-const BASE_RETRY_DELAY_MS = 500;
-const MAX_RETRY_DELAY_MS = 2000;
+const RATE_LIMIT_COOLDOWN_MS = 1000;
+const MAX_TRANSIENT_RETRIES = 1;
+const BASE_RETRY_DELAY_MS = 400;
+const MAX_RETRY_DELAY_MS = 1200;
+const REQUEST_TIMEOUT_MS = 15000;
+const FALLBACK_GEMINI_MODELS = ['gemini-3.5-flash'];
 const RETRYABLE_STATUS_CODES = new Set([429, 500, 502, 503, 504]);
+
+function promptKey(prefix: string, prompt: string): string {
+  return `${prefix}:${createHash('sha256').update(prompt).digest('hex').slice(0, 24)}`;
+}
 
 function checkRateLimit(featureKey: string): string | null {
   const now = Date.now();
@@ -20,9 +27,15 @@ function checkRateLimit(featureKey: string): string | null {
   return null;
 }
 
+function extractCandidateText(resJson: { candidates?: Array<{ content?: { parts?: Array<{ text?: string; thought?: boolean }> } }> }): string | undefined {
+  const parts = resJson.candidates?.[0]?.content?.parts || [];
+  const nonThought = parts.filter((part) => !part.thought && typeof part.text === 'string');
+  return nonThought[nonThought.length - 1]?.text ?? parts[0]?.text;
+}
+
 export class GeminiProvider implements AIProvider {
   name = 'Gemini (Google DeepMind)';
-  modelName = process.env.GEMINI_MODEL || 'gemini-3.8-flash';
+  modelName = process.env.GEMINI_MODEL || 'gemini-3.5-flash';
   private apiKey: string;
 
   constructor(apiKey?: string) {
@@ -40,14 +53,15 @@ export class GeminiProvider implements AIProvider {
     error: string,
     errorCategory: AIErrorCategory,
     startTime: number,
-    tokensUsed?: number
+    tokensUsed?: number,
+    model = this.modelName
   ): AIResponse<T> {
     return {
       success: false,
       error,
       errorCategory,
       provider: this.name,
-      model: this.modelName,
+      model,
       latencyMs: Date.now() - startTime,
       tokensUsed,
     };
@@ -80,29 +94,61 @@ export class GeminiProvider implements AIProvider {
     return body;
   }
 
-  private async request(body: Record<string, unknown>): Promise<Response> {
-    const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(this.modelName)}:generateContent`;
+  private async requestSingleModel(model: string, body: Record<string, unknown>): Promise<Response> {
+    const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`;
 
     for (let attempt = 0; ; attempt += 1) {
-      const response = await fetch(endpoint, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-goog-api-key': this.apiKey,
-        },
-        body: JSON.stringify(body),
-      });
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+      try {
+        const response = await fetch(endpoint, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-goog-api-key': this.apiKey,
+          },
+          body: JSON.stringify(body),
+          signal: controller.signal,
+        });
 
-      if (!RETRYABLE_STATUS_CODES.has(response.status) || attempt >= MAX_TRANSIENT_RETRIES) {
-        return response;
+        if (!RETRYABLE_STATUS_CODES.has(response.status) || attempt >= MAX_TRANSIENT_RETRIES) {
+          return response;
+        }
+
+        const retryAfterSeconds = Number(response.headers.get('retry-after'));
+        const retryAfterMs = Number.isFinite(retryAfterSeconds) && retryAfterSeconds > 0 ? retryAfterSeconds * 1000 : 0;
+        const exponentialDelayMs = BASE_RETRY_DELAY_MS * 2 ** attempt;
+        const delayMs = Math.min(Math.max(exponentialDelayMs, retryAfterMs), MAX_RETRY_DELAY_MS);
+        await new Promise((resolve) => setTimeout(resolve, delayMs));
+      } finally {
+        clearTimeout(timeout);
       }
-
-      const retryAfterSeconds = Number(response.headers.get('retry-after'));
-      const retryAfterMs = Number.isFinite(retryAfterSeconds) && retryAfterSeconds > 0 ? retryAfterSeconds * 1000 : 0;
-      const exponentialDelayMs = BASE_RETRY_DELAY_MS * 2 ** attempt;
-      const delayMs = Math.min(Math.max(exponentialDelayMs, retryAfterMs), MAX_RETRY_DELAY_MS);
-      await new Promise((resolve) => setTimeout(resolve, delayMs));
     }
+  }
+
+  private async request(body: Record<string, unknown>): Promise<{ response: Response; modelUsed: string }> {
+    const candidates = [this.modelName, ...FALLBACK_GEMINI_MODELS.filter((m) => m !== this.modelName)];
+    let lastError: unknown = null;
+    let lastResponse: Response | null = null;
+    let lastModel = this.modelName;
+
+    for (const candidateModel of candidates) {
+      lastModel = candidateModel;
+      try {
+        const response = await this.requestSingleModel(candidateModel, body);
+        lastResponse = response;
+        if (response.ok || (!RETRYABLE_STATUS_CODES.has(response.status) && response.status !== 404)) {
+          return { response, modelUsed: candidateModel };
+        }
+      } catch (err) {
+        lastError = err;
+      }
+    }
+
+    if (lastResponse) {
+      return { response: lastResponse, modelUsed: lastModel };
+    }
+    throw lastError || new Error('Gemini provider request failed.');
   }
 
   async generateStructuredOutput<T>(
@@ -117,14 +163,14 @@ export class GeminiProvider implements AIProvider {
       return this.failure(apiKeyError, 'AI_CONFIG_ERROR', startTime);
     }
 
-    // Basic rate limit check
-    const rateLimitError = checkRateLimit('structured');
+    // Basic rate limit check per unique prompt
+    const rateLimitError = checkRateLimit(promptKey('structured', prompt));
     if (rateLimitError) {
       return this.failure(rateLimitError, 'AI_RATE_LIMIT_ERROR', startTime);
     }
 
     try {
-      const response = await this.request(this.buildRequestBody(prompt, systemInstruction, true));
+      const { response, modelUsed } = await this.request(this.buildRequestBody(prompt, systemInstruction, true));
 
       if (!response.ok) {
         const errorBody = await response.text();
@@ -136,15 +182,15 @@ export class GeminiProvider implements AIProvider {
           // ignore parsing error
         }
         const category = response.status === 429 ? 'AI_RATE_LIMIT_ERROR' : response.status >= 500 ? 'AI_CAPACITY_ERROR' : 'AI_PROVIDER_ERROR';
-        return { ...this.failure(`Gemini Provider Error (HTTP ${response.status}): ${parsedErr}`, category, startTime), statusCode: response.status };
+        return { ...this.failure(`Gemini Provider Error (HTTP ${response.status}): ${parsedErr}`, category, startTime, undefined, modelUsed), statusCode: response.status };
       }
 
       const resJson = await response.json();
-      const rawText = resJson.candidates?.[0]?.content?.parts?.[0]?.text;
+      const rawText = extractCandidateText(resJson);
       const tokensUsed = resJson.usageMetadata?.totalTokenCount;
 
       if (!rawText) {
-        return this.failure('Gemini Provider returned empty response candidates.', 'AI_EMPTY_RESPONSE', startTime, tokensUsed);
+        return this.failure('Gemini Provider returned empty response candidates.', 'AI_EMPTY_RESPONSE', startTime, tokensUsed, modelUsed);
       }
 
       const cleanedText = rawText.trim().replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/i, '').trim();
@@ -155,25 +201,28 @@ export class GeminiProvider implements AIProvider {
         parsedJson = JSON.parse(cleanedText);
       } catch (jsonErr: unknown) {
         const message = jsonErr instanceof Error ? jsonErr.message : 'Unknown JSON parsing error';
-        return this.failure(`Malformed JSON response from Gemini model: ${message}`, 'AI_PARSE_ERROR', startTime);
+        return this.failure(`Malformed JSON response from Gemini model: ${message}`, 'AI_PARSE_ERROR', startTime, tokensUsed, modelUsed);
       }
 
       // Zod Validation
       const parseResult = schema.safeParse(parsedJson);
       if (!parseResult.success) {
         const zodErrMsg = parseResult.error.errors.map((e) => `${e.path.join('.')}: ${e.message}`).join(', ');
-        return this.failure(`Zod validation failed for model response: ${zodErrMsg}`, 'AI_SCHEMA_ERROR', startTime);
+        return this.failure(`Zod validation failed for model response: ${zodErrMsg}`, 'AI_SCHEMA_ERROR', startTime, tokensUsed, modelUsed);
       }
 
       return {
         success: true,
         data: parseResult.data,
         provider: this.name,
-        model: this.modelName,
+        model: modelUsed,
         latencyMs: Date.now() - startTime,
         tokensUsed,
       };
     } catch (err: unknown) {
+      if (err instanceof Error && err.name === 'AbortError') {
+        return this.failure('Gemini provider request timed out.', 'AI_TIMEOUT_ERROR', startTime);
+      }
       const message = err instanceof Error ? err.message : 'Failed to call Gemini provider';
       return this.failure(message, 'AI_NETWORK_ERROR', startTime);
     }
@@ -190,14 +239,14 @@ export class GeminiProvider implements AIProvider {
       return this.failure(apiKeyError, 'AI_CONFIG_ERROR', startTime);
     }
 
-    // Basic rate limit check
-    const rateLimitError = checkRateLimit('text');
+    // Basic rate limit check per unique prompt
+    const rateLimitError = checkRateLimit(promptKey('text', prompt));
     if (rateLimitError) {
       return this.failure(rateLimitError, 'AI_RATE_LIMIT_ERROR', startTime);
     }
 
     try {
-      const response = await this.request(this.buildRequestBody(prompt, systemInstruction, false));
+      const { response, modelUsed } = await this.request(this.buildRequestBody(prompt, systemInstruction, false));
 
       if (!response.ok) {
         const errorBody = await response.text();
@@ -209,26 +258,29 @@ export class GeminiProvider implements AIProvider {
           // ignore parsing error
         }
         const category = response.status === 429 ? 'AI_RATE_LIMIT_ERROR' : response.status >= 500 ? 'AI_CAPACITY_ERROR' : 'AI_PROVIDER_ERROR';
-        return { ...this.failure(`Gemini Provider Error (HTTP ${response.status}): ${parsedErr}`, category, startTime), statusCode: response.status };
+        return { ...this.failure(`Gemini Provider Error (HTTP ${response.status}): ${parsedErr}`, category, startTime, undefined, modelUsed), statusCode: response.status };
       }
 
       const resJson = await response.json();
-      const rawText = resJson.candidates?.[0]?.content?.parts?.[0]?.text;
+      const rawText = extractCandidateText(resJson);
       const tokensUsed = resJson.usageMetadata?.totalTokenCount;
 
       if (!rawText) {
-        return this.failure('Gemini Provider returned empty response candidates.', 'AI_EMPTY_RESPONSE', startTime);
+        return this.failure('Gemini Provider returned empty response candidates.', 'AI_EMPTY_RESPONSE', startTime, tokensUsed, modelUsed);
       }
 
       return {
         success: true,
         data: rawText,
         provider: this.name,
-        model: this.modelName,
+        model: modelUsed,
         latencyMs: Date.now() - startTime,
         tokensUsed,
       };
     } catch (err: unknown) {
+      if (err instanceof Error && err.name === 'AbortError') {
+        return this.failure('Gemini provider request timed out.', 'AI_TIMEOUT_ERROR', startTime);
+      }
       const message = err instanceof Error ? err.message : 'Failed to call Gemini provider';
       return this.failure(message, 'AI_NETWORK_ERROR', startTime);
     }
