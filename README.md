@@ -12,9 +12,16 @@ An AI-driven career guidance, skill readiness, and placement enablement platform
 [![Tailwind CSS](https://img.shields.io/badge/Tailwind-3.4-38B2AC?logo=tailwind-css)](https://tailwindcss.com/)
 [![Supabase](https://img.shields.io/badge/Supabase-PostgreSQL-3ECF8E?logo=supabase)](https://supabase.com/)
 
-[**Explore Live Demo**](https://career-setu-hslc.vercel.app) • [**Report an Issue**](https://github.com/SKYWALKERSID/Career-Setu/issues) • [**Architecture & Docs**](#architecture)
+[**Explore Live Demo**](https://career-setu-hslc.vercel.app) • [**Interactive Presentation (HTML)**](https://career-setu-hslc.vercel.app/presentation.html) • [**Download Master Deck (PDF)**](docs/CareerSetu_Master_Deck.pdf) • [**Report an Issue**](https://github.com/SKYWALKERSID/Career-Setu/issues)
 
 </div>
+
+---
+
+> 🖥️ **Master Presentation Deck (16:9 Format)**  
+> - **Live Interactive Deck (Browser):** [Open Presentation Deck](https://career-setu-hslc.vercel.app/presentation.html) *(or view via [GitHub HTMLPreview](https://htmlpreview.github.io/?https://github.com/SKYWALKERSID/Career-Setu/blob/main/docs/presentation-deck.html))*  
+> - **Print / Download Deck (PDF):** [`docs/CareerSetu_Master_Deck.pdf`](docs/CareerSetu_Master_Deck.pdf)  
+> - **Deck Source Code:** [`docs/presentation-deck.html`](docs/presentation-deck.html)
 
 ---
 
@@ -294,6 +301,6 @@ Distributed under the **MIT License**. See [`LICENSE`](LICENSE) for complete det
 
 Built with ❤️ for ambitious students everywhere.
 
-[**Launch CareerSetu**](https://career-setu-hslc.vercel.app)
+[**Launch CareerSetu**](https://career-setu-hslc.vercel.app) • [**Interactive Deck (HTML)**](https://career-setu-hslc.vercel.app/presentation.html) • [**Master Deck (PDF)**](docs/CareerSetu_Master_Deck.pdf)
 
 </div>
