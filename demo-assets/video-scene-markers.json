@@ -1,0 +1,58 @@
+{
+  "scenes": [
+    {
+      "id": "scene-01-hook",
+      "voDurationSec": 10.6,
+      "videoStartSec": 4.794,
+      "videoEndSec": 15.65
+    },
+    {
+      "id": "scene-02-onboarding",
+      "voDurationSec": 9.59,
+      "videoStartSec": 16.595,
+      "videoEndSec": 26.201
+    },
+    {
+      "id": "scene-03-readiness",
+      "voDurationSec": 11.14,
+      "videoStartSec": 26.834,
+      "videoEndSec": 38.902
+    },
+    {
+      "id": "scene-04-skillgap",
+      "voDurationSec": 9.68,
+      "videoStartSec": 39.952,
+      "videoEndSec": 50.04
+    },
+    {
+      "id": "scene-05-roadmap",
+      "voDurationSec": 9.48,
+      "videoStartSec": 51.086,
+      "videoEndSec": 61.184
+    },
+    {
+      "id": "scene-06-opportunities",
+      "voDurationSec": 9.71,
+      "videoStartSec": 62.228,
+      "videoEndSec": 71.986
+    },
+    {
+      "id": "scene-07-resume",
+      "voDurationSec": 9.98,
+      "videoStartSec": 73.032,
+      "videoEndSec": 83.172
+    },
+    {
+      "id": "scene-08-interview",
+      "voDurationSec": 9.33,
+      "videoStartSec": 84.191,
+      "videoEndSec": 94.165
+    },
+    {
+      "id": "scene-09-outro",
+      "voDurationSec": 8.26,
+      "videoStartSec": 95.048,
+      "videoEndSec": 103.328
+    }
+  ]
+}

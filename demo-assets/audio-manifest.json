@@ -1,0 +1,82 @@
+{
+  "generatedAt": "2026-10-29T18:13:07.867Z",
+  "voiceConfig": {
+    "languageCode": "en-US",
+    "primaryModel": "en-US-Journey-F",
+    "secondaryModel": "en-US-Neural2-F",
+    "geminiStudioVoice": "Kore",
+    "speakingRate": 1.04,
+    "pitch": 0
+  },
+  "totalDurationSec": 87.77,
+  "scenes": [
+    {
+      "id": "scene-01-hook",
+      "text": "Meet CareerSetu. Bridging higher education to meaningful careers. Moving students from passive chatbot answers to measurable readiness and action.",
+      "startSec": 0,
+      "durationSec": 10.6,
+      "wavPath": "C:\\Users\\ASUS\\Desktop\\CAREER SETU\\demo-assets\\voiceovers\\scene-01-hook.wav"
+    },
+    {
+      "id": "scene-02-onboarding",
+      "text": "In seconds, Aarav calibrates his degree, verified Python, SQL, and FastAPI stack, and locks onto a Data Engineering trajectory.",
+      "startSec": 10.6,
+      "durationSec": 9.59,
+      "wavPath": "C:\\Users\\ASUS\\Desktop\\CAREER SETU\\demo-assets\\voiceovers\\scene-02-onboarding.wav"
+    },
+    {
+      "id": "scene-03-readiness",
+      "text": "Zero black-box mystery. The explainable Readiness Engine scores six weighted dimensions across technical skills, practical projects, academics, and communication.",
+      "startSec": 20.19,
+      "durationSec": 11.14,
+      "wavPath": "C:\\Users\\ASUS\\Desktop\\CAREER SETU\\demo-assets\\voiceovers\\scene-03-readiness.wav"
+    },
+    {
+      "id": "scene-04-skillgap",
+      "text": "High-speed set intersections match Aarav to Data Systems Engineer, explaining the fit while pinpointing exact deficits like Apache Spark and Docker.",
+      "startSec": 31.33,
+      "durationSec": 9.68,
+      "wavPath": "C:\\Users\\ASUS\\Desktop\\CAREER SETU\\demo-assets\\voiceovers\\scene-04-skillgap.wav"
+    },
+    {
+      "id": "scene-05-roadmap",
+      "text": "Missing skills become a ninety-day execution roadmap across three phases. Completing a weekly lab recalibrates his readiness score in real time.",
+      "startSec": 41.01,
+      "durationSec": 9.48,
+      "wavPath": "C:\\Users\\ASUS\\Desktop\\CAREER SETU\\demo-assets\\voiceovers\\scene-05-roadmap.wav"
+    },
+    {
+      "id": "scene-06-opportunities",
+      "text": "Curated opportunity matching connects verified skills directly to industry internships and new-grad engineering roles with transparent qualification criteria.",
+      "startSec": 50.49,
+      "durationSec": 9.71,
+      "wavPath": "C:\\Users\\ASUS\\Desktop\\CAREER SETU\\demo-assets\\voiceovers\\scene-06-opportunities.wav"
+    },
+    {
+      "id": "scene-07-resume",
+      "text": "The Evidence-Grounded Resume Copilot transforms weak bullets into metric-driven impact statements, strictly anchored to real achievements with zero hallucinated claims.",
+      "startSec": 60.2,
+      "durationSec": 9.98,
+      "wavPath": "C:\\Users\\ASUS\\Desktop\\CAREER SETU\\demo-assets\\voiceovers\\scene-07-resume.wav"
+    },
+    {
+      "id": "scene-08-interview",
+      "text": "Adaptive multi-turn AI mock interviews test system depth and SQL optimization, delivering instant STAR rubric scorecards for accuracy and clarity.",
+      "startSec": 70.18,
+      "durationSec": 9.33,
+      "wavPath": "C:\\Users\\ASUS\\Desktop\\CAREER SETU\\demo-assets\\voiceovers\\scene-08-interview.wav"
+    },
+    {
+      "id": "scene-09-outro",
+      "text": "With cohort-wide analytics for universities and placement teams, CareerSetu turns student aspiration into actionable readiness.",
+      "startSec": 79.51,
+      "durationSec": 8.26,
+      "wavPath": "C:\\Users\\ASUS\\Desktop\\CAREER SETU\\demo-assets\\voiceovers\\scene-09-outro.wav"
+    }
+  ],
+  "sfx": {
+    "subBassPath": "C:\\Users\\ASUS\\Desktop\\CAREER SETU\\demo-assets\\sfx\\sub-bass-drop.wav",
+    "whooshPath": "C:\\Users\\ASUS\\Desktop\\CAREER SETU\\demo-assets\\sfx\\cinematic-whoosh.wav",
+    "ambientBedPath": "C:\\Users\\ASUS\\Desktop\\CAREER SETU\\demo-assets\\sfx\\ambient-tech-bed.wav"
+  }
+}

@@ -268,3 +268,4 @@ runWalkthrough().catch((err) => {
   console.error('Walkthrough recording error:', err);
   process.exit(1);
 });
+
