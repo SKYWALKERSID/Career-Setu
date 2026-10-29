@@ -12,7 +12,7 @@ An AI-driven career guidance, skill readiness, and placement enablement platform
 [![Tailwind CSS](https://img.shields.io/badge/Tailwind-3.4-38B2AC?logo=tailwind-css)](https://tailwindcss.com/)
 [![Supabase](https://img.shields.io/badge/Supabase-PostgreSQL-3ECF8E?logo=supabase)](https://supabase.com/)
 
-[**Explore Live Demo**](https://career-setu-hslc.vercel.app) · [**Report an Issue**](https://github.com/SKYALKERSID/Career-Setu/issues) · [**Architecture & Docs**](#architecture)
+[**Explore Live Demo**](https://career-setu-hslc.vercel.app) • [**Report an Issue**](https://github.com/SKYWALKERSID/Career-Setu/issues) • [**Architecture & Docs**](#architecture)
 
 </div>
 
@@ -184,7 +184,7 @@ Rather than a black-box percentage, the platform evaluates readiness across six 
 ### 1. Clone the Repository
 
 ```bash
-git clone https://github.com/SKYALKERSID/Career-Setu.git
+git clone https://github.com/SKYWALKERSID/Career-Setu.git
 cd Career-Setu
 ```
 
