@@ -1,799 +1,299 @@
 <div align="center">
 
-# MP CareerSetu
+# MP CareerSetu 🚀
 
-### AI-Powered Career Readiness & Employability Platform
+**Bridging Higher Education to Meaningful Careers Across Madhya Pradesh**
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE) [![Next.js](https://img.shields.io/badge/Next.js-15-black)](https://nextjs.org/) [![TypeScript](https://img.shields.io/badge/TypeScript-5.7-blue)](https://www.typescriptlang.org/) [![Tailwind CSS](https://img.shields.io/badge/Tailwind-3.4-38B2AC)](https://tailwindcss.com/) [![Supabase](https://img.shields.io/badge/Supabase-PostgreSQL-emerald)](https://supabase.com/)
+An AI-driven career guidance, skill readiness, and placement enablement platform built for students across universities, colleges, and polytechnics in MP.
 
-**Move from academic profile → career target → skill gap → action plan → opportunity → interview readiness.**
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![Next.js 15](https://img.shields.io/badge/Next.js-15.1-black?logo=next.js)](https://nextjs.org/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.7-3178C6?logo=typescript)](https://www.typescriptlang.org/)
+[![Tailwind CSS](https://img.shields.io/badge/Tailwind-3.4-38B2AC?logo=tailwind-css)](https://tailwindcss.com/)
+[![Supabase](https://img.shields.io/badge/Supabase-PostgreSQL-3ECF8E?logo=supabase)](https://supabase.com/)
 
-[Live Demo](https://career-setu-hslc.vercel.app) · [GitHub Repository](https://github.com/SKYALKERSID/Career-Setu)
+[**Explore Live Demo**](https://career-setu-hslc.vercel.app) · [**Report an Issue**](https://github.com/SKYALKERSID/Career-Setu/issues) · [**Architecture & Docs**](#architecture)
 
 </div>
 
 ---
 
-## Overview
+## 💡 Why MP CareerSetu?
 
-**MP CareerSetu** is an AI-enabled student career platform designed for the Madhya Pradesh government/public-service context. It analyzes a student's academic profile, skills, resume, and career interests, then converts that information into an actionable career plan.
+Most college students in Tier-2 and Tier-3 institutions across Madhya Pradesh face a common barrier: **the gap between what is taught in academic syllabi and what modern employers or state public sector exams demand.**
 
-The MVP is designed around demonstrable outcomes rather than feature breadth: a student should leave the platform knowing **what career to target, what skills are missing, what to learn next, which opportunities fit, and how prepared they are for selection**.
+Without access to personalized career coaching or placement cells, students frequently don't know:
+- Which career trajectories match their degree, branch, and current semester.
+- What specific skills they lack compared to industry job requirements.
+- How to structure their remaining semesters into a concrete, week-by-week learning plan.
+- How to draft an ATS-friendly, evidence-backed resume without exaggerating facts.
+- How to practice technical and behavioral interviews with real-time feedback.
 
-CareerSetu is intentionally designed as a continuous journey rather than a one-time chatbot interaction.
-
-> **Readiness → Action, rather than Chatbot → Answer.**
-
-Every AI output is intended to lead to a measurable next step.
-
----
-
-## Problem It Solves
-
-CareerSetu directly addresses the need for an AI-enabled platform that can:
-
-- Analyze student profiles and academic records.
-- Recommend career paths and government employment opportunities.
-- Identify skill gaps and suggest learning interventions.
-- Recommend courses and certifications.
-- Match internships and job opportunities.
-- Generate AI-based resume improvements.
-- Conduct role-specific mock interviews.
-
-The platform is aimed especially at students who do not have access to high-quality one-to-one career counselling.
+**MP CareerSetu** addresses this challenge with a unified platform that transforms a student's profile into an **actionable, evidence-backed 90-day readiness roadmap**.
 
 ---
 
-## Product Vision
+## 🌟 Key Features
 
-Make career guidance **personalized, evidence-driven, and actionable** for students across Madhya Pradesh.
+### 1. 🎓 Degree-Aware Academic Profiling
+- Built on a comprehensive academic taxonomy covering UGC, AICTE, and state university degrees (**B.Tech, BCA, B.Sc, B.Com, MCA, Polytechnic Diplomas, and more**).
+- Dynamic semester progression awareness (2-year to 5-year degrees).
+- District-level location preferences across all 55+ districts in Madhya Pradesh.
 
-CareerSetu is not intended to replace human career counsellors for high-stakes decisions, guarantee job placement, or act as the final authority on eligibility. Official sources remain authoritative for real-world eligibility decisions.
+### 2. 📊 Explainable Career Readiness Score (0–100)
+Rather than a black-box percentage, the platform evaluates readiness across six transparent, weighted dimensions:
+- **Technical & Domain Skills (25%)**: Skill inventory matched against role requirements.
+- **Practical Projects & Evidence (20%)**: Hands-on project portfolio and repository links.
+- **Academic Foundation (15%)**: Coursework, branch alignment, and aggregate CGPA.
+- **Resume Quality (15%)**: Structural clarity, ATS readability, and impact metrics.
+- **Communication & Interview Confidence (15%)**: Practice mock interview performance.
+- **Career Alignment (10%)**: Consistency between chosen domains and target roles.
+
+### 3. 🎯 AI Career Recommendations & Skill-Gap Analysis
+- Analyzes candidate skills against a catalog of 30+ specialized career paths.
+- Computes exact match percentages, highlighting high-priority missing skills.
+- Optimized AI pipeline using compact server-side skill intersections and dual-layer caching (in-memory TTL + database-backed run hashing) to guarantee fast, sub-3-second responses without token limits.
+
+### 4. 🗓️ 90-Day Actionable Roadmap
+- Generates a 12-week structured curriculum broken into three 30-day phases:
+  - **Weeks 1–4**: Foundational core concepts & prerequisite tooling.
+  - **Weeks 5–8**: Real-world portfolio project implementation.
+  - **Weeks 9–12**: Interview preparation, system design/problem solving, and application prep.
+- Interactive task tracking with completion progress synced directly to your readiness score.
+
+### 5. 💼 Opportunity Matching & State Initiatives
+- Aggregates internships, entry-level corporate openings, and Madhya Pradesh state public initiatives.
+- Provides transparent match breakdowns explaining *why* an opportunity fits your profile.
+- Hard filters for district location, minimum eligibility, degree level, and semester.
+
+### 6. 📄 Resume Copilot (Evidence-Grounded)
+- Direct PDF parsing using `pdfjs-dist` on the client and server.
+- Analyzes resume bullet points against your target role.
+- Generates metric-driven rewrites using the Google/Harvard **"Accomplished [X], as measured by [Y], by doing [Z]"** format.
+- Strictly guards against fact hallucination—only refines existing experience without fabricating credentials.
+
+### 7. 🎙️ Role-Specific AI Mock Interviews
+- Simulates realistic technical and behavioral interviews tailored to your target job role.
+- Supports multi-turn conversational dialogue with dynamic follow-up questions.
+- Produces comprehensive post-interview feedback evaluated on the STAR method (Situation, Task, Action, Result) with scores for technical accuracy, clarity, and depth.
 
 ---
 
-# Core User Journey
+## 🏛️ System Architecture
 
 ```text
-Onboarding
-    ↓
-Profile Completion
-    ↓
-Resume Upload
-    ↓
-Career Assessment
-    ↓
-Career Readiness Score
-    ↓
-Recommended Career Paths
-    ↓
-Skill-Gap Analysis
-    ↓
-Personalized 90-Day Roadmap
-    ↓
-Course / Certification Suggestions
-    ↓
-Opportunity Matching
-    ↓
-Resume Improvement
-    ↓
-Mock Interview
-    ↓
-Progress Tracking
-```
-
-The PRD defines this as the central product journey, connecting career discovery with concrete preparation and measurable progress.
-
----
-
-# Core Features
-
-## 1. Student Profile
-
-Students create and maintain a structured profile containing:
-
-- academic details
-- branch / discipline
-- semester
-- CGPA / grades where provided
-- skills
-- interests
-- location
-- preferred career domains
-- target careers
-
-The profile is editable and can be used to recalculate readiness.
-
----
-
-## 2. AI Profile Analysis
-
-The platform uses structured AI analysis of normalized student profile information and resume facts.
-
-The intended output includes structured:
-
-- strengths
-- weaknesses
-- evidence
-- missing data
-
-AI outputs are validated before being persisted or shown in the UI.
-
----
-
-## 3. Career Readiness Score
-
-CareerSetu uses an explainable **0–100 Career Readiness Score** rather than an opaque model for the MVP.
-
-| Dimension | Weight |
-|---|---:|
-| Technical / domain skills | 25% |
-| Academic foundation | 15% |
-| Projects / practical evidence | 20% |
-| Resume quality | 15% |
-| Communication / interview readiness | 15% |
-| Career alignment | 10% |
-
-The score is an **advisory indicator**, not a hiring decision.
-
----
-
-## 4. Career Recommendations
-
-CareerSetu recommends career paths based on profile evidence and career-role context.
-
-Each recommendation is intended to provide:
-
-- a fit score
-- rationale / explanation
-- missing skills
-- next steps
-
-The MVP target is the **top 3 career paths with fit explanation** where defensible catalog matches exist.
-
----
-
-## 5. Skill-Gap Engine
-
-The Skill Gap Engine compares the student's current skills with the selected target role's requirements.
-
-It is intended to produce:
-
-- ranked skill gaps
-- suggested learning actions
-
-This connects career recommendations to practical preparation rather than stopping at a recommendation.
-
----
-
-## 6. Personalized 90-Day Roadmap
-
-The platform turns identified gaps into a structured 90-day action plan with weekly milestones for:
-
-- learning
-- projects
-- interview preparation
-
-The roadmap is expected to contain measurable tasks and coherent sequencing.
-
----
-
-## 7. Course & Certification Discovery
-
-CareerSetu maps identified gaps to curated learning resources.
-
-The intended experience includes relevance and reasons for each recommendation, connecting learning directly to the student's identified needs.
-
----
-
-## 8. Opportunity Matching
-
-Opportunity matching uses a hybrid approach:
-
-```text
-Hard Filters
-    ↓
-Skill Similarity
-    ↓
-Goal Alignment
-    ↓
-Evidence Strength
-    ↓
-Semantic Similarity
-    ↓
-Explain Match Reasons
-```
-
-Hard filters can include:
-
-- location
-- education level
-- branch / discipline
-- experience
-- explicit eligibility where available
-
-Semantic ranking then considers skill overlap, career goals, interests, and roadmap alignment.
-
-The PRD also identifies government employment opportunities as a first-class destination in the product.
-
----
-
-## 9. Resume Copilot
-
-Resume Copilot provides AI-assisted resume improvement and targeted rewriting.
-
-The technical design defines Resume Improvement as taking:
-
-```text
-Parsed Resume + Target Role
-        ↓
-Issues + Rewritten Bullets + Missing Evidence
-```
-
-The product requirement is explicit that improved bullets must **not invent facts**.
-
-The broader Resume Copilot workflow is intended to keep the resume grounded in source information while producing actionable career-specific improvements.
-
----
-
-## 10. Mock Interview
-
-The Mock Interview feature provides a role-specific conversational interview experience.
-
-It is designed to:
-
-- ask questions
-- capture answers
-- score responses
-- return rubric-based feedback
-- continue the interview with the next question
-
-The technical prompt architecture uses target role, difficulty, and prior answers as inputs.
-
----
-
-## 11. Progress Tracking
-
-Progress Tracking connects roadmap completion with readiness and score trends.
-
-Students can mark roadmap tasks complete and review progress over time.
-
----
-
-## 12. Admin / Institutional View
-
-The planned admin experience is designed around aggregate, anonymized insight rather than unnecessary exposure of individual personal data.
-
-The PRD identifies use cases including:
-
-- common skill-gap analysis
-- aggregate usage
-- intervention metrics
-- placement / counselling support
-
-The admin dashboard is a P1 feature in the MVP prioritization and is intended for demo/admin use.
-
----
-
-# Product Differentiator
-
-CareerSetu is built around a **Readiness → Action** model rather than a **Chatbot → Answer** model.
-
-The PRD highlights five differentiating principles:
-
-1. Explainable readiness scoring instead of generic AI advice.
-2. Evidence-backed recommendations tied to the student profile.
-3. Government employment opportunities as a first-class destination.
-4. A 90-day action plan that converts recommendations into tasks.
-5. One continuous journey from profile to mock interview.
-
-This creates a connected flow:
-
-```text
-Student Evidence
-      ↓
-Career Decision Support
-      ↓
-Skill Gaps
-      ↓
-Action Plan
-      ↓
-Learning
-      ↓
-Opportunity
-      ↓
-Resume
-      ↓
-Interview
-      ↓
-Progress
+┌─────────────────────────────────────────────────────────────┐
+│                    Next.js 15 Client Layer                  │
+│       Tailwind CSS  •  shadcn/ui  •  Lucide  •  Recharts     │
+└───────────────┬─────────────────────────────▲───────────────┘
+                │ HTTP / Server Actions       │ Hydrated State
+┌───────────────▼─────────────────────────────┴───────────────┐
+│                   Next.js App Router (Node.js)              │
+│  ┌───────────────────────┐       ┌───────────────────────┐  │
+│  │    Profile Service    │       │   Roadmap Service     │  │
+│  ├───────────────────────┤       ├───────────────────────┤  │
+│  │ Recommendation Engine │       │  Resume Copilot / PDF │  │
+│  ├───────────────────────┤       ├───────────────────────┤  │
+│  │   Interview Service   │       │ Opportunities Matcher │  │
+│  └───────────┬───────────┘       └───────────┬───────────┘  │
+│              │                               │              │
+│              ▼                               ▼              │
+│  ┌───────────────────────────────────────────────────────┐  │
+│  │            AI Gateway & Multi-Layer Cache             │  │
+│  │  • 15-Minute In-Memory TTL Cache                      │  │
+│  │  • Database Input-Hash Versioned Prompt Cache         │  │
+│  │  • Primary: Groq (openai/gpt-oss-120b)                │  │
+│  │  • Fallback: Google Gemini (gemini-2.0-flash)         │  │
+│  │  • Zod Strict Schema Enforcement & Auto-Repair        │  │
+│  └───────────────────────────┬───────────────────────────┘  │
+└──────────────────────────────┼──────────────────────────────┘
+                               │
+                               ▼
+┌─────────────────────────────────────────────────────────────┐
+│                  Supabase / PostgreSQL 15                   │
+│   • Row-Level Security (RLS) on all user data               │
+│   • Relational Catalog (Degrees, Branches, Skills, Roles)   │
+│   • Stored Resumes in Secure Encrypted Storage              │
+│   • AI Audit Run Logs & Versioned Evaluation Results        │
+└─────────────────────────────────────────────────────────────┘
 ```
 
 ---
 
-# AI Design Principles
+## 🛠️ Tech Stack
 
-CareerSetu's technical design intentionally keeps AI structured and controllable.
-
-## Structured Outputs
-
-Every AI feature feeding the UI should request JSON matching a strict schema and should be validated with Zod before persistence or display. Malformed responses are rejected and can be repaired once through a repair prompt.
-
-## Retrieval-First Design
-
-Factual catalogs should come from application-controlled records rather than being invented by the model.
-
-Career role requirements, course metadata, and opportunities should be retrieved from controlled application data. The model interprets and ranks retrieved records; it does not create official eligibility facts from memory.
-
-## AI as Interpretation, Not Authority
-
-AI is designed to support decisions and provide explanations. Official sources remain authoritative for eligibility and real-world opportunity information.
+| Domain | Technologies |
+|---|---|
+| **Framework** | [Next.js 15](https://nextjs.org/) (App Router, Server Actions, Route Handlers) |
+| **Language** | [TypeScript 5.7](https://www.typescriptlang.org/) |
+| **Styling** | [Tailwind CSS 3.4](https://tailwindcss.com/) with custom MP Government theme palette |
+| **UI Components** | [shadcn/ui](https://ui.shadcn.com/) primitives + [Lucide Icons](https://lucide.dev/) |
+| **Database & Auth** | [Supabase](https://supabase.com/) (PostgreSQL 15, Row Level Security, Auth, Storage) |
+| **AI Providers** | [Groq](https://groq.com/) (`openai/gpt-oss-120b`) & [Google Gemini API](https://ai.google.dev/) (`gemini-2.0-flash`) |
+| **Schema Validation** | [Zod 3.24](https://zod.dev/) for type-safe inputs and AI output parsing |
+| **Document Processing** | `pdfjs-dist` for in-browser and server-side resume parsing |
+| **Data Visualization** | [Recharts](https://recharts.org/) for readiness radar and progress charts |
+| **Deployment** | [Vercel](https://vercel.com/) |
 
 ---
 
-# Architecture
-
-CareerSetu follows a **modular monolith** approach using managed infrastructure and structured AI outputs.
-
-The engineering principle is to maximize judging reliability and visible functionality while avoiding unnecessary microservices or custom model training.
-
-### High-Level Architecture
+## 📂 Project Structure
 
 ```text
-Browser
-   ↓
-Next.js UI
-   ↓
-API / Server Actions
-   ↓
-Domain Services
-   ↓
-PostgreSQL / Storage / Vector
-   ↓
-Search / AI Gateway
-   ↓
-LLM Provider
+├── public/                 # Static assets, branding logos, icons
+├── src/
+│   ├── app/                # Next.js App Router pages & server routes
+│   │   ├── (auth)/         # Login, Sign Up, and Password Reset flows
+│   │   ├── admin/          # Institutional insight & analytics dashboard
+│   │   ├── career/         # Career path discovery & skill-gap inspection
+│   │   ├── courses/        # Recommended course resources & certifications
+│   │   ├── dashboard/      # Main student dashboard & readiness summary
+│   │   ├── interview/      # Mock interview setup, chat session & report
+│   │   ├── onboarding/     # 5-step guided student onboarding wizard
+│   │   ├── opportunities/  # Internship and job matching portal
+│   │   ├── progress/       # 90-day roadmap task checklist & milestones
+│   │   ├── resume/         # Resume upload, ATS scanner & bullet enhancer
+│   │   └── settings/       # Profile management & academic information
+│   ├── components/         # Reusable React UI components
+│   │   ├── academic/       # Degree & branch searchable comboboxes
+│   │   ├── onboarding/     # Step visuals and completion graphics
+│   │   └── ui/             # Core UI atoms (Button, Card, Select, Badge)
+│   ├── lib/                # Business logic, services & shared utilities
+│   │   ├── academic/       # UGC/AICTE degree & branch taxonomies
+│   │   ├── ai/             # AI gateway, prompt templates, and caching
+│   │   │   ├── providers/  # Groq and Gemini API client integrations
+│   │   │   └── prompts/    # Validated prompt builders for all features
+│   │   ├── profile/        # Profile actions, scoring algorithms & schemas
+│   │   └── supabase/       # Supabase client & server session helpers
+│   └── types/              # Global TypeScript definitions
+├── supabase/               # Database migrations, seed data & schema DDL
+└── tests/                  # Playwright end-to-end and smoke test specs
 ```
 
-The AI Gateway centralizes prompt templates, model calls, retries, JSON-schema validation, and safety rules.
-
 ---
 
-# Technology Stack
+## ⚡ Getting Started
 
-| Layer | Technology / Approach |
-|---|---|
-| Web app | Next.js + TypeScript + Tailwind CSS |
-| UI | shadcn/ui + Lucide icons |
-| Authentication | Supabase Auth |
-| Database | PostgreSQL via Supabase |
-| File storage | Supabase Storage |
-| AI orchestration | Server-side TypeScript functions |
-| LLM | Approved model endpoint behind the AI Gateway |
-| Embeddings | pgvector / managed vector store |
-| Charts | Recharts |
-| Telemetry | Sentry + lightweight event logging |
-| Deployment | Vercel + Supabase |
+### Prerequisites
 
-These choices come directly from the TRD's recommended stack.
+- **Node.js**: v18.18 or higher (LTS recommended)
+- **npm** or **pnpm**
+- **Supabase Account**: A free project with PostgreSQL and Auth enabled
+- **AI API Key**: Groq API Key (recommended) or Google Gemini API Key
 
----
-
-# Domain Services
-
-The platform is organized into domain-oriented services:
-
-| Service | Responsibility |
-|---|---|
-| Profile Service | Student profile CRUD and normalization |
-| Assessment Service | Career Readiness Score and dimension breakdown |
-| Recommendation Service | Career, course, and opportunity recommendations |
-| Matching Service | Hard filters and semantic-similarity ranking |
-| Resume Service | Resume text extraction, fact structuring, suggestions |
-| Interview Service | Question generation, answer capture, scoring, feedback |
-| AI Gateway | Prompt templates, model calls, retries, schema validation, safety |
-| Data layer | Postgres, storage, vector embeddings, audit metadata |
-
----
-
-# Core Data Model
-
-The TRD defines the following core entities:
-
-```text
-users
-student_profiles
-skills
-student_skills
-career_roles
-career_recommendations
-roadmaps
-roadmap_tasks
-opportunities
-opportunity_matches
-resumes
-interviews
-interview_turns
-ai_runs
-```
-
-Important relationships include:
-
-- student profiles → target careers
-- student skills → canonical skills
-- career roles → required / preferred skills
-- recommendations → student + role
-- roadmaps → student + target role
-- roadmap tasks → roadmap
-- opportunities → source / eligibility / skills
-- opportunity matches → student + opportunity
-- resumes → student + stored source + extracted text + parsed data
-- interviews → student + role
-- AI runs → feature-level AI telemetry
-
----
-
-# API Surface
-
-The technical design defines the following protected product actions:
-
-| Method | Endpoint / Action | Purpose |
-|---|---|---|
-| POST | `/api/profile` | Create / update profile |
-| POST | `/api/profile/analyze` | Run profile analysis |
-| POST | `/api/career/recommend` | Generate career recommendations |
-| POST | `/api/roadmap/generate` | Generate 90-day roadmap |
-| GET | `/api/opportunities` | List filtered opportunities |
-| POST | `/api/opportunities/match` | Return ranked matches |
-| POST | `/api/resume/parse` | Parse uploaded resume |
-| POST | `/api/resume/improve` | Generate targeted improvements |
-| POST | `/api/interview/start` | Create interview session |
-| POST | `/api/interview/respond` | Score answer and generate next question |
-| GET | `/api/dashboard` | Return student progress data |
-
-Every protected action should apply server-side authorization, and provider API keys must never reach the client.
-
----
-
-# Security & Privacy
-
-Security is part of the technical architecture, not an afterthought.
-
-CareerSetu is designed to:
-
-- use Supabase Row Level Security for student-owned records
-- store uploaded resumes in private buckets
-- generate short-lived signed URLs where needed
-- use HTTPS for data in transit
-- rely on managed encrypted storage at rest
-- avoid logging raw resumes, interview answers, or AI tokens
-- keep provider keys only in server-side environment variables
-- apply rate limits to AI endpoints
-- use least-privilege database roles
-- avoid sensitive demographic attributes in recommendation scores
-- provide account/data deletion workflow in the technical backlog
-
-The product also requires unauthorized access to another student's data to fail.
-
----
-
-# AI Safety & Trust
-
-CareerSetu's AI layer follows several explicit trust requirements:
-
-- Never invent a qualification, job, deadline, salary, eligibility rule, or certification.
-- Display source / last-verified metadata for opportunities where possible.
-- Explicitly label inferred information and uncertainty.
-- Keep resumes and academic records private by default.
-- Do not use sensitive personal attributes for career ranking.
-- Provide a "Why am I seeing this?" explanation for recommendations.
-- Allow users to correct profile data and regenerate outputs.
-
----
-
-# Reliability & Fallbacks
-
-The TRD explicitly designs for third-party failure and judging reliability.
-
-| Risk | Fallback |
-|---|---|
-| LLM timeout | Retry once, then return cached / demo-safe response where applicable |
-| Malformed JSON | Schema validation → repair call → deterministic fallback |
-| Opportunity data unavailable | Seeded verified demo dataset with visible source metadata |
-| Embedding service unavailable | Keyword / skill-taxonomy scoring |
-| Resume parsing fails | Manual profile input + actionable error |
-| Internet degradation | Core dashboard, sample profiles, and precomputed demo outputs |
-
-The architecture also keeps provider choice swappable behind the AI Gateway rather than tightly coupling the application to one model or one opportunity source.
-
----
-
-# Non-Functional Requirements
-
-The hackathon MVP targets:
-
-| Requirement | Target |
-|---|---|
-| First meaningful page load | < 3 seconds on normal broadband for demo routes |
-| API response excluding LLM | < 500 ms target for common CRUD/read operations |
-| AI feature response | Prefer < 8 seconds, with visible progress state |
-| Availability during judging | Demo mode should not depend on live third-party job feeds |
-| Accessibility | Keyboard-navigable primary flows, readable contrast, clear form labels |
-| Responsive support | Desktop-first for judging + usable mobile layout |
-
----
-
-# Frontend Information Architecture
-
-| Route | Screen |
-|---|---|
-| `/` | Landing / value proposition / demo entry |
-| `/onboarding` | Profile setup wizard |
-| `/dashboard` | Career Readiness Score, top recommendation, roadmap progress |
-| `/career/[id]` | Career detail, skill gaps, roadmap and courses |
-| `/opportunities` | Jobs, internships, government opportunities |
-| `/resume` | Resume upload + analysis + improvement |
-| `/interview` | Mock interview workspace |
-| `/progress` | Roadmap tasks, score trend, achievements |
-| `/admin` | Demo-only aggregate dashboard |
-
----
-
-# Testing Strategy
-
-The technical plan uses multiple layers of verification:
-
-### Unit Testing
-
-- score calculation
-- hard filters
-- skill normalization
-- validation schemas
-
-### Integration Testing
-
-- profile → AI analysis → recommendation → roadmap
-
-### AI Contract Testing
-
-- JSON-schema compliance
-- no fabricated fields
-
-### Security Testing
-
-- unauthorized access to another student's data must fail
-
-### UI Smoke Testing
-
-- onboarding
-- dashboard
-- career
-- opportunities
-- resume
-- interview
-
-### Demo Rehearsal
-
-- full live path
-- seeded profile
-- controlled failure scenarios
-
----
-
-# Seed Dataset
-
-The hackathon dataset is planned around:
-
-- **20–40 career roles** spanning software, data, cybersecurity, electronics, commerce, public administration, and other student-relevant paths.
-- **100–300 curated opportunities** with source URLs, eligibility fields, and verification dates.
-- **50–100 courses / certifications** mapped to normalized skills.
-- **10–20 scholarships / government schemes** as a future or P1 module.
-- **3–5 prepared demo student personas** representing different branches and goals.
-
----
-
-# Deployment & Environments
-
-| Environment | Configuration |
-|---|---|
-| Local | Node.js LTS, `.env.local`, Supabase project, seeded DB |
-| Preview | Vercel preview deployment with masked test data |
-| Demo | Dedicated Vercel production project, stable seed dataset, backup AI responses |
-| Secrets | Vercel / Supabase secret storage; never commit keys |
-
----
-
-# Local Development
-
-## Prerequisites
-
-- Node.js LTS
-- npm
-- Supabase project
-- AI provider credentials configured server-side
-
-## Setup
+### 1. Clone the Repository
 
 ```bash
 git clone https://github.com/SKYALKERSID/Career-Setu.git
 cd Career-Setu
+```
+
+### 2. Install Dependencies
+
+```bash
 npm install
 ```
 
-Copy the environment template and fill in your Supabase and AI provider credentials:
+### 3. Configure Environment Variables
+
+Create a `.env.local` file in the project root:
 
 ```bash
 cp .env.example .env.local
 ```
 
-Configure your API keys in `.env.local` (Groq / Gemini and Supabase). **Never commit secrets.**
+Fill in your configuration keys:
 
-Start the development server:
+```ini
+# Supabase Configuration
+NEXT_PUBLIC_SUPABASE_URL=https://your-project-id.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your-supabase-anon-key
+SUPABASE_SERVICE_ROLE_KEY=your-supabase-service-role-key
+
+# AI Provider Configuration (groq or gemini)
+AI_PROVIDER=groq
+
+# Groq Credentials (Recommended)
+GROQ_API_KEY=gsk_your_groq_api_key_here
+GROQ_MODEL=openai/gpt-oss-120b
+
+# Google Gemini Credentials (Alternative / Fallback)
+GEMINI_API_KEY=your_gemini_api_key_here
+GEMINI_MODEL=gemini-2.0-flash
+```
+
+### 4. Seed the Database
+
+Run the database seed script to populate academic degrees, branches, canonical skills, career roles, and verified opportunities:
+
+```bash
+npm run seed
+```
+
+### 5. Launch Development Server
 
 ```bash
 npm run dev
 ```
 
-Then open:
+Open [http://localhost:3000](http://localhost:3000) in your browser.
 
-```text
-http://localhost:3000
+---
+
+## 🧪 Testing & Verification
+
+The project includes unit verification, type checks, linting, and smoke tests:
+
+```bash
+# Type-check entire codebase
+npx tsc --noEmit
+
+# Run ESLint rules
+npm run lint
+
+# Execute unit and contract test suites
+npm test
+
+# Run Playwright end-to-end smoke tests
+npm run test:e2e:smoke
+
+# Test production build locally
+npm run build
 ```
 
-> The exact environment variable names and local migration/seed commands should remain aligned with the repository's current implementation.
+---
+
+## 🛡️ Security, Privacy & Compliance
+
+- **Row Level Security (RLS)**: Strictly enforced at the database level so students can only read and modify their own records, resumes, and interview responses.
+- **Private File Storage**: Uploaded resumes are placed in private, server-only Supabase storage buckets with time-limited signed access URLs.
+- **Credential Hygiene**: Provider API keys (`GROQ_API_KEY`, `GEMINI_API_KEY`, `SUPABASE_SERVICE_ROLE_KEY`) are server-only environment variables and are never transmitted to client bundles.
+- **Fact-Grounded AI**: The platform relies on database-retrieved taxonomy records for skills and qualifications rather than generating fictitious job requirements or deadlines.
 
 ---
 
-# Engineering Workflow
+## 🤝 Contributing
 
-The TRD explicitly recommends a vertical-slice workflow using Codex + Antigravity:
+Contributions, bug reports, and suggestions are welcome!
 
-- **Codex:** architecture, database schema, API routes, server-side logic, validation, tests, integration fixes, and refactoring.
-- **Antigravity:** UI exploration, page composition, visual polish, interaction states, responsive layout, and front-end iteration.
-- **Human review:** product decisions, data realism, API permissions, AI output quality, demo script, and final QA.
-
-The guiding rule is to maintain one source of truth for requirements, build small vertical slices, test them, and only then move on.
-
----
-
-# Suggested Build Order
-
-The project plan specifies this implementation sequence:
-
-1. Scaffold Next.js app, Supabase schema, auth, and seeded demo data.
-2. Build student onboarding + dashboard with static readiness data.
-3. Add real scoring engine and profile analysis.
-4. Add career recommendation + skill-gap workflow.
-5. Add roadmap generation + progress tracking.
-6. Add opportunity matching using seeded data + vector / keyword fallback.
-7. Add resume parsing / improvement.
-8. Add mock interview.
-9. Polish UI, loading/error/empty states, and demo persona.
-10. Freeze features and rehearse the complete demo three times.
+1. Fork the project.
+2. Create your feature branch (`git checkout -b feature/AmazingFeature`).
+3. Commit your changes (`git commit -m 'feat: Add some AmazingFeature'`).
+4. Push to the branch (`git push origin feature/AmazingFeature`).
+5. Open a Pull Request.
 
 ---
 
-# Project Priorities
+## 📄 License
 
-The PRD organizes features into three priority levels.
-
-### P0 — Core MVP
-
-- Student Profile
-- AI Profile Analysis
-- Career Readiness Score
-- Career Recommendations
-- Skill Gap Engine
-- 90-Day Roadmap
-- Opportunity Matching
-- Resume Copilot
-- Mock Interview
-
-### P1
-
-- Course / Certification Discovery
-- Progress Tracking
-- Admin Dashboard
-
-### P2
-
-- Hindi Voice Interaction
-
----
-
-# Success Metrics for the MVP
-
-The PRD defines these demo-oriented targets:
-
-| Metric | MVP Target |
-|---|---|
-| Onboarding completion | ≥ 80% of demo users reach profile analysis |
-| Time to first useful recommendation | < 2 minutes after profile completion |
-| Recommendation explanation coverage | 100% of career recommendations show rationale |
-| Roadmap generation success | ≥ 95% of valid profiles generate a roadmap |
-| Opportunity relevance | ≥ 70% of top-5 opportunities judged relevant in manual test |
-| Demo reliability | No P0 failure in three consecutive full demo runs |
-
----
-
-# Technical Risks & Mitigations
-
-| Risk | Probability | Impact | Mitigation |
-|---|---|---|---|
-| Scope explosion | High | High | Freeze P0 scope; add P1 only after full P0 works |
-| LLM hallucination | Medium | High | Retrieval-first design, schema validation, source metadata |
-| Too much UI, too little backend | Medium | High | End-to-end vertical slices; every screen uses real or clearly marked seeded data |
-| Live API failure | Medium | High | Seeded dataset, graceful fallbacks, precomputed critical demo responses |
-| Poor recommendation quality | Medium | High | Curated role taxonomy, explicit scoring, human review |
-| Agent-generated regressions | Medium | Medium | Small commits, automated tests, review after every vertical slice |
-
----
-
-# Definition of Done — Hackathon MVP
-
-The MVP is considered complete when:
-
-- A user can complete onboarding without developer intervention.
-- A real profile produces a Career Readiness Score with explainable dimensions.
-- Top career recommendations are connected to specific skill gaps.
-- A 90-day roadmap is generated and progress can be updated.
-- At least one opportunity list shows realistic match scores and reasons.
-- Resume upload produces useful, non-fabricated improvement suggestions.
-- Mock interview completes end-to-end and returns a score / feedback summary.
-- Unauthorized data access is blocked.
-- The application remains demoable using seeded data if an external service fails.
-- The complete demo can be executed in under 6 minutes without changing code.
-
----
-
-# Hackathon Demo Flow
-
-The PRD's recommended demo script is:
-
-1. Start with a student persona and one concrete career goal.
-2. Complete the profile and upload a sample resume.
-3. Show AI profile diagnosis and the Career Readiness Score.
-4. Open a recommended career and show skill gaps + evidence.
-5. Generate the 90-day roadmap and mark one task complete.
-6. Show matched opportunities and explain why one ranks highly.
-7. Run a short mock interview and show its feedback report.
-8. Finish with an impact dashboard showing readiness, interventions, and opportunities unlocked.
-
----
-
-# Future Scope
-
-The PRD identifies the following future directions:
-
-- verified government opportunity feeds and scholarship services
-- institution / college dashboards and placement analytics
-- regional-language voice assistant and low-bandwidth mode
-- career assessments and skill verification
-- employer-side matching and apprenticeship workflows
-- longitudinal outcomes from skill completion through application, interview, and placement
-
----
-
-# Project Scope & Disclaimer
-
-MP CareerSetu is specified as a **hackathon MVP**, not a production government deployment. Real-world data integrations and eligibility rules must be verified before operational use.
-
-CareerSetu is an advisory career-development platform. Its readiness scores and AI-generated guidance are not hiring decisions, employment guarantees, or authoritative eligibility determinations. Official sources remain authoritative where applicable.
-
----
-
-# License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+Distributed under the **MIT License**. See [`LICENSE`](LICENSE) for complete details.
 
 ---
 
 <div align="center">
 
-### MP CareerSetu
+Built with ❤️ for the students of Madhya Pradesh.
 
-**From career uncertainty to an actionable readiness plan.**
-
-[Live Demo](https://career-setu-hslc.vercel.app)
+[**Launch MP CareerSetu**](https://career-setu-hslc.vercel.app)
 
 </div>

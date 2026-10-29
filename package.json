@@ -8,6 +8,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
+    "test": "node scripts/run-unit-tests.js",
     "test:e2e": "playwright test",
     "test:e2e:smoke": "playwright test tests/auth.smoke.spec.ts",
     "seed": "node --loader ts-node/register/transpile-only supabase/seed.ts"
