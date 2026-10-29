@@ -431,27 +431,49 @@
       color: #E2E8F0;
     }
 
+    @page {
+      size: 1920px 1080px;
+      margin: 0;
+    }
+
     @media print {
-      body {
-        background: white;
-        color: black;
+      html, body {
+        width: 1920px !important;
+        height: auto !important;
+        background: #0A1128 !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+        color: #F8FAFC !important;
+        margin: 0 !important;
+        padding: 0 !important;
       }
 
       .deck-container {
-        aspect-ratio: auto;
-        box-shadow: none;
-        border: none;
-        max-width: 100%;
+        width: 1920px !important;
+        max-width: 1920px !important;
+        aspect-ratio: auto !important;
+        border: none !important;
+        border-radius: 0 !important;
+        box-shadow: none !important;
+        background: transparent !important;
       }
 
       .slide {
         display: flex !important;
-        page-break-after: always;
-        height: 100vh;
+        width: 1920px !important;
+        height: 1080px !important;
+        box-sizing: border-box !important;
+        padding: 3.5rem 5rem !important;
+        background: radial-gradient(circle at 80% 20%, #0F2042 0%, #0A1128 60%) !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+        page-break-after: always !important;
+        page-break-inside: avoid !important;
+        break-after: page !important;
       }
 
       .deck-controls {
-        display: none;
+        display: none !important;
       }
     }
   </style>
@@ -464,7 +486,7 @@
     <!-- SLIDE 1: HERO -->
     <section class="slide active" data-slide="1">
       <div class="hero-content">
-        <span class="badge mb-3">GOVERNMENT EMPLOYABILITY READINESS & PLACEMENT PORTAL</span>
+        <span class="badge mb-3">AI-DRIVEN EMPLOYABILITY READINESS & PLACEMENT PLATFORM</span>
         <h1 class="hero-title">CareerSetu 🚀</h1>
         <p class="hero-tagline">Bridging Higher Education to Meaningful Careers</p>
         <p style="color: #94A3B8; max-width: 650px; font-size: 0.95rem; margin-bottom: 2.2rem; line-height: 1.5;">
@@ -918,8 +940,7 @@
           </div>
         </div>
         <div class="callout" style="border-left-color: var(--accent-cyan);">
-          <strong>Public Sector Direct Feeds:</strong> Connects students with apprenticeship programs, regional
-          Rojgar opportunities, and regional industrial drives.
+          <strong>Public Sector Direct Feeds:</strong> Connects students with state apprenticeship programs, public employment opportunities, and regional industrial drives.
         </div>
       </div>
     </section>
