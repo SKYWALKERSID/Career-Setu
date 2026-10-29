@@ -11,7 +11,9 @@ function canFailOver(response: AIResponse<unknown>): boolean {
     || response.errorCategory === 'AI_EMPTY_RESPONSE'
     || response.errorCategory === 'AI_PARSE_ERROR'
     || response.errorCategory === 'AI_SCHEMA_ERROR'
-    || (response.errorCategory === 'AI_PROVIDER_ERROR' && (response.statusCode === undefined || response.statusCode >= 500));
+    || response.errorCategory === 'AI_PROVIDER_ERROR'
+    || response.errorCategory === 'AI_AUTH_ERROR'
+    || response.errorCategory === 'AI_CONFIG_ERROR';
 }
 
 class SyntheticRateLimitProvider implements AIProvider {

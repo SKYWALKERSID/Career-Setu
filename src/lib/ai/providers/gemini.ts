@@ -9,7 +9,7 @@ const MAX_TRANSIENT_RETRIES = 1;
 const BASE_RETRY_DELAY_MS = 400;
 const MAX_RETRY_DELAY_MS = 1200;
 const REQUEST_TIMEOUT_MS = 15000;
-const FALLBACK_GEMINI_MODELS = ['gemini-3.5-flash'];
+const FALLBACK_GEMINI_MODELS = ['gemini-3.5-flash', 'gemini-3.5-flash-lite', 'gemini-3.6-flash', 'gemini-3.1-flash-lite'];
 const RETRYABLE_STATUS_CODES = new Set([429, 500, 502, 503, 504]);
 
 function promptKey(prefix: string, prompt: string): string {
@@ -137,7 +137,7 @@ export class GeminiProvider implements AIProvider {
       try {
         const response = await this.requestSingleModel(candidateModel, body);
         lastResponse = response;
-        if (response.ok || (!RETRYABLE_STATUS_CODES.has(response.status) && response.status !== 404)) {
+        if (response.ok || (!RETRYABLE_STATUS_CODES.has(response.status) && response.status !== 404 && response.status !== 400)) {
           return { response, modelUsed: candidateModel };
         }
       } catch (err) {
@@ -200,8 +200,29 @@ export class GeminiProvider implements AIProvider {
       try {
         parsedJson = JSON.parse(cleanedText);
       } catch (jsonErr: unknown) {
-        const message = jsonErr instanceof Error ? jsonErr.message : 'Unknown JSON parsing error';
-        return this.failure(`Malformed JSON response from Gemini model: ${message}`, 'AI_PARSE_ERROR', startTime, tokensUsed, modelUsed);
+        const firstBrace = cleanedText.indexOf('{');
+        const lastBrace = cleanedText.lastIndexOf('}');
+        if (firstBrace !== -1 && lastBrace > firstBrace) {
+          try {
+            parsedJson = JSON.parse(cleanedText.slice(firstBrace, lastBrace + 1));
+          } catch {
+            const message = jsonErr instanceof Error ? jsonErr.message : 'Unknown JSON parsing error';
+            return this.failure(`Malformed JSON response from Gemini model: ${message}`, 'AI_PARSE_ERROR', startTime, tokensUsed, modelUsed);
+          }
+        } else {
+          const message = jsonErr instanceof Error ? jsonErr.message : 'Unknown JSON parsing error';
+          return this.failure(`Malformed JSON response from Gemini model: ${message}`, 'AI_PARSE_ERROR', startTime, tokensUsed, modelUsed);
+        }
+      }
+
+      if (parsedJson && typeof parsedJson === 'object' && !Array.isArray(parsedJson)) {
+        const obj = parsedJson as Record<string, unknown>;
+        const uuidRe = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+        for (const key of ['evidenced_skill_ids', 'role_required_skill_ids', 'not_evidenced_skill_ids']) {
+          if (Array.isArray(obj[key])) {
+            obj[key] = (obj[key] as unknown[]).filter((v): v is string => typeof v === 'string' && uuidRe.test(v.trim()));
+          }
+        }
       }
 
       // Zod Validation

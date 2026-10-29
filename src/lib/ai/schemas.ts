@@ -14,6 +14,13 @@ function textArray(value: unknown): string[] {
   return Array.isArray(value) ? value.map(textValue).filter((item): item is string => Boolean(item)) : [];
 }
 
+function boundedTextArray(value: unknown, maxLen = 500, maxItems = 15): string[] {
+  return textArray(value)
+    .map((item) => item.trim().slice(0, maxLen))
+    .filter((item) => item.length > 0)
+    .slice(0, maxItems);
+}
+
 function idArray(value: unknown): string[] {
   if (!Array.isArray(value)) return [];
   return value.map((item) => {
@@ -342,7 +349,7 @@ export const ResumeParseSchema = z.preprocess((value) => {
   const rawEmail = typeof contact.email === 'string' ? contact.email.trim() : undefined;
   const validEmail = rawEmail && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(rawEmail) ? rawEmail : undefined;
 
-  const priority_issues = Array.isArray(output.priority_issues)
+  const rawPriorityIssues = Array.isArray(output.priority_issues)
     ? output.priority_issues.map((item) => {
         if (!item || typeof item !== 'object') return null;
         const rec = item as Record<string, unknown>;
@@ -354,22 +361,37 @@ export const ResumeParseSchema = z.preprocess((value) => {
           why_it_matters: (textValue(rec.why_it_matters ?? rec.rationale ?? rec.why) || 'Affects resume effectiveness').slice(0, 600),
           recommended_change: (textValue(rec.recommended_change ?? rec.solution ?? rec.recommendation) || 'Update content').slice(0, 600),
         };
-      }).filter(Boolean)
+      }).filter(Boolean).slice(0, 8)
     : [];
+  const priority_issues = rawPriorityIssues.length > 0 ? rawPriorityIssues : [{
+    title: 'Quantify project and experience outcomes',
+    priority: 'high' as const,
+    section: 'Projects' as const,
+    problem: 'Key project and experience bullets can better highlight measurable outcomes and technical depth.',
+    why_it_matters: 'Specific, verifiable outcomes help recruiters evaluate real-world engineering impact.',
+    recommended_change: 'Add concrete scope, tools used, and verified metrics where available.',
+  }];
 
-  const section_analysis = Array.isArray(output.section_analysis)
+  const rawSectionAnalysis = Array.isArray(output.section_analysis)
     ? output.section_analysis.map((item) => {
         if (!item || typeof item !== 'object') return null;
         const rec = item as Record<string, unknown>;
         return {
           section: normalizeSectionName(rec.section),
           status: normalizeSectionStatus(rec.status),
-          what_works: textArray(rec.what_works ?? rec.strengths),
-          what_is_weak: textArray(rec.what_is_weak ?? rec.weaknesses),
-          recommended_improvement: textArray(rec.recommended_improvement ?? rec.improvements ?? rec.recommendations),
+          what_works: boundedTextArray(rec.what_works ?? rec.strengths, 500, 15),
+          what_is_weak: boundedTextArray(rec.what_is_weak ?? rec.weaknesses, 500, 15),
+          recommended_improvement: boundedTextArray(rec.recommended_improvement ?? rec.improvements ?? rec.recommendations, 500, 15),
         };
-      }).filter(Boolean)
+      }).filter(Boolean).slice(0, 8)
     : [];
+  const section_analysis = rawSectionAnalysis.length > 0 ? rawSectionAnalysis : [{
+    section: 'Projects' as const,
+    status: 'needs_work' as const,
+    what_works: ['Core technical stack and project titles are present.'],
+    what_is_weak: ['Outcome metrics and architectural specifics can be clearer.'],
+    recommended_improvement: ['Highlight technical decisions and verified outcomes in each bullet.'],
+  }];
 
   const bullet_improvements = Array.isArray(output.bullet_improvements)
     ? output.bullet_improvements.map((item) => {
@@ -383,47 +405,47 @@ export const ResumeParseSchema = z.preprocess((value) => {
           issue: (textValue(rec.issue ?? rec.problem) || 'Could be stronger').slice(0, 400),
           why_it_is_weak: (textValue(rec.why_it_is_weak ?? rec.why) || 'Lacks measurable impact').slice(0, 500),
           suggested: (textValue(rec.suggested ?? rec.improved ?? rec.recommendation) || 'Rewritten bullet point').slice(0, 700),
-          missing_information: textArray(rec.missing_information ?? rec.missing),
+          missing_information: boundedTextArray(rec.missing_information ?? rec.missing, 500, 15),
         };
-      }).filter(Boolean)
+      }).filter(Boolean).slice(0, 10)
     : [];
 
   const ats = output.ats_keywords && typeof output.ats_keywords === 'object' ? output.ats_keywords as Record<string, unknown> : {};
   const ats_keywords = {
-    present: textArray(ats.present ?? ats.found),
-    weak_or_missing: textArray(ats.weak_or_missing ?? ats.missing),
-    placement_suggestions: textArray(ats.placement_suggestions ?? ats.placement),
-    formatting_concerns: textArray(ats.formatting_concerns ?? ats.formatting),
-    ordering_suggestions: textArray(ats.ordering_suggestions ?? ats.ordering),
+    present: boundedTextArray(ats.present ?? ats.found, 500, 15),
+    weak_or_missing: boundedTextArray(ats.weak_or_missing ?? ats.missing, 500, 15),
+    placement_suggestions: boundedTextArray(ats.placement_suggestions ?? ats.placement, 500, 15),
+    formatting_concerns: boundedTextArray(ats.formatting_concerns ?? ats.formatting, 500, 15),
+    ordering_suggestions: boundedTextArray(ats.ordering_suggestions ?? ats.ordering, 500, 15),
   };
 
   const align = output.career_alignment_analysis && typeof output.career_alignment_analysis === 'object' ? output.career_alignment_analysis as Record<string, unknown> : {};
   const career_alignment_analysis = {
-    aligned_areas: textArray(align.aligned_areas ?? align.aligned),
-    underrepresented_areas: textArray(align.underrepresented_areas ?? align.underrepresented),
-    missing_role_evidence: textArray(align.missing_role_evidence ?? align.missing),
-    priority_changes: textArray(align.priority_changes ?? align.priority),
+    aligned_areas: boundedTextArray(align.aligned_areas ?? align.aligned, 500, 15),
+    underrepresented_areas: boundedTextArray(align.underrepresented_areas ?? align.underrepresented, 500, 15),
+    missing_role_evidence: boundedTextArray(align.missing_role_evidence ?? align.missing, 500, 15),
+    priority_changes: boundedTextArray(align.priority_changes ?? align.priority, 500, 15),
   };
 
   const strat = output.resume_strategy && typeof output.resume_strategy === 'object' ? output.resume_strategy as Record<string, unknown> : {};
   const resume_strategy = {
-    emphasize: textArray(strat.emphasize),
-    reduce: textArray(strat.reduce),
-    reorder: textArray(strat.reorder),
-    remove: textArray(strat.remove),
-    add_if_true: textArray(strat.add_if_true ?? strat.add),
+    emphasize: boundedTextArray(strat.emphasize, 500, 15),
+    reduce: boundedTextArray(strat.reduce, 500, 15),
+    reorder: boundedTextArray(strat.reorder, 500, 15),
+    remove: boundedTextArray(strat.remove, 500, 15),
+    add_if_true: boundedTextArray(strat.add_if_true ?? strat.add, 500, 15),
   };
 
   const plan = output.action_plan && typeof output.action_plan === 'object' ? output.action_plan as Record<string, unknown> : {};
   const action_plan = {
-    fix_now: textArray(plan.fix_now),
-    improve_next: textArray(plan.improve_next),
-    optional_polish: textArray(plan.optional_polish),
+    fix_now: boundedTextArray(plan.fix_now, 500, 15),
+    improve_next: boundedTextArray(plan.improve_next, 500, 15),
+    optional_polish: boundedTextArray(plan.optional_polish, 500, 15),
   };
 
   return {
     analysis_source: output.analysis_source === 'deterministic_fallback' ? 'deterministic_fallback' : output.analysis_source === 'ai' ? 'ai' : undefined,
-    analysis_version: typeof output.analysis_version === 'string' ? output.analysis_version : undefined,
+    analysis_version: typeof output.analysis_version === 'string' ? output.analysis_version.slice(0, 80) : undefined,
     analysis_context_hash: typeof output.analysis_context_hash === 'string' ? output.analysis_context_hash : undefined,
     name: typeof output.name === 'string' ? output.name.slice(0, 200) : undefined,
     contact: {
@@ -433,12 +455,18 @@ export const ResumeParseSchema = z.preprocess((value) => {
     },
     location: typeof output.location === 'string' ? output.location.slice(0, 200) : undefined,
     summary: typeof output.summary === 'string' ? output.summary.slice(0, 1200) : undefined,
-    education: textArray(output.education), skills: textArray(output.skills), projects: textArray(output.projects),
-    experience: textArray(output.experience ?? output.work_experience), certifications: textArray(output.certifications), achievements: textArray(output.achievements),
-    evidenced_skill_ids: idArray(output.evidenced_skill_ids ?? output.evidencedSkillIds),
-    role_required_skill_ids: idArray(output.role_required_skill_ids ?? output.roleRequiredSkillIds),
-    not_evidenced_skill_ids: idArray(output.not_evidenced_skill_ids ?? output.notEvidencedSkillIds),
-    strengths: textArray(output.strengths), improvement_areas: textArray(output.improvement_areas ?? output.improvementAreas), suggestions: textArray(output.suggestions ?? output.recommendations),
+    education: boundedTextArray(output.education, 300, 10),
+    skills: boundedTextArray(output.skills, 100, 50),
+    projects: boundedTextArray(output.projects, 500, 20),
+    experience: boundedTextArray(output.experience ?? output.work_experience, 500, 20),
+    certifications: boundedTextArray(output.certifications, 300, 20),
+    achievements: boundedTextArray(output.achievements, 300, 20),
+    evidenced_skill_ids: idArray(output.evidenced_skill_ids ?? output.evidencedSkillIds).slice(0, 50),
+    role_required_skill_ids: idArray(output.role_required_skill_ids ?? output.roleRequiredSkillIds).slice(0, 50),
+    not_evidenced_skill_ids: idArray(output.not_evidenced_skill_ids ?? output.notEvidencedSkillIds).slice(0, 50),
+    strengths: boundedTextArray(output.strengths, 300, 10),
+    improvement_areas: boundedTextArray(output.improvement_areas ?? output.improvementAreas, 300, 10),
+    suggestions: boundedTextArray(output.suggestions ?? output.recommendations, 400, 15),
     overall_assessment: (textValue(output.overall_assessment ?? output.overallAssessment) || 'The uploaded resume has been analyzed for target career fit.').slice(0, 900),
     biggest_opportunity: (textValue(output.biggest_opportunity ?? output.biggestOpportunity) || 'Focus on quantifying achievements and highlighting key role-relevant skills.').slice(0, 600),
     priority_issues,

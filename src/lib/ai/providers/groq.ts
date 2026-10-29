@@ -53,8 +53,8 @@ export class GroqProvider implements AIProvider {
   }
 
   private buildRequestBody(prompt: string, systemInstruction?: string, model = this.modelName): Record<string, unknown> {
-    const estimatedPromptTokens = Math.ceil((prompt.length + (systemInstruction?.length || 0)) / 3.2);
-    const maxCompletionTokens = Math.max(1024, Math.min(2600, 7400 - estimatedPromptTokens));
+    const estimatedPromptTokens = Math.ceil((prompt.length + (systemInstruction?.length || 0)) / 3.5);
+    const maxCompletionTokens = Math.max(2048, Math.min(4200, 7800 - estimatedPromptTokens));
     return {
       messages: [
         ...(systemInstruction ? [{ role: 'system', content: systemInstruction }] : []),
@@ -63,7 +63,7 @@ export class GroqProvider implements AIProvider {
       model,
       temperature: 0.1,
       max_completion_tokens: maxCompletionTokens,
-      ...(model.startsWith('openai/gpt-oss') ? { reasoning_effort: 'medium' } : {}),
+      ...(model.startsWith('openai/gpt-oss') ? { reasoning_effort: 'low' } : {}),
       response_format: { type: 'json_object' },
     };
   }
@@ -110,7 +110,7 @@ export class GroqProvider implements AIProvider {
       }
       const response = await this.requestWithModel(body);
       lastResponse = response;
-      if (response.ok || ![429, 500, 502, 503, 504].includes(response.status)) {
+      if (response.ok || ![400, 404, 413, 429, 500, 502, 503, 504].includes(response.status)) {
         return { response, modelUsed: candidateModel };
       }
     }
@@ -166,8 +166,29 @@ export class GroqProvider implements AIProvider {
       try {
         parsedJson = JSON.parse(cleanedText);
       } catch (error: unknown) {
-        const message = error instanceof Error ? error.message : 'Unknown JSON parsing error';
-        return this.failure(`Malformed JSON response from Groq model: ${message}`, 'AI_PARSE_ERROR', startTime, tokensUsed, modelUsed);
+        const firstBrace = cleanedText.indexOf('{');
+        const lastBrace = cleanedText.lastIndexOf('}');
+        if (firstBrace !== -1 && lastBrace > firstBrace) {
+          try {
+            parsedJson = JSON.parse(cleanedText.slice(firstBrace, lastBrace + 1));
+          } catch {
+            const message = error instanceof Error ? error.message : 'Unknown JSON parsing error';
+            return this.failure(`Malformed JSON response from Groq model: ${message}`, 'AI_PARSE_ERROR', startTime, tokensUsed, modelUsed);
+          }
+        } else {
+          const message = error instanceof Error ? error.message : 'Unknown JSON parsing error';
+          return this.failure(`Malformed JSON response from Groq model: ${message}`, 'AI_PARSE_ERROR', startTime, tokensUsed, modelUsed);
+        }
+      }
+
+      if (parsedJson && typeof parsedJson === 'object' && !Array.isArray(parsedJson)) {
+        const obj = parsedJson as Record<string, unknown>;
+        const uuidRe = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+        for (const key of ['evidenced_skill_ids', 'role_required_skill_ids', 'not_evidenced_skill_ids']) {
+          if (Array.isArray(obj[key])) {
+            obj[key] = (obj[key] as unknown[]).filter((v): v is string => typeof v === 'string' && uuidRe.test(v.trim()));
+          }
+        }
       }
 
       const result = schema.safeParse(parsedJson);
