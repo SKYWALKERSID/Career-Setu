@@ -13,18 +13,22 @@ An AI-driven career guidance, skill readiness, and placement enablement platform
 [![Supabase](https://img.shields.io/badge/Supabase-PostgreSQL-3ECF8E?logo=supabase)](https://supabase.com/)
 [![Presentation Deck](https://img.shields.io/badge/Presentation-18--Slide%20Deck%20(Live)-06B6D4?logo=slides)](https://career-setu-hslc.vercel.app/presentation.html)
 [![Download PDF](https://img.shields.io/badge/Download-Slides%20(PDF)-14B8A6?logo=adobe-acrobat-reader)](docs/CareerSetu_Presentation_Deck.pdf)
-[![Cinematic Commercial](https://img.shields.io/badge/Commercial-1080p%2060fps%20MP4%20(Voiceover)-E11D48?logo=youtube)](careersetu-cinematic-ad.mp4)
+[![Watch Commercial (Live)](https://img.shields.io/badge/Watch%20Commercial-1080p%2060fps%20(Live%20Player)-E11D48?logo=youtube)](https://career-setu-hslc.vercel.app/commercial.html)
+[![Download MP4](https://img.shields.io/badge/Download-Commercial%20(MP4)-F43F5E?logo=vlc-media-player)](careersetu-cinematic-ad.mp4)
 
-[**Explore Live Demo**](https://career-setu-hslc.vercel.app) • [**Watch 1080p 60fps Commercial (MP4)**](careersetu-cinematic-ad.mp4) • [**Live Presentation Deck (HTML)**](https://career-setu-hslc.vercel.app/presentation.html) • [**Download Slides (PDF)**](docs/CareerSetu_Presentation_Deck.pdf) • [**Architecture & Docs**](#%EF%B8%8F-system-architecture)
+[**Explore Live Demo**](https://career-setu-hslc.vercel.app) • [**Watch Commercial (Live Player)**](https://career-setu-hslc.vercel.app/commercial.html) • [**Download Commercial (MP4)**](careersetu-cinematic-ad.mp4) • [**Live Presentation Deck (HTML)**](https://career-setu-hslc.vercel.app/presentation.html) • [**Download Slides (PDF)**](docs/CareerSetu_Presentation_Deck.pdf)
 
 </div>
 
 ---
 
-> 📽️ **Presentation Deck & Launch Commercial Videos**:
-> - 🎬 **Cinematic Launch Commercial (1080p 60fps MP4 + Voiceover)**: [`careersetu-cinematic-ad.mp4`](careersetu-cinematic-ad.mp4)
-> - 🎥 **Raw Walkthrough Video (WebM)**: [`demo-videos/CareerSetu_Demo_Walkthrough.webm`](demo-videos/CareerSetu_Demo_Walkthrough.webm)
+> 🎬 **Launch Commercial Video (1080p 60fps + Gemini Studio Voiceover)**:
+> - 🌐 **Live Web Theater Player**: [**Watch Interactive 9-Scene Commercial (Full Screen)**](https://career-setu-hslc.vercel.app/commercial.html) *(or stream direct [MP4](https://career-setu-hslc.vercel.app/careersetu-cinematic-ad.mp4))*
+> - 💻 **GitHub Repository File**: [`careersetu-cinematic-ad.mp4`](careersetu-cinematic-ad.mp4) *(also mirrored in [`demo-videos/careersetu-cinematic-ad.mp4`](demo-videos/careersetu-cinematic-ad.mp4))*
+>
+> 📽️ **18-Slide Master Presentation Deck**:
 > - 🌐 **Live Web Presentation**: [**Open Interactive Deck (Full Screen)**](https://career-setu-hslc.vercel.app/presentation.html) *(or view via [GitHub HTMLPreview](https://htmlpreview.github.io/?https://github.com/SKYWALKERSID/Career-Setu/blob/main/docs/presentation-deck.html))*
+> - 💻 **GitHub Repository File**: [`docs/presentation-deck.html`](docs/presentation-deck.html)
 > - 📄 **Download Widescreen PDF**: [`docs/CareerSetu_Presentation_Deck.pdf`](docs/CareerSetu_Presentation_Deck.pdf) (16:9 printable executive slides)
 
 ---
