@@ -13,16 +13,17 @@ An AI-driven career guidance, skill readiness, and placement enablement platform
 [![Supabase](https://img.shields.io/badge/Supabase-PostgreSQL-3ECF8E?logo=supabase)](https://supabase.com/)
 [![Presentation Deck](https://img.shields.io/badge/Presentation-18--Slide%20Deck%20(Live)-06B6D4?logo=slides)](https://career-setu-hslc.vercel.app/presentation.html)
 [![Download PDF](https://img.shields.io/badge/Download-Slides%20(PDF)-14B8A6?logo=adobe-acrobat-reader)](docs/CareerSetu_Presentation_Deck.pdf)
+[![Demo Video](https://img.shields.io/badge/Walkthrough-Full%20HD%20Video-E11D48?logo=youtube)](demo-videos/CareerSetu_Demo_Walkthrough.webm)
 
-[**Explore Live Demo**](https://career-setu-hslc.vercel.app) • [**Live Presentation Deck (HTML)**](https://career-setu-hslc.vercel.app/presentation.html) • [**Download Slides (PDF)**](docs/CareerSetu_Presentation_Deck.pdf) • [**Architecture & Docs**](#%EF%B8%8F-system-architecture)
+[**Explore Live Demo**](https://career-setu-hslc.vercel.app) • [**Live Presentation Deck (HTML)**](https://career-setu-hslc.vercel.app/presentation.html) • [**Download Slides (PDF)**](docs/CareerSetu_Presentation_Deck.pdf) • [**Watch Demo Video**](demo-videos/CareerSetu_Demo_Walkthrough.webm) • [**Architecture & Docs**](#%EF%B8%8F-system-architecture)
 
 </div>
 
 ---
 
-> 📽️ **Presentation Deck Available**: You can interactively present the complete 18-slide Civic-Tech presentation deck right in your browser:
+> 📽️ **Presentation Deck & Demo Video**:
+> - 🎬 **Full HD Walkthrough Video**: [`demo-videos/CareerSetu_Demo_Walkthrough.webm`](demo-videos/CareerSetu_Demo_Walkthrough.webm) (Full end-to-end platform workflow)
 > - 🌐 **Live Web Presentation**: [**Open Interactive Deck (Full Screen)**](https://career-setu-hslc.vercel.app/presentation.html) *(or view via [GitHub HTMLPreview](https://htmlpreview.github.io/?https://github.com/SKYWALKERSID/Career-Setu/blob/main/docs/presentation-deck.html))*
-> - 💻 **GitHub Repository File**: [`docs/presentation-deck.html`](docs/presentation-deck.html)
 > - 📄 **Download Widescreen PDF**: [`docs/CareerSetu_Presentation_Deck.pdf`](docs/CareerSetu_Presentation_Deck.pdf) (16:9 printable executive slides)
 
 ---
